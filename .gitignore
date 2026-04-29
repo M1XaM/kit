@@ -1,0 +1,32 @@
+# Binaries
+bin/
+
+# Go
+*.o
+*.a
+*.so
+_obj
+_test
+*.[568vq]
+[568vq].out
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+_testmain.go
+*.test
+*.prof
+
+# Node / React Frontend
+src/frontend/node_modules/
+src/frontend/dist/
+src/frontend/.npm/
+src/frontend/.eslintcache
+src/frontend/npm-debug.log*
+src/frontend/yarn-debug.log*
+src/frontend/yarn-error.log*
+
+# OS Files
+.DS_Store
+Thumbs.db

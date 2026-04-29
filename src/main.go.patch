@@ -1,0 +1,57 @@
+--- a/src/main.go
++++ b/src/main.go
+@@ -10,6 +10,8 @@
+ "image/png"
+ "io"
+ "io/fs"
+ "log"
+ "net"
+ "net/http"
+@@ -128,7 +130,46 @@
+ log.Fatalf("Failed to instantiate embedded FS: %v", err)
+ }
+ 
+-http.Handle("/", http.FileServer(http.FS(distFS)))
++fileServer := http.FileServer(http.FS(distFS))
++http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
++path := strings.TrimPrefix(r.URL.Path, "/")
++if path == "" {
++path = "index.html"
++}
++f, err := distFS.Open(path)
++if err == nil {
++f.Close()
++fileServer.ServeHTTP(w, r)
++return
++}
++
++index, err := distFS.Open("index.html")
++if err != nil {
++http.NotFound(w, r)
++return
++}
++defer index.Close()
++http.ServeContent(w, r, "index.html", time.Time{}, index.(io.ReadSeeker))
++})
+ http.HandleFunc("/ws", handleWebSocket)
+ http.HandleFunc("/api/convert/png-to-jpg", handlePngToJpg)
++
++// Add endpoint stubs for the other implemented frontend tools
++http.HandleFunc("/api/pdf/merge", func(w http.ResponseWriter, r *http.Request) {
++w.Header().Set("Content-Type", "text/plain")
++w.Write([]byte("Merged PDF output simulated"))
++})
++http.HandleFunc("/api/pdf/compress", func(w http.ResponseWriter, r *http.Request) {
++w.Header().Set("Content-Type", "text/plain")
++w.Write([]byte("Compressed PDF output simulated"))
++})
++http.HandleFunc("/api/pdf/to-word", func(w http.ResponseWriter, r *http.Request) {
++w.Header().Set("Content-Type", "text/plain")
++w.Write([]byte("PDF to Word dummy output"))
++})
++http.HandleFunc("/api/pdf/to-excel", func(w http.ResponseWriter, r *http.Request) {
++w.Header().Set("Content-Type", "text/plain")
++w.Write([]byte("PDF to Excel dummy output"))
++})
+ 
+ server := &http.Server{Addr: ":" + port}
