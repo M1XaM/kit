@@ -69,13 +69,11 @@ desktopPath := filepath.Join(appDir, "kit.desktop")
 
 content := fmt.Sprintf(`[Desktop Entry]
 Name=Kit
-Exec=%s -term=true %%u
+Exec=%s -term=%s %%u
 Type=Application
 Terminal=%s
 MimeType=x-scheme-handler/kit;
-`, exePath, termStr)
-
-// Check if it already exists exactly as needed so we don't spam Nautilus causing it to crash
+`, exePath, termStr, termStr)
 existingContent, err := os.ReadFile(desktopPath)
 if err != nil || string(existingContent) != content {
 os.WriteFile(desktopPath, []byte(content), 0644)
@@ -85,14 +83,13 @@ exec.Command("update-desktop-database", appDir).Run()
 
 case "windows":
 // Check registry quickly so cmd windows don't flash if already present
-cmd := exec.Command("cmd", "/c", `reg query "HKCU\Software\Classes\kit\shell\open\command" /ve`)
-out, err := cmd.Output()
-if err != nil || !strings.Contains(string(out), exePath) {
-exec.Command("cmd", "/c", fmt.Sprintf("reg add \"HKCU\\Software\\Classes\\kit\" /ve /d \"URL:Kit Protocol\" /f")).Run()
-exec.Command("cmd", "/c", fmt.Sprintf("reg add \"HKCU\\Software\\Classes\\kit\" /v \"URL Protocol\" /d \"\" /f")).Run()
-exec.Command("cmd", "/c", fmt.Sprintf("reg add \"HKCU\\Software\\Classes\\kit\\shell\\open\\command\" /ve /d \"\\\"%s\\\" -term=true \\\"%%1\\\"\" /f", exePath)).Run()
-}
-
+		cmd := exec.Command("reg", "query", `HKCU\Software\Classes\kit\shell\open\command`, "/ve")
+		out, err := cmd.Output()
+		if err != nil || !strings.Contains(string(out), exePath) {
+			exec.Command("reg", "add", `HKCU\Software\Classes\kit`, "/ve", "/d", "URL:Kit Protocol", "/f").Run()
+			exec.Command("reg", "add", `HKCU\Software\Classes\kit`, "/v", "URL Protocol", "/d", "", "/f").Run()
+			exec.Command("reg", "add", `HKCU\Software\Classes\kit\shell\open\command`, "/ve", "/d", fmt.Sprintf(`"%s" -term=%s "%%1"`, exePath, termStr), "/f").Run()
+		}
 case "darwin":
 home, err := os.UserHomeDir()
 if err != nil {
