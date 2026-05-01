@@ -16,7 +16,7 @@ RUN npm run build
 # ==========================================
 # Stage 2: Build the Go backend
 # ==========================================
-FROM golang:1.22-alpine AS backend
+FROM golang:alpine AS backend
 WORKDIR /app
 
 # Ensure correct CGO state for pure static cross-compilation
