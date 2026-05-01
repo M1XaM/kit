@@ -1,44 +1,45 @@
-# Kit
+# Kit - Your Local Tools Hub
 
-Kit is a robust local-tools hub featuring a high-performance Go backend and a React/Vite frontend. Instead of uploading your large files to random cloud websites for conversions or utility processing, **Kit** handles data manipulation entirely dynamically on your local OS, bypassing the usual browser memory limits while keeping all your data fully secure.
+**Kit** brings all the tools you need to work with your files directly to your local machine. It provides a lightning-fast, sleek interface in your browser without sacrificing the power and security of a desktop application. 
 
-## Features
+Instead of uploading your sensitive files to random cloud websites for conversions or utility processing, **Kit** handles data manipulation entirely dynamically on your local OS. 
 
-- **PNG to JPG Converter:** Converts bulky images instantly with Zero Memory Overload.
-- **Custom Protocol Scheme (`kit://start`):** Acts like a sleek native OS application. Once run, it registers itself on Linux, Windows, or macOS, letting you "bookmark" its trigger right inside your browser to start the app natively.
-- **Zero Idle Memory:** Auto-detects lost WebSocket heartbeats. Shut down your browser tab, and the background server immediately destroys itself 5 seconds later.
+---
 
-## Structure
+## 🚀 Why Use Kit? (Our Approach)
 
-```
-├── .gitignore
-├── README.md
-├── bin/          (Auto-generated execution folder)
-│   ├── linux/
-│   ├── macos/
-│   └── windows/
-└── src/
-    ├── frontend/ (React UI + Vite configuration)
-    ├── uninstall/ (Uninstaller script code)
-    ├── main.go   (Go Backend server + handler logic)
-    ├── go.mod    (Dependencies)
-    └── build.sh  (Cross-compiler script)
-```
+* **Privacy First (100% Offline):** Say goodbye to uploading your sensitive documents and images to third-party servers. Everything is processed locally on your hardware. No cloud servers, no bandwidth limits, no data harvesting.
+* **Zero Browser Memory Overload:** Traditional web tools crash when handling large files because of browser sandbox limits. Kit uses a high-performance background server running directly on your OS to bypass these limits, letting you process massive files seamlessly.
+* **Smart Background Auto-Shutdown:** Kit auto-detects lost connections. Close your browser tab, and the background engine cleanly terminates itself within 5 seconds to free up your system resources.
+* **Native App Experience (`kit://` Protocol):** Kit runs in your browser but acts like a native OS application. Once launched, it registers a sleek `kit://start` custom URL scheme. You can bookmark this right in your browser to launch Kit instantly anytime!
+* **Cross-Platform:** Works beautifully across Linux, macOS, and Windows.
 
-## How to Build
+---
 
-1. Open your terminal in the `src/` directory.
-2. Ensure you have Node (`npm`) and Go installed.
-3. Run the automated script:
-   ```bash
-   ./build.sh
-   ```
+## 🛠️ Existing Features
 
-This creates the native backend and uninstaller apps for Linux, Windows, and macOS inside the `bin/` directory.
+We are constantly expanding our toolkit. Currently, you can easily access the following modules right from the dashboard:
 
-## Uninstallation
+* **PNG to JPG Converter:** Convert bulky PNG images to compressed JPGs in seconds without quality loss.
+* **Merge PDF:** Combine multiple PDFs in the exact order you want with the easiest PDF merger available.
+* **Compress PDF:** Drastically reduce PDF file sizes while optimizing for maximal viewing quality.
+* **PDF to Word:** Easily convert your PDF files into easy-to-edit DOC/DOCX documents.
+* **PDF to Excel:** Pull data straight from your PDFs into Excel spreadsheets in a few short seconds.
 
-To instantly wipe the custom `kit://` URL schemes from your System registries without manual hunting:
-1. Simply navigate to the `bin/{your-os}/` folder.
-2. Execute `./delete-kit` (or `.exe`). 
-3. After execution, safely throw away the binaries!
+---
+
+## 📥 How to Run
+
+1. **Launch:** Simply open the `bin/` folder and execute the `kit` binary corresponding to your operating system (`linux`, `windows`, or `macos`).
+2. **Access:** The app will automatically open a sleek dashboard in your default web browser.
+3. **Bookmark (Pro Tip):** Save `kit://start` as a bookmark to start the application natively whenever you need it!
+
+---
+
+## 🗑️ Uninstallation
+
+Didn't like it? Kit leaves no hidden background services. To instantly wipe the custom `kit://` URL schemas from your system registries without any manual hunting:
+
+1. Navigate to your operating system's folder inside `bin/`.
+2. Run the `delete-kit` (or `delete-kit.exe`) application.
+3. Your system is wiped clean of Kit's routing! You can safely delete all remaining files.
