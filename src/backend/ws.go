@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -45,9 +46,12 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func monitorConnections() {
+func monitorConnections(currentPort int, basePort int) {
 	go func() {
 		zeroConnSince := time.Time{}
+		fallbackIdleSince := time.Time{}
+		basePortStr := strconv.Itoa(basePort)
+
 		for {
 			time.Sleep(1 * time.Second)
 			connsMutex.Lock()
@@ -57,12 +61,25 @@ func monitorConnections() {
 			if count == 0 {
 				if zeroConnSince.IsZero() {
 					zeroConnSince = time.Now()
-				} else if time.Since(zeroConnSince) > 5*time.Second {
-					fmt.Println("No active connections for 5 seconds. Shutting down to free up OS memory...")
+				} else if time.Since(zeroConnSince) > 3*time.Second {
+					fmt.Println("No active connections for 3 seconds. Shutting down to free up OS memory...")
 					os.Exit(0)
+				}
+
+				// If this is a fallback instance, release it once the primary port becomes free.
+				if currentPort != basePort && !isPortInUse(basePortStr) {
+					if fallbackIdleSince.IsZero() {
+						fallbackIdleSince = time.Now()
+					} else if time.Since(fallbackIdleSince) > 2*time.Second {
+						fmt.Printf("Primary port %d is free again. Shutting down fallback instance on port %d...\n", basePort, currentPort)
+						os.Exit(0)
+					}
+				} else {
+					fallbackIdleSince = time.Time{}
 				}
 			} else {
 				zeroConnSince = time.Time{} // reset
+				fallbackIdleSince = time.Time{}
 			}
 		}
 	}()
