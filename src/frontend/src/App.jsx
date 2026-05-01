@@ -29,8 +29,14 @@ const TOOLS = [
   }
 ];
 
-function HomeGrid() {
+function HomeGrid({ favoriteOrder, onToggleFavorite }) {
   const navigate = useNavigate();
+  const favoriteSet = new Set(favoriteOrder);
+  const orderedTools = [
+    ...favoriteOrder.map((id) => TOOLS.find((tool) => tool.id === id)).filter(Boolean),
+    ...TOOLS.filter((tool) => !favoriteSet.has(tool.id)),
+  ];
+
   return (
     <>
       <div className="header">
@@ -39,8 +45,22 @@ function HomeGrid() {
       </div>
 
       <div className="grid">
-        {TOOLS.map(tool => (
+        {orderedTools.map(tool => (
           <div className="card" key={tool.id} onClick={() => navigate('/tool/' + tool.id)}>
+            <button
+              type="button"
+              className={`favorite-star ${favoriteSet.has(tool.id) ? 'active' : ''}`}
+              aria-label={favoriteSet.has(tool.id) ? `Remove ${tool.title} from favorites` : `Add ${tool.title} to favorites`}
+              title={favoriteSet.has(tool.id) ? 'Remove from favorites' : 'Add to favorites'}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(tool.id);
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill={favoriteSet.has(tool.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </button>
             <div className={`card-icon ${tool.colorClass}`}>
               {tool.icon}
             </div>
@@ -235,6 +255,54 @@ function NotFound() {
 function MainLayout() {
   const [status, setStatus] = useState('Connecting...')
   const location = useLocation()
+  const [favoriteOrder, setFavoriteOrder] = useState([])
+
+  const saveFavoriteOrder = async (nextOrder) => {
+    try {
+      const response = await fetch('/api/preferences/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: nextOrder }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save favorites');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleFavorite = async (toolID) => {
+    let nextOrder = [];
+    setFavoriteOrder((current) => {
+      const exists = current.includes(toolID);
+      if (exists) {
+        nextOrder = current.filter((id) => id !== toolID);
+        return nextOrder;
+      }
+      nextOrder = [toolID, ...current.filter((id) => id !== toolID)];
+      return nextOrder;
+    });
+    await saveFavoriteOrder(nextOrder);
+  };
+
+  useEffect(() => {
+    const validIds = new Set(TOOLS.map((tool) => tool.id));
+    const loadFavorites = async () => {
+      try {
+        const response = await fetch('/api/preferences/favorites');
+        if (!response.ok) {
+          throw new Error('Failed to load favorites');
+        }
+        const payload = await response.json();
+        const order = Array.isArray(payload?.order) ? payload.order : [];
+        setFavoriteOrder(order.filter((id) => typeof id === 'string' && validIds.has(id)));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadFavorites();
+  }, []);
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -291,7 +359,7 @@ function MainLayout() {
       </div>
       <div className="container">
         <Routes>
-          <Route path="/" element={<HomeGrid />} />
+          <Route path="/" element={<HomeGrid favoriteOrder={favoriteOrder} onToggleFavorite={toggleFavorite} />} />
           <Route path="/tool/:id" element={<ToolView />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
