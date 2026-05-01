@@ -15,12 +15,16 @@ all: build
 # and automatically discards the container.
 build:
 	@echo "Starting platform-agnostic build process via Docker..."
+	@rm -rf bin/
+	@rm -rf src/frontend/dist/
 	@DOCKER_BUILDKIT=1 docker build --file Dockerfile --output type=local,dest=bin/ .
 	@echo "Build complete! Check the bin/ directory for your OS folders."
 
 # Compiles locally using your host's Go and Node.js
 local-build:
 	@echo "Starting local build process..."
+	@rm -rf bin/
+	@rm -rf src/frontend/dist/
 	@cd src && ./build.sh
 
 # Runs the application on Linux (builds first if needed)
@@ -32,13 +36,6 @@ run: build
 dev:
 	@echo "Starting Go backend in dev mode..."
 	@cd src && mkdir -p backend/frontend/dist && cp -r frontend/dist/* backend/frontend/dist/ 2>/dev/null || true && cd backend && go run .
-
-# Removes build artifacts
-clean:
-	@echo "Cleaning up..."
-	@rm -rf bin/
-	@rm -rf src/frontend/dist/
-	@echo "Clean complete."
 
 # Tags the current commit with the specified version and pushes it
 release:
