@@ -17,6 +17,8 @@ _cgo_export.*
 _testmain.go
 *.test
 *.prof
+.gotmp/
+.gocache/
 
 # Ignore everything in src/ by default to catch all random binaries
 /src/*
