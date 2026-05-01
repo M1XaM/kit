@@ -13,18 +13,32 @@ import (
 )
 
 var (
-	upgrader    = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	upgrader    = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 	activeConns = 0
 	connsMutex  sync.Mutex
 )
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	connsMutex.Lock()
+	if activeConns >= 8 {
+		connsMutex.Unlock()
+		http.Error(w, "Too many active websocket connections", http.StatusTooManyRequests)
+		return
+	}
+	connsMutex.Unlock()
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("WebSocket upgrade error:", err)
 		return
 	}
 	defer conn.Close()
+
+	conn.SetReadLimit(1024)
+	_ = conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	conn.SetPongHandler(func(string) error {
+		return conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	})
 
 	connsMutex.Lock()
 	activeConns++
