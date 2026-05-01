@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"strconv"
 	"time"
 )
 
@@ -15,13 +15,13 @@ func main() {
 
 	registerCustomScheme(*showTerm)
 
-	port := "8080"
+	basePort := 8080
+	selectedPort, usedFallbackPort := chooseLaunchPort(basePort)
+	port := strconv.Itoa(selectedPort)
 	url := fmt.Sprintf("http://localhost:%s", port)
 
-	if isPortInUse(port) {
-		fmt.Println("Server is already running on port 8080. Redirecting browser to exist instance...")
-		openBrowser(url)
-		os.Exit(0)
+	if usedFallbackPort {
+		fmt.Printf("Primary port %d is busy. Starting a new instance on port %d...\n", basePort, selectedPort)
 	}
 
 	server := setupServer(port)
@@ -33,11 +33,18 @@ func main() {
 		}
 	}()
 
-	go openBrowser(url)
+	go func() {
+		if waitForServerReady(url, 5*time.Second) {
+			openBrowserWithRetry(url, 3, 400*time.Millisecond)
+			return
+		}
+		// Even if readiness checks fail, still attempt to open.
+		openBrowserWithRetry(url, 5, 700*time.Millisecond)
+	}()
 
 	time.Sleep(15 * time.Second)
 
-	monitorConnections()
+	monitorConnections(selectedPort, basePort)
 
 	select {}
 }

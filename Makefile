@@ -27,11 +27,6 @@ local-build:
 	@rm -rf src/frontend/dist/
 	@cd src && ./build.sh
 
-# Runs the application on Linux (builds first if needed)
-run: build
-	@echo "Running Kit..."
-	@./bin/linux/kit
-
 # Starts the Go backend directly for development
 dev:
 	@echo "Starting Go backend in dev mode..."

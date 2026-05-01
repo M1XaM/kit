@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -24,7 +26,22 @@ func isPortInUse(port string) bool {
 	return false
 }
 
-func openBrowser(url string) {
+func chooseLaunchPort(basePort int) (int, bool) {
+	port := basePort
+	usedFallback := false
+
+	if isPortInUse(strconv.Itoa(port)) {
+		usedFallback = true
+		port++
+		for isPortInUse(strconv.Itoa(port)) {
+			port++
+		}
+	}
+
+	return port, usedFallback
+}
+
+func openBrowser(url string) error {
 	var err error
 	switch runtime.GOOS {
 	case "linux":
@@ -37,8 +54,43 @@ func openBrowser(url string) {
 		err = fmt.Errorf("unsupported platform")
 	}
 	if err != nil {
-		log.Printf("Failed to open browser automatically: %v\n", err)
+		return err
 	}
+	return nil
+}
+
+func openBrowserWithRetry(url string, attempts int, delay time.Duration) {
+	if attempts < 1 {
+		attempts = 1
+	}
+
+	for i := 0; i < attempts; i++ {
+		if err := openBrowser(url); err == nil {
+			return
+		} else if i == attempts-1 {
+			log.Printf("Failed to open browser automatically after %d attempts: %v\n", attempts, err)
+		}
+
+		time.Sleep(delay)
+	}
+}
+
+func waitForServerReady(url string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	client := &http.Client{
+		Timeout: 500 * time.Millisecond,
+	}
+
+	for time.Now().Before(deadline) {
+		resp, err := client.Get(url)
+		if err == nil {
+			resp.Body.Close()
+			return true
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+
+	return false
 }
 
 func registerCustomScheme(showTerm bool) {
