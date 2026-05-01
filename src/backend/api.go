@@ -7,21 +7,28 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
-func setupAPI() {
-	http.HandleFunc("/api/convert/png-to-jpg", handlePngToJpg)
-	http.HandleFunc("/api/pdf/merge", handleMockProcess)
-	http.HandleFunc("/api/pdf/compress", handleCompressPDF)
-	http.HandleFunc("/api/pdf/to-word", handleMockProcess)
-	http.HandleFunc("/api/pdf/to-excel", handleMockProcess)
+func setupAPI(mux *http.ServeMux, policy *securityPolicy) {
+	mux.HandleFunc("/api/convert/png-to-jpg", policy.wrapAPIHandler(handlePngToJpg))
+	mux.HandleFunc("/api/pdf/merge", policy.wrapAPIHandler(handleMockProcess))
+	mux.HandleFunc("/api/pdf/compress", policy.wrapAPIHandler(handleCompressPDF))
+	mux.HandleFunc("/api/pdf/to-word", policy.wrapAPIHandler(handleMockProcess))
+	mux.HandleFunc("/api/pdf/to-excel", policy.wrapAPIHandler(handleMockProcess))
 }
 
 func handleMockProcess(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	err := r.ParseMultipartForm(50 << 20)
 	if err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
@@ -59,7 +66,7 @@ func handlePngToJpg(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.jpg\"", header.Filename))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.jpg\"", safeFileBase(header.Filename)))
 
 	opts := &jpeg.Options{Quality: 90}
 	err = jpeg.Encode(w, img, opts)
@@ -136,7 +143,7 @@ func handleCompressPDF(w http.ResponseWriter, r *http.Request) {
 	defer compressedFile.Close()
 
 	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="compressed_%s"`, header.Filename))
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="compressed_%s"`, safeFileName(header.Filename)))
 
 	_, err = io.Copy(w, compressedFile)
 	if err != nil {
@@ -144,4 +151,20 @@ func handleCompressPDF(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fmt.Printf("Successfully compressed %s\n", header.Filename)
 	}
+}
+
+func safeFileBase(name string) string {
+	base := strings.TrimSpace(filepath.Base(name))
+	if base == "." || base == "/" || base == "" {
+		return "output"
+	}
+	return strings.TrimSuffix(base, filepath.Ext(base))
+}
+
+func safeFileName(name string) string {
+	base := strings.TrimSpace(filepath.Base(name))
+	if base == "." || base == "/" || base == "" {
+		return "output.pdf"
+	}
+	return base
 }

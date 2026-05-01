@@ -14,13 +14,16 @@ import (
 var embeddedFiles embed.FS
 
 func setupServer(port string) *http.Server {
+	security := newSecurityPolicy(port)
+
 	distFS, err := fs.Sub(embeddedFiles, "frontend/dist")
 	if err != nil {
 		log.Fatalf("Failed to instantiate embedded FS: %v", err)
 	}
 
 	fileServer := http.FileServer(http.FS(distFS))
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/")
 		if path == "" {
 			path = "index.html"
@@ -41,9 +44,17 @@ func setupServer(port string) *http.Server {
 		http.ServeContent(w, r, "index.html", time.Time{}, index.(io.ReadSeeker))
 	})
 
-	http.HandleFunc("/ws", handleWebSocket)
+	mux.HandleFunc("/ws", security.wrapWebSocketHandler(handleWebSocket))
 
-	setupAPI()
+	setupAPI(mux, security)
 
-	return &http.Server{Addr: ":" + port}
+	return &http.Server{
+		Addr:              ":" + port,
+		Handler:           security.wrapRootHandler(mux),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      90 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
 }
