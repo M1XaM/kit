@@ -191,6 +191,19 @@ function ToolView() {
   );
 }
 
+function NotFound() {
+  const navigate = useNavigate();
+  return (
+    <div className="tool-view" style={{ textAlign: 'center', marginTop: '50px' }}>
+      <h1>404 - Page Not Found</h1>
+      <p style={{ color: '#a0a0a0', marginBottom: '30px' }}>Oops! The page you're looking for doesn't exist.</p>
+      <button className="primary-btn" onClick={() => navigate('/')} style={{ margin: '0 auto', display: 'block', maxWidth: '200px' }}>
+        Return to Home
+      </button>
+    </div>
+  );
+}
+
 function MainLayout() {
   const [status, setStatus] = useState('Connecting...')
   const location = useLocation()
@@ -237,6 +250,7 @@ function MainLayout() {
         <Routes>
           <Route path="/" element={<HomeGrid />} />
           <Route path="/tool/:id" element={<ToolView />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
     </>

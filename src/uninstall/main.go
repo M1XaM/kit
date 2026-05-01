@@ -1,15 +1,63 @@
 package main
 
 import (
-"fmt"
-"os"
-"os/exec"
-"path/filepath"
-"runtime"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
 )
 
+func askUser() bool {
+	switch runtime.GOOS {
+	case "windows":
+		if _, err := exec.LookPath("powershell"); err == nil {
+			cmd := exec.Command("powershell", "-Command", "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $res = [System.Windows.Forms.MessageBox]::Show('Are you sure you want to completely uninstall Kit?', 'Uninstall Kit', 'YesNo', 'Question'); if ($res -eq 'Yes') { exit 0 } else { exit 1 }")
+			if err := cmd.Run(); err != nil {
+				return false
+			}
+			return true
+		}
+	case "darwin":
+		if _, err := exec.LookPath("osascript"); err == nil {
+			cmd := exec.Command("osascript", "-e", `display dialog "Are you sure you want to completely uninstall Kit?" buttons {"Cancel", "Yes"} default button "Cancel" with title "Uninstall Kit"`)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				return false
+			}
+			return strings.Contains(string(out), "button returned:Yes")
+		}
+	case "linux":
+		if _, err := exec.LookPath("zenity"); err == nil {
+			cmd := exec.Command("zenity", "--question", "--text=Are you sure you want to completely uninstall Kit?", "--title=Uninstall Kit")
+			if err := cmd.Run(); err != nil {
+				return false
+			}
+			return true
+		} else if _, err := exec.LookPath("kdialog"); err == nil {
+			cmd := exec.Command("kdialog", "--yesno", "Are you sure you want to completely uninstall Kit?", "--title", "Uninstall Kit")
+			if err := cmd.Run(); err != nil {
+				return false
+			}
+			return true
+		}
+	}
+	
+	// Fallback to console input
+	fmt.Print("Are you sure you want to completely uninstall Kit? (y/N): ")
+	var response string
+	fmt.Scanln(&response)
+	return strings.ToLower(response) == "y" || strings.ToLower(response) == "yes"
+}
+
 func main() {
-fmt.Println("Removing all traces of Kit from the system...")
+	if !askUser() {
+		fmt.Println("Uninstallation cancelled.")
+		return
+	}
+
+	fmt.Println("Removing all traces of Kit from the system...")
 
 switch runtime.GOOS {
 case "linux":
