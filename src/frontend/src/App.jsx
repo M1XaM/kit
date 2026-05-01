@@ -4,14 +4,6 @@ import './App.css'
 
 const TOOLS = [
   {
-    id: 'merge-pdf',
-    title: 'Merge PDF',
-    description: 'Combine PDFs in the order you want with the easiest PDF merger available.',
-    icon: ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> ),
-    colorClass: 'icon-red',
-    apiEndpoint: '/api/pdf/merge'
-  },
-  {
     id: 'png-to-jpg',
     title: 'PNG to JPG',
     description: 'Convert PNG images to JPG in seconds. Easily handled locally to bypass limits.',
@@ -26,22 +18,6 @@ const TOOLS = [
     icon: ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M12 12v9"></path><path d="m8 17 4 4 4-4"></path></svg> ),
     colorClass: 'icon-green',
     apiEndpoint: '/api/pdf/compress'
-  },
-  {
-    id: 'pdf-to-word',
-    title: 'PDF to Word',
-    description: 'Easily convert your PDF files into easy to edit DOC and DOCX documents.',
-    icon: ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> ),
-    colorClass: 'icon-blue',
-    apiEndpoint: '/api/pdf/to-word'
-  },
-  {
-    id: 'pdf-to-excel',
-    title: 'PDF to Excel',
-    description: 'Pull data straight from PDFs into Excel spreadsheets in a few short seconds.',
-    icon: ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M8 13h2"></path><path d="M8 17h2"></path><path d="M14 13h2"></path><path d="M14 17h2"></path></svg> ),
-    colorClass: 'icon-green',
-    apiEndpoint: '/api/pdf/to-excel'
   }
 ];
 
@@ -50,17 +26,8 @@ function HomeGrid() {
   return (
     <>
       <div className="header">
-        <h1>Every tool you need to work with your files locally</h1>
-        <p>Every tool you need to use local media, at your fingertips. All are 100% FREE, entirely offline, and easy to use! Process, compress, convert, rotate, and manage native local files with just a few clicks without relying on cloud servers or facing bandwidth limits.</p>
-      </div>
-      
-      <div className="categories">
-        <button className="category-pill active">All</button>
-        <button className="category-pill">Workflows</button>
-        <button className="category-pill">Organize PDF</button>
-        <button className="category-pill">Optimize PDF</button>
-        <button className="category-pill">Convert PDF</button>
-        <button className="category-pill">Edit Media</button>
+        <h1>Kit</h1>
+        <p>The all-in-one toolkit for working with files — directly on your machine.</p>
       </div>
 
       <div className="grid">
@@ -236,16 +203,31 @@ function MainLayout() {
   return (
     <>
       <div className="status-bar">
-        <div>
-          <Link to="/" style={{color: 'inherit', textDecoration: 'none', fontWeight: 'bold'}}>Kit Local Hub</Link>
-          <a href="kit://start" style={{marginLeft: '15px', padding: '4px 10px', background: '#333', color: '#fff', fontSize: '0.8rem', borderRadius: '4px', textDecoration: 'none'}}>🔖 Drag to Bookmarks to Install Launch Link</a>
+        <div className="status-left">
+          <a href="kit://start" className="status-pill-link">Drag me to your bookmarks!</a>
+          <a href="#" className="status-pill-link">
+            Explore extension
+            <span className="soon-badge">Soon</span>
+          </a>
         </div>
-        <div>
-          <span className={`status-dot ${status === 'Connected' ? 'connected' : 'disconnected'}`}></span>
-          {status}
+        <div className="status-right">
+          <a href="https://m1xam.github.io/kit/" className="status-pill-link">Landing page</a>
+          <div className="status-connection-wrap">
+            <div className="status-pill-link status-connection-pill">
+              <span className={`status-dot ${status === 'Connected' ? 'connected' : 'disconnected'}`}></span>
+              {status}
+            </div>
+            <div className="status-connection-tooltip">
+              Local background server is running while this tab is open and shuts down when you close it.
+            </div>
+          </div>
         </div>
       </div>
 
+      <div className={`page-content ${location.pathname === '/' ? 'page-content-home' : ''}`}>
+        <div className="bg-glow" />
+        <div className="bg-grid" />
+      </div>
       <div className="container">
         <Routes>
           <Route path="/" element={<HomeGrid />} />
