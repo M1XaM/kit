@@ -1,4 +1,11 @@
-.PHONY: all build local-build run dev clean
+.PHONY: all build local-build run dev clean release
+
+# Extract the version from the arguments for "make release <version>"
+ifeq (release,$(firstword $(MAKECMDGOALS)))
+  RELEASE_VERSION := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  # Turn the version argument into a do-nothing target so Make doesn't complain
+  $(eval $(RELEASE_VERSION):;@:)
+endif
 
 # Default target builds via docker
 all: build
@@ -32,3 +39,13 @@ clean:
 	@rm -rf bin/
 	@rm -rf src/frontend/dist/
 	@echo "Clean complete."
+
+# Tags the current commit with the specified version and pushes it
+release:
+	@if [ -z "$(RELEASE_VERSION)" ]; then \
+		echo "Error: Please specify a version. Example: make release v1.2.3"; \
+		exit 1; \
+	fi
+	@echo "Creating and pushing release tag $(RELEASE_VERSION)..."
+	git tag $(RELEASE_VERSION)
+	git push origin $(RELEASE_VERSION)
