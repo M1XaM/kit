@@ -21,6 +21,7 @@ WORKDIR /app
 
 # Ensure correct CGO state for pure static cross-compilation
 ENV CGO_ENABLED=0
+ENV GO111MODULE=on
 
 # Pre-cache go modules
 COPY src/go.mod src/go.sum ./

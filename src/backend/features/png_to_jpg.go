@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image/jpeg"
 	"image/png"
-	"local-tools-hub/src/backend/features/shared"
+	"local-tools-hub/backend/features/shared"
 	"net/http"
 )
 
