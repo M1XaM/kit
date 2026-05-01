@@ -18,6 +18,14 @@ const TOOLS = [
     icon: ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M12 12v9"></path><path d="m8 17 4 4 4-4"></path></svg> ),
     colorClass: 'icon-green',
     apiEndpoint: '/api/pdf/compress'
+  },
+  {
+    id: 'split-pdf',
+    title: 'Split PDF',
+    description: 'Split PDF pages by custom range or export each page into its own file.',
+    icon: ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v18"></path><path d="M6 3h12"></path><path d="M6 21h12"></path><path d="M4 8h4"></path><path d="M4 16h4"></path><path d="M16 8h4"></path><path d="M16 16h4"></path></svg> ),
+    colorClass: 'icon-yellow',
+    apiEndpoint: '/api/pdf/split'
   }
 ];
 
@@ -53,6 +61,8 @@ function ToolView() {
   const [isProcessing, setIsProcessing] = useState(false)
   const fileInputRef = useRef(null)
   const [selectedFileName, setSelectedFileName] = useState('')
+  const [splitMode, setSplitMode] = useState('range')
+  const [splitRange, setSplitRange] = useState('1-2')
 
   if (!tool) {
     return (
@@ -75,6 +85,12 @@ function ToolView() {
     const formData = new FormData();
     formData.append("image", file); // using image key for png conversion, backend ignores for mock routes
     formData.append("file", file);
+    if (id === 'split-pdf') {
+      formData.append("mode", splitMode);
+      if (splitMode === 'range') {
+        formData.append("pages", splitRange);
+      }
+    }
 
     try {
       const response = await fetch(tool.apiEndpoint, {
@@ -92,6 +108,7 @@ function ToolView() {
       let downloadFilename = file.name.replace(/\.[^/.]+$/, "") + "_output";
 
       if (id === 'png-to-jpg') downloadFilename += '.jpg';
+      else if (id === 'split-pdf') downloadFilename += splitMode === 'per-page' ? '.zip' : '.pdf';
       else downloadFilename += '.txt';
 
       if (disp && disp.includes("filename=")) {
@@ -140,16 +157,60 @@ function ToolView() {
             <div>{selectedFileName ? selectedFileName : "Click or drag a file to upload"}</div>
             <input 
             type="file" 
-            accept={id === 'png-to-jpg' ? 'image/png' : '*'} 
+            accept={id === 'png-to-jpg' ? 'image/png' : id === 'split-pdf' ? 'application/pdf' : '*'} 
             ref={fileInputRef} 
             disabled={isProcessing}
             onChange={handleFileChange}
           />
         </label>
+        {id === 'split-pdf' && (
+          <div style={{ marginTop: '12px', marginBottom: '12px', textAlign: 'left' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#a0a0a0' }}>Split mode</label>
+            <select
+              value={splitMode}
+              onChange={(e) => setSplitMode(e.target.value)}
+              disabled={isProcessing}
+              style={{
+                width: '100%',
+                background: '#131314',
+                border: '1px solid #2c2c2e',
+                color: '#fff',
+                borderRadius: '8px',
+                padding: '10px'
+              }}
+            >
+              <option value="range">By range</option>
+              <option value="per-page">Per page (ZIP)</option>
+            </select>
+
+            {splitMode === 'range' && (
+              <>
+                <label style={{ display: 'block', marginTop: '12px', marginBottom: '8px', color: '#a0a0a0' }}>
+                  Page range
+                </label>
+                <input
+                  type="text"
+                  value={splitRange}
+                  onChange={(e) => setSplitRange(e.target.value)}
+                  disabled={isProcessing}
+                  placeholder="Example: 1-3,5"
+                  style={{
+                    width: '100%',
+                    background: '#131314',
+                    border: '1px solid #2c2c2e',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    padding: '10px'
+                  }}
+                />
+              </>
+            )}
+          </div>
+        )}
         <button 
           className="primary-btn"
           type="submit" 
-          disabled={isProcessing || !selectedFileName}
+          disabled={isProcessing || !selectedFileName || (id === 'split-pdf' && splitMode === 'range' && !splitRange.trim())}
         >
           {isProcessing ? 'Processing...' : 'Process File'}
         </button>
