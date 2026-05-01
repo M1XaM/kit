@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kit - All-in-One File Toolkit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-white font-sans antialiased selection:bg-blue-500/30 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Background Glow -->
+    <div class="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[600px] sm:w-[1000px] h-[400px] sm:h-[600px] bg-blue-500/10 blur-[160px] rounded-full pointer-events-none"></div>
+
+    <!-- Grid Overlay -->
+    <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
+
+    <!-- Container -->
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-28 flex-grow">
+
+        <!-- HERO -->
+        <div class="text-center">
+
+            <h1 class="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight bg-gradient-to-b from-white via-white to-gray-500 text-transparent bg-clip-text">
+                Kit
+            </h1>
+
+            <p class="mt-5 sm:mt-6 text-base sm:text-lg lg:text-xl text-gray-400 max-w-xl sm:max-w-2xl mx-auto leading-relaxed">
+                The all-in-one toolkit for working with files — directly on your machine.
+            </p>
+
+            <!-- Animated Line -->
+            <p class="mt-5 text-base sm:text-lg text-gray-300 flex justify-center items-center gap-2 flex-wrap">
+                <span class="text-gray-500">No</span>
+
+                <span class="relative h-[1.5em] w-[70px] sm:w-[80px] overflow-hidden inline-flex items-center">
+                    <span id="roulette" class="absolute left-0 top-0 flex flex-col text-base sm:text-lg leading-[1.5em]">
+                        <span class="text-gray-500 h-[1.5em] flex items-center">uploads.</span>
+                        <span class="text-gray-500 h-[1.5em] flex items-center">limits.</span>
+                        <span class="text-gray-500 h-[1.5em] flex items-center">bullshit.</span>
+                        <span class="text-gray-500 h-[1.5em] flex items-center">uploads.</span>
+                    </span>
+                </span>
+            </p>
+
+            <div class="mt-6 sm:mt-8 inline-flex items-center px-3 sm:px-4 py-2 rounded-full bg-white/[0.03] text-blue-400 text-[11px] sm:text-xs border border-white/10 backdrop-blur-md">
+                <span class="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
+                Launching Soon
+            </div>
+
+        </div>
+
+        <!-- FEATURES -->
+        <div class="mt-20 sm:mt-32 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+
+            <div class="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/10">
+                <h3 class="text-sm sm:text-base font-semibold mb-2 text-white/90">📄 Document Tools</h3>
+                <p class="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                    Merge, split, convert, and compress PDFs and documents instantly.
+                </p>
+            </div>
+
+            <div class="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/10">
+                <h3 class="text-sm sm:text-base font-semibold mb-2 text-white/90">🎬 Media Processing</h3>
+                <p class="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                    Trim videos, convert formats, extract audio — all locally.
+                </p>
+            </div>
+
+            <div class="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/10">
+                <h3 class="text-sm sm:text-base font-semibold mb-2 text-white/90">🖼 Image Utilities</h3>
+                <p class="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                    Background removal, compression, OCR, and upscaling.
+                </p>
+            </div>
+
+            <div class="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/10">
+                <h3 class="text-sm sm:text-base font-semibold mb-2 text-white/90">⚙️ Developer Tools</h3>
+                <p class="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                    Format code, extract archives, encode/decode data.
+                </p>
+            </div>
+
+            <div class="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/10">
+                <h3 class="text-sm sm:text-base font-semibold mb-2 text-white/90">🔒 100% Local</h3>
+                <p class="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                    Your files never leave your device. No tracking. No cloud.
+                </p>
+            </div>
+
+            <div class="p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/10">
+                <h3 class="text-sm sm:text-base font-semibold mb-2 text-white/90">⚡ No Limits</h3>
+                <p class="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                    No file size limits, no queues, no artificial restrictions.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="text-center text-gray-700 text-[11px] sm:text-xs tracking-wide pb-6 space-y-1 px-4">
+        <div>© 2026 Kit. All rights reserved.</div>
+        <div class="text-gray-600 break-words">
+            Licensed under AGPL-3.0 · 
+            <a href="https://github.com/M1XaM/kit" class="underline hover:text-gray-400">Source Code</a>
+        </div>
+    </div>
+
+<script>
+const el = document.getElementById("roulette");
+let index = 0;
+const step = el.firstElementChild.offsetHeight;
+const total = el.children.length;
+
+function animate() {
+    index++;
+    el.style.transition = "transform 0.7s ease-in-out";
+    el.style.transform = `translateY(-${index * step}px)`;
+
+    if (index === total - 1) {
+        setTimeout(() => {
+            el.style.transition = "none";
+            el.style.transform = "translateY(0)";
+            index = 0;
+        }, 700);
+    }
+}
+
+setInterval(animate, 2000);
+</script>
+
+</body>
+</html>
