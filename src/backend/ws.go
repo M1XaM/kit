@@ -13,13 +13,13 @@ import (
 
 var (
 	upgrader    = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
-	activeConns = 0
 	connsMutex  sync.Mutex
+	connections = make(map[*websocket.Conn]struct{})
 )
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	connsMutex.Lock()
-	if activeConns >= 8 {
+	if len(connections) >= 8 {
 		connsMutex.Unlock()
 		http.Error(w, "Too many active websocket connections", http.StatusTooManyRequests)
 		return
@@ -31,7 +31,17 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Println("WebSocket upgrade error:", err)
 		return
 	}
-	defer conn.Close()
+
+	connsMutex.Lock()
+	connections[conn] = struct{}{}
+	connsMutex.Unlock()
+
+	defer func() {
+		connsMutex.Lock()
+		delete(connections, conn)
+		connsMutex.Unlock()
+		conn.Close()
+	}()
 
 	conn.SetReadLimit(1024)
 	conn.SetPongHandler(func(string) error {
@@ -58,17 +68,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	connsMutex.Lock()
-	activeConns++
-	fmt.Printf("Client connected. Active connections: %d\n", activeConns)
-	connsMutex.Unlock()
-
-	defer func() {
-		connsMutex.Lock()
-		activeConns--
-		fmt.Printf("Client disconnected. Active connections: %d\n", activeConns)
-		connsMutex.Unlock()
-	}()
+	fmt.Printf("Client connected. Active connections: %d\n", len(connections))
 
 	for {
 		conn.SetReadDeadline(time.Now().Add(30 * time.Second))
@@ -94,7 +94,7 @@ func monitorConnections(server *http.Server) {
 
 	for range ticker.C {
 		connsMutex.Lock()
-		count := activeConns
+		count := len(connections)
 		connsMutex.Unlock()
 
 		if count > 0 {
@@ -118,4 +118,24 @@ func monitorConnections(server *http.Server) {
 			return
 		}
 	}
+}
+
+// broadcastMessage sends a text message to every connected WebSocket client.
+// Write errors are logged but the connection is left in the map — the read
+// loop in handleWebSocket will clean it up on the next failed read.
+func broadcastMessage(msg []byte) {
+	connsMutex.Lock()
+	defer connsMutex.Unlock()
+	for conn := range connections {
+		_ = conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+		if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+			log.Printf("Broadcast write error: %v", err)
+		}
+	}
+}
+
+// BroadcastFavoritesUpdated notifies all connected browser tabs that the
+// favorites order has changed so they can refresh from the server.
+func BroadcastFavoritesUpdated() {
+	broadcastMessage([]byte(`{"type":"favorites-updated"}`))
 }
