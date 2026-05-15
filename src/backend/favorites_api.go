@@ -58,6 +58,9 @@ func handleSaveFavorites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Notify all connected tabs so every client stays in sync.
+	go BroadcastFavoritesUpdated()
+
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(favoritesPayload{Order: order})
 }

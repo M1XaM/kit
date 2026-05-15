@@ -36,6 +36,7 @@ _testmain.go
 # Node / React Frontend
 src/frontend/node_modules/
 src/frontend/dist/
+src/backend/frontend/dist/
 src/frontend/.npm/
 src/frontend/.eslintcache
 src/frontend/npm-debug.log*

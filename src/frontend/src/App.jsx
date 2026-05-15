@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 import './App.css'
 
@@ -286,23 +286,24 @@ function MainLayout() {
     await saveFavoriteOrder(nextOrder);
   };
 
-  useEffect(() => {
+  const loadFavorites = useCallback(async () => {
     const validIds = new Set(TOOLS.map((tool) => tool.id));
-    const loadFavorites = async () => {
-      try {
-        const response = await fetch('/api/preferences/favorites');
-        if (!response.ok) {
-          throw new Error('Failed to load favorites');
-        }
-        const payload = await response.json();
-        const order = Array.isArray(payload?.order) ? payload.order : [];
-        setFavoriteOrder(order.filter((id) => typeof id === 'string' && validIds.has(id)));
-      } catch (err) {
-        console.error(err);
+    try {
+      const response = await fetch('/api/preferences/favorites');
+      if (!response.ok) {
+        throw new Error('Failed to load favorites');
       }
-    };
-    loadFavorites();
+      const payload = await response.json();
+      const order = Array.isArray(payload?.order) ? payload.order : [];
+      setFavoriteOrder(order.filter((id) => typeof id === 'string' && validIds.has(id)));
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
+
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -336,6 +337,17 @@ function MainLayout() {
 
       ws.onerror = (err) => {
         console.error('WebSocket error:', err);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'favorites-updated') {
+            loadFavorites();
+          }
+        } catch {
+          // Ignore non-JSON messages (e.g., pings).
+        }
       };
     }
 
