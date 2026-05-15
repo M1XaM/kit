@@ -120,22 +120,4 @@ func monitorConnections(server *http.Server) {
 	}
 }
 
-// broadcastMessage sends a text message to every connected WebSocket client.
-// Write errors are logged but the connection is left in the map — the read
-// loop in handleWebSocket will clean it up on the next failed read.
-func broadcastMessage(msg []byte) {
-	connsMutex.Lock()
-	defer connsMutex.Unlock()
-	for conn := range connections {
-		_ = conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
-		if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-			log.Printf("Broadcast write error: %v", err)
-		}
-	}
-}
 
-// BroadcastFavoritesUpdated notifies all connected browser tabs that the
-// favorites order has changed so they can refresh from the server.
-func BroadcastFavoritesUpdated() {
-	broadcastMessage([]byte(`{"type":"favorites-updated"}`))
-}
