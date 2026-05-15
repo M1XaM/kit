@@ -308,25 +308,45 @@ function MainLayout() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     
-    let ws = new WebSocket(wsUrl);
+    let ws;
+    let interval;
+    let reconnectTimer;
+    let mounted = true;
 
-    ws.onopen = () => {
-      setStatus('Connected');
-      const interval = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send('ping');
-        }
-      }, 2000);
-      return () => clearInterval(interval);
+    function connect() {
+      if (!mounted) return;
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        setStatus('Connected');
+        interval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send('ping');
+          }
+        }, 2000);
+      };
+
+      ws.onclose = () => {
+        clearInterval(interval);
+        if (!mounted) return;
+        setStatus('Disconnected');
+        // Retry connection after 2 seconds
+        reconnectTimer = setTimeout(connect, 2000);
+      };
+
+      ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+      };
+    }
+
+    connect();
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+      clearTimeout(reconnectTimer);
+      if (ws) ws.close();
     };
-
-    ws.onclose = () => setStatus('Disconnected');
-    ws.onerror = (err) => {
-      console.error('WebSocket error:', err);
-      setStatus('Error connecting');
-    };
-
-    return () => ws.close();
   }, []);
 
   return (
@@ -347,7 +367,7 @@ function MainLayout() {
               {status}
             </div>
             <div className="status-connection-tooltip">
-              Local background server is running while this tab is open and shuts down when you close it.
+              Local background server keeps running after you close this tab. Use the kit://start bookmark to reopen anytime.
             </div>
           </div>
         </div>

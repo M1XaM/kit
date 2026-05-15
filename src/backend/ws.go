@@ -1,11 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"strconv"
 	"sync"
 	"time"
 
@@ -35,10 +34,29 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	conn.SetReadLimit(1024)
-	_ = conn.SetReadDeadline(time.Now().Add(30 * time.Second))
 	conn.SetPongHandler(func(string) error {
 		return conn.SetReadDeadline(time.Now().Add(30 * time.Second))
 	})
+
+	// Server-side ping keepalive — keeps the connection alive even when
+	// the browser throttles client-side timers in background tabs.
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second)); err != nil {
+					log.Printf("WebSocket ping failed: %v", err)
+					return
+				}
+			}
+		}
+	}()
 
 	connsMutex.Lock()
 	activeConns++
@@ -53,48 +71,51 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for {
+		conn.SetReadDeadline(time.Now().Add(30 * time.Second))
 		_, _, err := conn.ReadMessage()
 		if err != nil {
+			log.Printf("WebSocket read ended: %v", err)
 			break
 		}
 	}
 }
 
-func monitorConnections(currentPort int, basePort int) {
-	go func() {
-		zeroConnSince := time.Time{}
-		fallbackIdleSince := time.Time{}
-		basePortStr := strconv.Itoa(basePort)
+// monitorConnections watches active WebSocket connections and shuts down the
+// server after 5 seconds of inactivity. When kit://start triggers /api/open,
+// the new browser tab establishes a fresh WebSocket connection, which resets
+// the idle timer — so the restart flow is preserved.
+func monitorConnections(server *http.Server) {
+	const idleTimeout = 5 * time.Second
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
 
-		for {
-			time.Sleep(1 * time.Second)
-			connsMutex.Lock()
-			count := activeConns
-			connsMutex.Unlock()
+	var idleStart time.Time
+	idle := false
 
-			if count == 0 {
-				if zeroConnSince.IsZero() {
-					zeroConnSince = time.Now()
-				} else if time.Since(zeroConnSince) > 3*time.Second {
-					fmt.Println("No active connections for 3 seconds. Shutting down to free up OS memory...")
-					os.Exit(0)
-				}
+	for range ticker.C {
+		connsMutex.Lock()
+		count := activeConns
+		connsMutex.Unlock()
 
-				// If this is a fallback instance, release it once the primary port becomes free.
-				if currentPort != basePort && !isPortInUse(basePortStr) {
-					if fallbackIdleSince.IsZero() {
-						fallbackIdleSince = time.Now()
-					} else if time.Since(fallbackIdleSince) > 2*time.Second {
-						fmt.Printf("Primary port %d is free again. Shutting down fallback instance on port %d...\n", basePort, currentPort)
-						os.Exit(0)
-					}
-				} else {
-					fallbackIdleSince = time.Time{}
-				}
-			} else {
-				zeroConnSince = time.Time{} // reset
-				fallbackIdleSince = time.Time{}
-			}
+		if count > 0 {
+			idle = false
+			continue
 		}
-	}()
+
+		if !idle {
+			idle = true
+			idleStart = time.Now()
+			continue
+		}
+
+		if time.Since(idleStart) >= idleTimeout {
+			log.Println("No active connections for 5 seconds. Shutting down server.")
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := server.Shutdown(ctx); err != nil {
+				log.Printf("Error during server shutdown: %v", err)
+			}
+			return
+		}
+	}
 }

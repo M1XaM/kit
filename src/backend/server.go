@@ -46,7 +46,7 @@ func setupServer(port string) *http.Server {
 
 	mux.HandleFunc("/ws", security.wrapWebSocketHandler(handleWebSocket))
 
-	setupAPI(mux, security)
+	setupAPI(mux, security, port)
 
 	return &http.Server{
 		Addr:              ":" + port,
