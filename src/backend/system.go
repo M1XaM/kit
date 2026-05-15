@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -24,21 +23,6 @@ func isPortInUse(port string) bool {
 		return true
 	}
 	return false
-}
-
-func chooseLaunchPort(basePort int) (int, bool) {
-	port := basePort
-	usedFallback := false
-
-	if isPortInUse(strconv.Itoa(port)) {
-		usedFallback = true
-		port++
-		for isPortInUse(strconv.Itoa(port)) {
-			port++
-		}
-	}
-
-	return port, usedFallback
 }
 
 func openBrowser(url string) error {
