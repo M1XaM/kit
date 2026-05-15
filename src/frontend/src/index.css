@@ -1,1 +1,5 @@
 
+.status-pill-link a {
+  color: inherit; /* This forces the link to match the <p> color */
+  text-decoration: underline;
+}

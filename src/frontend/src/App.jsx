@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 import './App.css'
 
@@ -255,55 +255,28 @@ function NotFound() {
 function MainLayout() {
   const [status, setStatus] = useState('Connecting...')
   const location = useLocation()
-  const [favoriteOrder, setFavoriteOrder] = useState([])
-
-  const saveFavoriteOrder = async (nextOrder) => {
+  const [favoriteOrder, setFavoriteOrder] = useState(() => {
     try {
-      const response = await fetch('/api/preferences/favorites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order: nextOrder }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to save favorites');
+      const stored = localStorage.getItem('kit-favorites');
+      if (stored) {
+        const order = JSON.parse(stored);
+        const validIds = new Set(TOOLS.map((tool) => tool.id));
+        return Array.isArray(order) ? order.filter((id) => typeof id === 'string' && validIds.has(id)) : [];
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    } catch {}
+    return [];
+  });
 
-  const toggleFavorite = async (toolID) => {
-    let nextOrder = [];
+  const toggleFavorite = (toolID) => {
     setFavoriteOrder((current) => {
       const exists = current.includes(toolID);
-      if (exists) {
-        nextOrder = current.filter((id) => id !== toolID);
-        return nextOrder;
-      }
-      nextOrder = [toolID, ...current.filter((id) => id !== toolID)];
+      const nextOrder = exists
+        ? current.filter((id) => id !== toolID)
+        : [toolID, ...current.filter((id) => id !== toolID)];
+      localStorage.setItem('kit-favorites', JSON.stringify(nextOrder));
       return nextOrder;
     });
-    await saveFavoriteOrder(nextOrder);
   };
-
-  const loadFavorites = useCallback(async () => {
-    const validIds = new Set(TOOLS.map((tool) => tool.id));
-    try {
-      const response = await fetch('/api/preferences/favorites');
-      if (!response.ok) {
-        throw new Error('Failed to load favorites');
-      }
-      const payload = await response.json();
-      const order = Array.isArray(payload?.order) ? payload.order : [];
-      setFavoriteOrder(order.filter((id) => typeof id === 'string' && validIds.has(id)));
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadFavorites();
-  }, [loadFavorites]);
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -338,17 +311,6 @@ function MainLayout() {
       ws.onerror = (err) => {
         console.error('WebSocket error:', err);
       };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'favorites-updated') {
-            loadFavorites();
-          }
-        } catch {
-          // Ignore non-JSON messages (e.g., pings).
-        }
-      };
     }
 
     connect();
@@ -365,7 +327,8 @@ function MainLayout() {
     <>
       <div className="status-bar">
         <div className="status-left">
-          <a href="kit://start" className="status-pill-link">Drag me to your bookmarks!</a>
+          <p className="status-pill-link">
+            Drag <a href="kit://start" className="underline text-current">Kit</a> to your bookmarks!          </p>
           <a href="#" className="status-pill-link">
             Explore extension
             <span className="soon-badge">Soon</span>
