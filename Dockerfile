@@ -1,6 +1,7 @@
 # ==========================================
 # Stage 1: Build the React frontend
 # ==========================================
+ARG TARGET_OS=all
 FROM node:20-alpine AS frontend
 WORKDIR /app
 
@@ -17,6 +18,7 @@ RUN npm run build
 # Stage 2: Build the Go backend
 # ==========================================
 FROM golang:alpine AS backend
+ARG TARGET_OS=all
 WORKDIR /app
 
 # Ensure correct CGO state for pure static cross-compilation
@@ -35,20 +37,32 @@ RUN mkdir -p backend/frontend/dist
 RUN rm -rf backend/frontend/dist/*
 COPY --from=frontend /app/dist ./backend/frontend/dist
 
-# Build the binaries for all OS targets
-RUN mkdir -p /out/linux /out/windows /out/macos
+# Build the binaries for requested OS targets
+RUN mkdir -p /out
+RUN for os in $TARGET_OS; do \
+			case "$os" in all|linux|windows|macos) ;; *) echo "Unknown TARGET_OS: $os" && exit 1 ;; esac; \
+		done
 
 # Linux
-RUN GOOS=linux GOARCH=amd64 go build -o /out/linux/kit ./backend
-RUN GOOS=linux GOARCH=amd64 go build -o /out/linux/delete-kit ./uninstall/main.go
+RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " linux "; then \
+			mkdir -p /out/linux; \
+			GOOS=linux GOARCH=amd64 go build -o /out/linux/kit ./backend; \
+			GOOS=linux GOARCH=amd64 go build -o /out/linux/delete-kit ./uninstall/main.go; \
+		fi
 
 # Windows
-RUN GOOS=windows GOARCH=amd64 go build -o /out/windows/kit.exe ./backend
-RUN GOOS=windows GOARCH=amd64 go build -o /out/windows/delete-kit.exe ./uninstall/main.go
+RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " windows "; then \
+			mkdir -p /out/windows; \
+			GOOS=windows GOARCH=amd64 go build -o /out/windows/kit.exe ./backend; \
+			GOOS=windows GOARCH=amd64 go build -o /out/windows/delete-kit.exe ./uninstall/main.go; \
+		fi
 
 # macOS (Apple Silicon)
-RUN GOOS=darwin GOARCH=arm64 go build -o /out/macos/kit ./backend
-RUN GOOS=darwin GOARCH=arm64 go build -o /out/macos/delete-kit ./uninstall/main.go
+RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " macos "; then \
+			mkdir -p /out/macos; \
+			GOOS=darwin GOARCH=arm64 go build -o /out/macos/kit ./backend; \
+			GOOS=darwin GOARCH=arm64 go build -o /out/macos/delete-kit ./uninstall/main.go; \
+		fi
 
 
 # ==========================================
