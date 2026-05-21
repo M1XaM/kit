@@ -1,4 +1,7 @@
-.PHONY: all build local-build run dev clean release
+.PHONY: all build local-build run dev clean release linux windows macos platform-build
+
+PLATFORM_TARGETS := linux windows macos
+REQUESTED_PLATFORMS := $(filter $(PLATFORM_TARGETS),$(MAKECMDGOALS))
 
 # Extract the version from the arguments for "make release <version>"
 ifeq (release,$(firstword $(MAKECMDGOALS)))
@@ -26,6 +29,19 @@ local-build:
 	@rm -rf bin/
 	@rm -rf src/frontend/dist/
 	@cd src && ./build.sh
+
+linux windows macos: platform-build
+
+platform-build:
+	@if [ -z "$(REQUESTED_PLATFORMS)" ]; then \
+		echo "Error: Specify one or more platforms: linux windows macos"; \
+		exit 1; \
+	fi
+	@echo "Starting platform-agnostic build process via Docker for $(REQUESTED_PLATFORMS)..."
+	@rm -rf bin/
+	@rm -rf src/frontend/dist/
+	@DOCKER_BUILDKIT=1 docker build --file Dockerfile --build-arg TARGET_OS="$(REQUESTED_PLATFORMS)" --output type=local,dest=bin/ .
+	@echo "Build complete! Check the bin/ directory for your OS folders."
 
 # Starts the Go backend directly for development
 dev:
