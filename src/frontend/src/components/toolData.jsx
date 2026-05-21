@@ -57,9 +57,7 @@ const COMING_SOON_TOOLS = [
   makeSoonTool('image-filters', 'Filters/Effects', 'Apply filters and effects.', 'image', ICONS.image, 'icon-green'),
   makeSoonTool('archive-extract', 'Archive Extract', 'Extract files from ZIP, RAR, or TAR.', 'files', ICONS.files, 'icon-blue'),
   makeSoonTool('archive-create', 'Archive Create', 'Create ZIP, RAR, or TAR archives.', 'files', ICONS.files, 'icon-blue'),
-  makeSoonTool('checksum-verify', 'Checksum Verification', 'Verify checksums for files.', 'files', ICONS.files, 'icon-blue'),
-  makeSoonTool('performance-viewer', 'Performance Viewer', 'View CPU and memory usage.', 'system', ICONS.system, 'icon-purple'),
-  makeSoonTool('internet-test', 'Internet Test', 'Test download and upload speed.', 'system', ICONS.system, 'icon-purple')
+  makeSoonTool('checksum-verify', 'Checksum Verification', 'Verify checksums for files.', 'files', ICONS.files, 'icon-blue')
 ]
 
 export const TOOLS = [
@@ -111,6 +109,22 @@ export const TOOLS = [
     ),
     colorClass: 'icon-yellow',
     apiEndpoint: '/api/pdf/split'
+  },
+  {
+    id: 'performance-viewer',
+    title: 'Performance Viewer',
+    description: 'Monitor CPU, RAM, storage, network, and GPU activity in real time.',
+    category: 'system',
+    icon: ICONS.system,
+    colorClass: 'icon-purple'
+  },
+  {
+    id: 'internet-test',
+    title: 'Internet Speed',
+    description: 'Measure download and upload speeds using Cloudflare speed test endpoints.',
+    category: 'system',
+    icon: ICONS.system,
+    colorClass: 'icon-purple'
   },
   ...COMING_SOON_TOOLS
 ]

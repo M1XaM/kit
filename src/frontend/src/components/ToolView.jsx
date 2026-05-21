@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { TOOLS } from './toolData'
 import ComingSoon from './ComingSoon'
 import NotFound from './NotFound'
+import PerformanceViewer from './PerformanceViewer'
+import InternetSpeed from './InternetSpeed'
 
 function ToolView() {
   const { id } = useParams()
@@ -20,6 +22,15 @@ function ToolView() {
 
   if (tool.comingSoon) {
     return <ComingSoon tool={tool} />
+  }
+
+  const customViews = {
+    'performance-viewer': PerformanceViewer,
+    'internet-test': InternetSpeed
+  }
+  const CustomView = customViews[id]
+  if (CustomView) {
+    return <CustomView tool={tool} />
   }
 
   const handleProcess = async (event) => {
