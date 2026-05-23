@@ -34,15 +34,23 @@ function HomeGrid({ favoriteOrder, onToggleFavorite, headerSubtitle }) {
 
   return (
     <>
-      <div className="header">
-        <h1>Kit</h1>
-        {headerSubtitle ? <p>{headerSubtitle}</p> : null}
+      <div className="text-center mb-16">
+        <h1 className="text-[clamp(3rem,11vw,6.75rem)] font-extrabold tracking-[-0.04em] leading-none bg-gradient-to-b from-white via-white to-slate-500 bg-clip-text text-transparent">
+          Kit
+        </h1>
+        {headerSubtitle ? (
+          <p className="mx-auto mt-5 max-w-2xl text-[clamp(1rem,2vw,1.35rem)] text-slate-400 leading-relaxed">
+            {headerSubtitle}
+          </p>
+        ) : null}
       </div>
 
       {sections.map((section) => (
-        <div className="category-section" key={section.id}>
-          <h2 className="category-title">{section.title}</h2>
-          <div className="grid">
+        <div className="mb-12 last:mb-0" key={section.id}>
+          <h2 className="mb-4 text-[clamp(1.35rem,2.6vw,1.8rem)] font-extrabold tracking-[0.06em] text-slate-50">
+            {section.title}
+          </h2>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 text-left">
             {section.tools.map((tool) => (
               <ToolCard
                 key={tool.id}

@@ -50,11 +50,11 @@ const appendHistory = (list, entry) => {
 
 const MiniChart = ({ data, lines, formatValue }) => {
   if (!data.length) {
-    return <div className="chart-empty">Collecting samples...</div>
+    return <div className="mt-2 text-xs text-slate-400">Collecting samples...</div>
   }
 
   return (
-    <div className="chart-wrap">
+    <div className="mt-2 h-16">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 6, left: 0, bottom: 0 }}>
           <Tooltip
@@ -155,11 +155,15 @@ function PerformanceViewer({ tool }) {
   const gpuStatus = metrics?.gpu?.status
 
   const statusLabel = error ? 'Degraded' : metrics ? 'Live' : 'Connecting'
-  const statusClass = error ? 'status-warn' : 'status-live'
+  const statusClass = error
+    ? 'border-red-400/50 bg-red-900/40 text-red-200'
+    : 'border-sky-400/50 bg-sky-900/40 text-sky-200'
+  const cardClass = 'relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.35)] animate-rise'
+  const cardOverlayClass = 'pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(45,212,191,0.12),transparent_60%)] opacity-70'
 
   return (
-    <div className="tool-view tool-view-wide performance-view">
-      <Link to="/" className="back-btn">
+    <div className="mx-auto max-w-5xl rounded-2xl border border-white/10 bg-white/5 p-10 text-left backdrop-blur">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -167,152 +171,171 @@ function PerformanceViewer({ tool }) {
         Back to Tools
       </Link>
 
-      <div className="tool-header">
-        <div className="tool-header-left">
-          <div className={`tool-icon ${tool.colorClass}`}>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${tool.colorClass}`}>
             {Icon ? <Icon /> : null}
           </div>
           <div>
-            <h2>{tool.title}</h2>
-            <p className="tool-subtitle">Live system metrics from your machine.</p>
+            <h2 className="text-2xl font-semibold text-slate-50">{tool.title}</h2>
+            <p className="text-sm text-slate-400">Live system metrics from your machine.</p>
           </div>
         </div>
-        <div className={`live-chip ${statusClass}`}>{statusLabel}</div>
+        <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${statusClass}`}>{statusLabel}</div>
       </div>
 
-      {error ? <div className="tool-alert">Unable to refresh metrics: {error}</div> : null}
+      {error ? (
+        <div className="mb-4 rounded-xl border border-red-400/50 bg-red-900/25 px-4 py-3 text-sm text-red-200">
+          Unable to refresh metrics: {error}
+        </div>
+      ) : null}
 
-      <div className="metrics-grid">
-        <div className="stat-card" style={{ '--delay': '0ms' }}>
-          <div className="stat-title">CPU</div>
-          <div className="stat-value">
-            {formatPercent(cpuUsage)}
-            <span className="stat-unit">usage</span>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
+        <div className={cardClass} style={{ animationDelay: '0ms' }}>
+          <div className={cardOverlayClass} />
+          <div className="relative">
+            <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">CPU</div>
+            <div className="mt-1 flex items-baseline gap-2 text-2xl font-semibold text-slate-50">
+              {formatPercent(cpuUsage)}
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-300">usage</span>
+            </div>
+            <div className="mt-1 text-sm text-slate-400">{metrics?.cpu?.cores ? `${metrics.cpu.cores} cores` : 'Detecting cores...'}</div>
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-700/40">
+              <div className="h-full bg-gradient-to-r from-sky-400 to-fuchsia-500" style={{ width: `${clampPercent(cpuUsage ?? 0)}%` }}></div>
+            </div>
+            <MiniChart
+              data={history.cpu}
+              lines={[{ key: 'value', label: 'CPU', color: '#60a5fa' }]}
+              formatValue={formatPercent}
+            />
           </div>
-          <div className="stat-subtitle">{metrics?.cpu?.cores ? `${metrics.cpu.cores} cores` : 'Detecting cores...'}</div>
-          <div className="stat-bar">
-            <div className="stat-bar-fill" style={{ width: `${clampPercent(cpuUsage ?? 0)}%` }}></div>
-          </div>
-          <MiniChart
-            data={history.cpu}
-            lines={[{ key: 'value', label: 'CPU', color: '#60a5fa' }]}
-            formatValue={formatPercent}
-          />
         </div>
 
-        <div className="stat-card" style={{ '--delay': '80ms' }}>
-          <div className="stat-title">Memory</div>
-          <div className="stat-value">
-            {formatPercent(memoryUsage)}
-            <span className="stat-unit">used</span>
+        <div className={cardClass} style={{ animationDelay: '80ms' }}>
+          <div className={cardOverlayClass} />
+          <div className="relative">
+            <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">Memory</div>
+            <div className="mt-1 flex items-baseline gap-2 text-2xl font-semibold text-slate-50">
+              {formatPercent(memoryUsage)}
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-300">used</span>
+            </div>
+            <div className="mt-1 text-sm text-slate-400">
+              {metrics?.memory ? `${formatBytes(metrics.memory.used)} / ${formatBytes(metrics.memory.total)}` : 'Reading memory...'}
+            </div>
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-700/40">
+              <div className="h-full bg-gradient-to-r from-cyan-400 to-teal-400" style={{ width: `${clampPercent(memoryUsage ?? 0)}%` }}></div>
+            </div>
+            <MiniChart
+              data={history.memory}
+              lines={[{ key: 'value', label: 'Memory', color: '#22d3ee' }]}
+              formatValue={formatPercent}
+            />
           </div>
-          <div className="stat-subtitle">
-            {metrics?.memory ? `${formatBytes(metrics.memory.used)} / ${formatBytes(metrics.memory.total)}` : 'Reading memory...'}
-          </div>
-          <div className="stat-bar">
-            <div className="stat-bar-fill" style={{ width: `${clampPercent(memoryUsage ?? 0)}%` }}></div>
-          </div>
-          <MiniChart
-            data={history.memory}
-            lines={[{ key: 'value', label: 'Memory', color: '#22d3ee' }]}
-            formatValue={formatPercent}
-          />
         </div>
 
-        <div className="stat-card" style={{ '--delay': '160ms' }}>
-          <div className="stat-title">Storage</div>
-          <div className="stat-value">
-            {formatPercent(storageUsage)}
-            <span className="stat-unit">used</span>
+        <div className={cardClass} style={{ animationDelay: '160ms' }}>
+          <div className={cardOverlayClass} />
+          <div className="relative">
+            <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">Storage</div>
+            <div className="mt-1 flex items-baseline gap-2 text-2xl font-semibold text-slate-50">
+              {formatPercent(storageUsage)}
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-300">used</span>
+            </div>
+            <div className="mt-1 text-sm text-slate-400">
+              {metrics?.storage ? `${formatBytes(metrics.storage.used)} / ${formatBytes(metrics.storage.total)}` : 'Reading storage...'}
+            </div>
+            <div className="mt-3 flex justify-between text-xs text-slate-200">
+              <span>Read</span>
+              <span>{formatRate(metrics?.storage?.readBytesPerSec)}</span>
+            </div>
+            <div className="mt-1 flex justify-between text-xs text-slate-200">
+              <span>Write</span>
+              <span>{formatRate(metrics?.storage?.writeBytesPerSec)}</span>
+            </div>
+            <MiniChart
+              data={history.storage}
+              lines={[
+                { key: 'read', label: 'Read', color: '#34d399' },
+                { key: 'write', label: 'Write', color: '#fbbf24' }
+              ]}
+              formatValue={formatRate}
+            />
           </div>
-          <div className="stat-subtitle">
-            {metrics?.storage ? `${formatBytes(metrics.storage.used)} / ${formatBytes(metrics.storage.total)}` : 'Reading storage...'}
-          </div>
-          <div className="stat-row">
-            <span>Read</span>
-            <span>{formatRate(metrics?.storage?.readBytesPerSec)}</span>
-          </div>
-          <div className="stat-row">
-            <span>Write</span>
-            <span>{formatRate(metrics?.storage?.writeBytesPerSec)}</span>
-          </div>
-          <MiniChart
-            data={history.storage}
-            lines={[
-              { key: 'read', label: 'Read', color: '#34d399' },
-              { key: 'write', label: 'Write', color: '#fbbf24' }
-            ]}
-            formatValue={formatRate}
-          />
         </div>
 
-        <div className="stat-card" style={{ '--delay': '240ms' }}>
-          <div className="stat-title">Network</div>
-          <div className="stat-value">
-            {metrics?.network ? formatRate(metrics.network.bytesRecvPerSec) : '--'}
-            <span className="stat-unit">down</span>
+        <div className={cardClass} style={{ animationDelay: '240ms' }}>
+          <div className={cardOverlayClass} />
+          <div className="relative">
+            <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">Network</div>
+            <div className="mt-1 flex items-baseline gap-2 text-2xl font-semibold text-slate-50">
+              {metrics?.network ? formatRate(metrics.network.bytesRecvPerSec) : '--'}
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-300">down</span>
+            </div>
+            <div className="mt-3 flex justify-between text-xs text-slate-200">
+              <span>Up</span>
+              <span>{formatRate(metrics?.network?.bytesSentPerSec)}</span>
+            </div>
+            <div className="mt-1 flex justify-between text-xs text-slate-200">
+              <span>Packets</span>
+              <span>
+                {metrics?.network
+                  ? `${metrics.network.packetsRecvPerSec ?? 0}/s down, ${metrics.network.packetsSentPerSec ?? 0}/s up`
+                  : '--'}
+              </span>
+            </div>
+            <MiniChart
+              data={history.network}
+              lines={[
+                { key: 'down', label: 'Down', color: '#a855f7' },
+                { key: 'up', label: 'Up', color: '#f472b6' }
+              ]}
+              formatValue={formatRate}
+            />
           </div>
-          <div className="stat-row">
-            <span>Up</span>
-            <span>{formatRate(metrics?.network?.bytesSentPerSec)}</span>
-          </div>
-          <div className="stat-row">
-            <span>Packets</span>
-            <span>
-              {metrics?.network
-                ? `${metrics.network.packetsRecvPerSec ?? 0}/s down, ${metrics.network.packetsSentPerSec ?? 0}/s up`
-                : '--'}
-            </span>
-          </div>
-          <MiniChart
-            data={history.network}
-            lines={[
-              { key: 'down', label: 'Down', color: '#a855f7' },
-              { key: 'up', label: 'Up', color: '#f472b6' }
-            ]}
-            formatValue={formatRate}
-          />
         </div>
 
-        <div className="stat-card" style={{ '--delay': '320ms' }}>
-          <div className="stat-title">GPU</div>
-          {gpuStatus === 'ok' ? (
-            <>
-              <div className="stat-value">
-                {formatPercent(metrics?.gpu?.utilization)}
-                <span className="stat-unit">usage</span>
-              </div>
-              <div className="stat-subtitle">
-                {metrics?.gpu?.name ? metrics.gpu.name : 'Detected GPU'}
-              </div>
-              <div className="stat-row">
-                <span>Memory</span>
-                <span>
-                  {metrics?.gpu
-                    ? `${formatBytes(metrics.gpu.memoryUsed)} / ${formatBytes(metrics.gpu.memoryTotal)}`
-                    : '--'}
-                </span>
-              </div>
-              <div className="stat-row">
-                <span>Temp</span>
-                <span>{formatTemperature(metrics?.gpu?.temperature)}</span>
-              </div>
-              <MiniChart
-                data={history.gpu}
-                lines={[{ key: 'value', label: 'GPU', color: '#f97316' }]}
-                formatValue={formatPercent}
-              />
-            </>
-          ) : (
-            <>
-              <div className="stat-value">Unavailable</div>
-              <div className="stat-subtitle">{metrics?.gpu?.reason || 'GPU metrics not detected'}</div>
-            </>
-          )}
+        <div className={cardClass} style={{ animationDelay: '320ms' }}>
+          <div className={cardOverlayClass} />
+          <div className="relative">
+            <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">GPU</div>
+            {gpuStatus === 'ok' ? (
+              <>
+                <div className="mt-1 flex items-baseline gap-2 text-2xl font-semibold text-slate-50">
+                  {formatPercent(metrics?.gpu?.utilization)}
+                  <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-300">usage</span>
+                </div>
+                <div className="mt-1 text-sm text-slate-400">
+                  {metrics?.gpu?.name ? metrics.gpu.name : 'Detected GPU'}
+                </div>
+                <div className="mt-3 flex justify-between text-xs text-slate-200">
+                  <span>Memory</span>
+                  <span>
+                    {metrics?.gpu
+                      ? `${formatBytes(metrics.gpu.memoryUsed)} / ${formatBytes(metrics.gpu.memoryTotal)}`
+                      : '--'}
+                  </span>
+                </div>
+                <div className="mt-1 flex justify-between text-xs text-slate-200">
+                  <span>Temp</span>
+                  <span>{formatTemperature(metrics?.gpu?.temperature)}</span>
+                </div>
+                <MiniChart
+                  data={history.gpu}
+                  lines={[{ key: 'value', label: 'GPU', color: '#f97316' }]}
+                  formatValue={formatPercent}
+                />
+              </>
+            ) : (
+              <>
+                <div className="mt-2 text-xl font-semibold text-slate-50">Unavailable</div>
+                <div className="mt-2 text-sm text-slate-400">{metrics?.gpu?.reason || 'GPU metrics not detected'}</div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="tool-footer">
+      <div className="mt-6 text-xs text-slate-400">
         Last updated at {formatTimestamp(lastUpdated)}. Refreshes every 1s. GPU metrics use vendor tooling (nvidia-smi).
       </div>
     </div>
