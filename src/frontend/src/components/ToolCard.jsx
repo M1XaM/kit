@@ -1,13 +1,19 @@
 function ToolCard({ tool, isFavorite, onToggleFavorite, onNavigate }) {
   const Icon = tool.icon
+  const favoriteClass = isFavorite
+    ? 'border-amber-400/70 bg-amber-400/20 text-amber-300'
+    : 'border-white/20 bg-white/5 text-slate-500'
 
   return (
-    <div className="card" onClick={() => onNavigate(tool.id)}>
-      <div className="card-actions">
+    <div
+      className="relative flex h-full cursor-pointer flex-col rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10"
+      onClick={() => onNavigate(tool.id)}
+    >
+      <div className="absolute right-3 top-3 flex items-center gap-2">
         {tool.comingSoon && (
           <button
             type="button"
-            className="card-soon-pill"
+            className="rounded-full border border-blue-400/50 bg-blue-600/30 px-2.5 py-1 text-[0.7rem] font-semibold tracking-wide text-blue-200"
             aria-label={`${tool.title} is coming soon`}
             title="Coming soon"
             onClick={(event) => {
@@ -20,7 +26,7 @@ function ToolCard({ tool, isFavorite, onToggleFavorite, onNavigate }) {
         )}
         <button
           type="button"
-          className={`favorite-star ${isFavorite ? 'active' : ''}`}
+          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border transition hover:border-amber-400/60 hover:bg-amber-400/20 hover:text-amber-300 ${favoriteClass}`}
           aria-label={isFavorite ? `Remove ${tool.title} from favorites` : `Add ${tool.title} to favorites`}
           title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           onClick={(event) => {
@@ -33,11 +39,11 @@ function ToolCard({ tool, isFavorite, onToggleFavorite, onNavigate }) {
           </svg>
         </button>
       </div>
-      <div className={`card-icon ${tool.colorClass}`}>
+      <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg ${tool.colorClass}`}>
         {Icon ? <Icon /> : null}
       </div>
-      <h3>{tool.title}</h3>
-      <p>{tool.description}</p>
+      <h3 className="mb-2 text-base font-semibold text-slate-50">{tool.title}</h3>
+      <p className="text-sm text-slate-400 leading-relaxed">{tool.description}</p>
     </div>
   )
 }

@@ -1,5 +1,14 @@
 
-.status-pill-link a {
-  color: inherit; /* This forces the link to match the <p> color */
-  text-decoration: underline;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply m-0 min-h-screen overflow-x-hidden bg-black p-0 text-white font-sans;
+  }
+
+  #root {
+    @apply relative min-h-screen;
+  }
 }

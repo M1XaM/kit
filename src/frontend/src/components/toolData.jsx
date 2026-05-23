@@ -1,14 +1,102 @@
 import { ICONS } from './icons'
 
+const COLOR_CLASSES = {
+  'icon-red': 'bg-red-500/15 text-red-400',
+  'icon-green': 'bg-emerald-500/15 text-emerald-400',
+  'icon-blue': 'bg-blue-500/15 text-blue-400',
+  'icon-yellow': 'bg-amber-500/15 text-amber-400',
+  'icon-purple': 'bg-violet-500/15 text-violet-400'
+}
+
+const resolveColorClass = (value) => COLOR_CLASSES[value] || value || ''
+
 const makeSoonTool = (id, title, description, category, icon, colorClass) => ({
   id,
   title,
   description,
   category,
   icon,
-  colorClass,
+  colorClass: resolveColorClass(colorClass),
   comingSoon: true
 })
+
+const TEXT_TOOLS = [
+  {
+    id: 'metadata-edit',
+    title: 'Metadata Editor',
+    description: 'View file details and export metadata sidecars locally.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple')
+  },
+  {
+    id: 'text-compare',
+    title: 'Text Diff/Compare',
+    description: 'Compare text and highlight line-by-line changes.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple')
+  },
+  {
+    id: 'markdown-diff',
+    title: 'Markdown Preview/Diff',
+    description: 'Preview Markdown and compare revisions in the browser.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple')
+  },
+  {
+    id: 'hash-generator',
+    title: 'Hash Generator',
+    description: 'Generate MD5, SHA-1, or SHA-256 hashes locally.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple')
+  },
+  {
+    id: 'base64-encode-decode',
+    title: 'Base64 Encode/Decode',
+    description: 'Encode or decode Base64 text instantly.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple')
+  },
+  {
+    id: 'hex-encode-decode',
+    title: 'Hex Encode/Decode',
+    description: 'Convert text to and from hexadecimal.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple')
+  },
+  {
+    id: 'url-encode-decode',
+    title: 'URL Encode/Decode',
+    description: 'Encode or decode URL-safe strings.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple')
+  },
+  {
+    id: 'text-encoding-convert',
+    title: 'Text Encoding Conversion',
+    description: 'Convert text between common encodings.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple')
+  }
+]
+
+const AUDIO_TOOLS = [
+  {
+    id: 'record-audio',
+    title: 'Record Audio',
+    description: 'Record audio from your microphone without leaving the browser.',
+    category: 'audio',
+    icon: ICONS.audio,
+    colorClass: resolveColorClass('icon-yellow')
+  }
+]
 
 const COMING_SOON_TOOLS = [
   makeSoonTool('merge-pdf', 'Merge PDF', 'Combine multiple PDFs into a single file.', 'documents', ICONS.document, 'icon-blue'),
@@ -21,14 +109,6 @@ const COMING_SOON_TOOLS = [
   makeSoonTool('ocr', 'OCR', 'Extract text from images and scans.', 'text', ICONS.text, 'icon-purple'),
   makeSoonTool('extract-text-pdf', 'Extract Text from PDF', 'Pull plain text from PDF files.', 'text', ICONS.text, 'icon-purple'),
   makeSoonTool('watermark-documents', 'Watermark Documents', 'Apply image or page watermarks to documents.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('metadata-edit', 'Metadata Editor', 'View and edit document metadata.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('text-compare', 'Text Diff/Compare', 'Compare text and highlight changes.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('markdown-diff', 'Markdown Preview/Diff', 'Preview Markdown and compare revisions.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('hash-generator', 'Hash Generator', 'Generate MD5, SHA-1, or SHA-256 hashes.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('base64-encode-decode', 'Base64 Encode/Decode', 'Encode or decode Base64 text.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('hex-encode-decode', 'Hex Encode/Decode', 'Convert text to and from hex.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('url-encode-decode', 'URL Encode/Decode', 'Encode or decode URL-safe strings.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('text-encoding-convert', 'Text Encoding Conversion', 'Convert between common text encodings.', 'text', ICONS.text, 'icon-purple'),
   makeSoonTool('ai-summarize', 'AI Summarize', 'Summarize documents with AI.', 'ai-tools', ICONS.ai, 'icon-green'),
   makeSoonTool('ai-remove-background', 'AI Remove Background', 'Remove image backgrounds with AI.', 'ai-tools', ICONS.ai, 'icon-green'),
   makeSoonTool('trim-video', 'Trim Video', 'Trim videos to a selected range.', 'video', ICONS.video, 'icon-red'),
@@ -41,7 +121,6 @@ const COMING_SOON_TOOLS = [
   makeSoonTool('merge-audio', 'Merge Audio', 'Combine audio tracks into one file.', 'audio', ICONS.audio, 'icon-yellow'),
   makeSoonTool('convert-audio', 'Convert Audio Formats', 'Convert audio between formats.', 'audio', ICONS.audio, 'icon-yellow'),
   makeSoonTool('adjust-audio', 'Adjust Bitrate/Sample Rate', 'Adjust bitrate and sample rate.', 'audio', ICONS.audio, 'icon-yellow'),
-  makeSoonTool('record-audio', 'Record Audio', 'Record audio from your microphone.', 'audio', ICONS.audio, 'icon-yellow'),
   makeSoonTool('record-video', 'Record Video', 'Record video using your camera.', 'audio', ICONS.audio, 'icon-yellow'),
   makeSoonTool('screen-recording', 'Screen Recording', 'Capture your screen with audio.', 'audio', ICONS.audio, 'icon-yellow'),
   makeSoonTool('resize-image', 'Resize Image', 'Resize images by dimensions or size.', 'image', ICONS.image, 'icon-green'),
@@ -54,10 +133,7 @@ const COMING_SOON_TOOLS = [
   makeSoonTool('image-collage', 'Image Collage/Grid', 'Build collages or image grids.', 'image', ICONS.image, 'icon-green'),
   makeSoonTool('watermark-image', 'Image Watermark', 'Add watermarks to your images.', 'image', ICONS.image, 'icon-green'),
   makeSoonTool('image-borders', 'Borders/Rounded Corners', 'Add borders or rounded corners.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('image-filters', 'Filters/Effects', 'Apply filters and effects.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('archive-extract', 'Archive Extract', 'Extract files from ZIP, RAR, or TAR.', 'files', ICONS.files, 'icon-blue'),
-  makeSoonTool('archive-create', 'Archive Create', 'Create ZIP, RAR, or TAR archives.', 'files', ICONS.files, 'icon-blue'),
-  makeSoonTool('checksum-verify', 'Checksum Verification', 'Verify checksums for files.', 'files', ICONS.files, 'icon-blue')
+  makeSoonTool('image-filters', 'Filters/Effects', 'Apply filters and effects.', 'image', ICONS.image, 'icon-green')
 ]
 
 export const TOOLS = [
@@ -73,7 +149,7 @@ export const TOOLS = [
         <polyline points="21 15 16 10 5 21"></polyline>
       </svg>
     ),
-    colorClass: 'icon-yellow',
+    colorClass: resolveColorClass('icon-yellow'),
     apiEndpoint: '/api/convert/png-to-jpg'
   },
   {
@@ -88,7 +164,7 @@ export const TOOLS = [
         <path d="m8 17 4 4 4-4"></path>
       </svg>
     ),
-    colorClass: 'icon-green',
+    colorClass: resolveColorClass('icon-green'),
     apiEndpoint: '/api/pdf/compress'
   },
   {
@@ -107,8 +183,37 @@ export const TOOLS = [
         <path d="M16 16h4"></path>
       </svg>
     ),
-    colorClass: 'icon-yellow',
+    colorClass: resolveColorClass('icon-yellow'),
     apiEndpoint: '/api/pdf/split'
+  },
+  {
+    id: 'archive-extract',
+    title: 'Archive Extract',
+    description: 'Extract files from ZIP, RAR, 7Z, or TAR archives.',
+    category: 'files',
+    icon: ICONS.files,
+    colorClass: resolveColorClass('icon-blue'),
+    apiEndpoint: '/api/archive/extract',
+    toolType: 'archive-extract'
+  },
+  {
+    id: 'archive-create',
+    title: 'Archive Create',
+    description: 'Create ZIP, TAR, 7Z, or RAR archives from your files.',
+    category: 'files',
+    icon: ICONS.files,
+    colorClass: resolveColorClass('icon-blue'),
+    apiEndpoint: '/api/archive/create',
+    toolType: 'archive-create'
+  },
+  {
+    id: 'checksum-verify',
+    title: 'Checksum Verification',
+    description: 'Verify file checksums locally without uploading anything.',
+    category: 'files',
+    icon: ICONS.files,
+    colorClass: resolveColorClass('icon-blue'),
+    toolType: 'checksum'
   },
   {
     id: 'performance-viewer',
@@ -116,7 +221,7 @@ export const TOOLS = [
     description: 'Monitor CPU, RAM, storage, network, and GPU activity in real time.',
     category: 'system',
     icon: ICONS.system,
-    colorClass: 'icon-purple'
+    colorClass: resolveColorClass('icon-purple')
   },
   {
     id: 'internet-test',
@@ -124,8 +229,10 @@ export const TOOLS = [
     description: 'Measure download and upload speeds using Cloudflare speed test endpoints.',
     category: 'system',
     icon: ICONS.system,
-    colorClass: 'icon-purple'
+    colorClass: resolveColorClass('icon-purple')
   },
+  ...TEXT_TOOLS,
+  ...AUDIO_TOOLS,
   ...COMING_SOON_TOOLS
 ]
 

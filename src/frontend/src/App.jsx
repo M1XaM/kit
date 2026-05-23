@@ -1,10 +1,9 @@
 import { BrowserRouter } from 'react-router-dom'
 import MainLayout from './components/MainLayout'
-import './App.css'
 
 const HEADER_SUBTITLE = 'The all-in-one toolkit for working with files — directly on your machine.'
 const FOOTER_REPO_URL = 'https://github.com/M1XaM/kit'
-const FOOTER_AUTHOR_NAME = 'M1XaM'
+const FOOTER_AUTHOR_NAME = 'Isacescu Maxim'
 
 function App() {
   return (

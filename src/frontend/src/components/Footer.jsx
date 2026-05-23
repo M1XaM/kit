@@ -4,14 +4,14 @@ function Footer({ repoUrl, authorName }) {
   }
 
   return (
-    <footer className="footer">
+    <footer className="mt-14 flex flex-col items-center gap-2 border-t border-white/10 pt-6 text-sm text-slate-400 md:flex-row md:gap-3">
       {repoUrl && (
-        <a className="footer-link" href={repoUrl} target="_blank" rel="noreferrer">
+        <a className="font-semibold text-blue-400 hover:underline" href={repoUrl} target="_blank" rel="noreferrer">
           GitHub
         </a>
       )}
-      {repoUrl && authorName && <span className="footer-divider">|</span>}
-      {authorName && <span className="footer-name">{authorName}</span>}
+      {repoUrl && authorName && <span className="text-slate-600">|</span>}
+      {authorName && <span className="font-semibold text-slate-200">{authorName}</span>}
     </footer>
   )
 }
