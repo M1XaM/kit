@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
+import RuntimePill from './RuntimePill'
 
 const HISTORY_LIMIT = 60
 const POLL_MS = 1000
@@ -181,7 +182,10 @@ function PerformanceViewer({ tool }) {
             <p className="text-sm text-slate-400">Live system metrics from your machine.</p>
           </div>
         </div>
-        <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${statusClass}`}>{statusLabel}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <RuntimePill tool={tool} className="text-[0.6rem]" />
+          <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${statusClass}`}>{statusLabel}</div>
+        </div>
       </div>
 
       {error ? (

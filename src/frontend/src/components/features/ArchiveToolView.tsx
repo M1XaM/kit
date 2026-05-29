@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import FeatureHeader from './FeatureHeader'
+import type { Tool } from './toolData'
 
 const ARCHIVE_FORMATS = [
   { value: 'zip', label: 'ZIP (.zip)' },
@@ -11,19 +13,23 @@ const ARCHIVE_FORMATS = [
 
 const ARCHIVE_ACCEPT = '.zip,.tar,.gz,.tgz,.rar,.7z'
 
-function ArchiveToolView({ tool }) {
+type ArchiveToolViewProps = {
+  tool: Tool
+}
+
+function ArchiveToolView({ tool }: ArchiveToolViewProps) {
   const isCreate = tool.id === 'archive-create'
-  const [selectedFiles, setSelectedFiles] = useState([])
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [format, setFormat] = useState('zip')
   const [isProcessing, setIsProcessing] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const fileInputRef = useRef(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const dropZoneClass = `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center text-slate-400 transition ${dragActive ? 'border-blue-400/70 bg-blue-600/20 text-slate-200' : 'border-white/20 hover:border-white/30 hover:bg-white/5'}`
 
-  const normalizeFiles = (files) => (isCreate ? files : files.slice(0, 1))
+  const normalizeFiles = (files: File[]) => (isCreate ? files : files.slice(0, 1))
 
-  const updateFiles = (files) => {
+  const updateFiles = (files: File[]) => {
     const normalized = normalizeFiles(files)
     setSelectedFiles(normalized)
     setErrorMessage('')
@@ -55,7 +61,7 @@ function ArchiveToolView({ tool }) {
     }
   }
 
-  const stripArchiveExtension = (filename) => {
+  const stripArchiveExtension = (filename: string) => {
     const lower = filename.toLowerCase()
     if (lower.endsWith('.tar.gz')) return filename.slice(0, -7)
     if (lower.endsWith('.tgz')) return filename.slice(0, -4)
@@ -80,7 +86,7 @@ function ArchiveToolView({ tool }) {
     return `${base}_extracted.zip`
   }
 
-  const downloadResponse = async (response) => {
+  const downloadResponse = async (response: Response) => {
     const fallbackName = buildFallbackName()
     const disposition = response.headers.get('content-disposition') || ''
     const match = disposition.match(/filename="?([^";]+)"?/i)
@@ -130,7 +136,8 @@ function ArchiveToolView({ tool }) {
       setSelectedFiles([])
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
-      setErrorMessage(err.message || 'Archive processing failed.')
+      const message = err instanceof Error ? err.message : 'Archive processing failed.'
+      setErrorMessage(message)
     } finally {
       setIsProcessing(false)
     }
@@ -145,8 +152,11 @@ function ArchiveToolView({ tool }) {
         </svg>
         Back to Tools
       </Link>
-      <h2 className="text-2xl font-semibold text-slate-50">{tool.title}</h2>
-      <p className="mt-2 text-sm text-slate-400">Processed securely by the local Go backend running on your machine.</p>
+
+      <FeatureHeader
+        tool={tool}
+        subtitle="Processed securely by the local Go backend running on your machine."
+      />
 
       {errorMessage && <div className="mt-5 rounded-xl border border-red-400/50 bg-red-900/25 px-4 py-3 text-sm text-red-200">{errorMessage}</div>}
 

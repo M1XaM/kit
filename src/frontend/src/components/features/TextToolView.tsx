@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import RuntimePill from './RuntimePill'
 import { createMD5 } from 'hash-wasm'
 import { sha1 } from '@noble/hashes/sha1'
 import { sha256 } from '@noble/hashes/sha256'
@@ -260,9 +261,7 @@ function ToolShell({ tool, subtitle, children }) {
             <p className="text-sm text-slate-400">{subtitle || tool.description}</p>
           </div>
         </div>
-        <div className="rounded-full border border-emerald-400/40 bg-emerald-900/40 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-emerald-200">
-          Client-side
-        </div>
+        <RuntimePill tool={tool} />
       </div>
       {children}
     </div>

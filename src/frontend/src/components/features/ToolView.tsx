@@ -1,26 +1,27 @@
 import { useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { TOOLS } from './toolData'
+import { TOOLS, type Tool } from './toolData'
 import ComingSoon from './ComingSoon'
-import NotFound from './NotFound'
+import NotFound from '../layout/NotFound'
 import PerformanceViewer from './PerformanceViewer'
 import InternetSpeed from './InternetSpeed'
 import ArchiveToolView from './ArchiveToolView'
 import ChecksumView from './ChecksumView'
 import TextToolView from './TextToolView'
 import RecordAudioView from './RecordAudioView'
+import FeatureHeader from './FeatureHeader'
 
 function ToolView() {
   const { id } = useParams()
   const tool = TOOLS.find((item) => item.id === id)
 
   const [isProcessing, setIsProcessing] = useState(false)
-  const fileInputRef = useRef(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedFileName, setSelectedFileName] = useState('')
   const [splitMode, setSplitMode] = useState('range')
   const [splitRange, setSplitRange] = useState('1-2')
 
-  if (!tool) {
+  if (!id || !tool) {
     return <NotFound />
   }
 
@@ -28,7 +29,9 @@ function ToolView() {
     return <ComingSoon tool={tool} />
   }
 
-  const customViews = {
+  type ToolViewComponent = React.ComponentType<{ tool: Tool }>
+
+  const customViews: Partial<Record<string, ToolViewComponent>> = {
     'performance-viewer': PerformanceViewer,
     'internet-test': InternetSpeed,
     'archive-extract': ArchiveToolView,
@@ -47,6 +50,10 @@ function ToolView() {
   const CustomView = customViews[id]
   if (CustomView) {
     return <CustomView tool={tool} />
+  }
+
+  if (!tool.apiEndpoint) {
+    return <NotFound />
   }
 
   const handleProcess = async (event) => {
@@ -103,7 +110,8 @@ function ToolView() {
       setSelectedFileName('')
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
-      alert('Processing failed: ' + err.message)
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      alert('Processing failed: ' + message)
     } finally {
       setIsProcessing(false)
     }
@@ -124,8 +132,11 @@ function ToolView() {
         </svg>
         Back to Tools
       </Link>
-      <h2 className="text-2xl font-semibold text-slate-50">{tool.title}</h2>
-      <p className="mt-2 text-sm text-slate-400">This bypasses browser memory and is handled entirely by the fast Go backend right on your machine.</p>
+
+      <FeatureHeader
+        tool={tool}
+        subtitle="This bypasses browser memory and is handled entirely by the fast Go backend right on your machine."
+      />
 
       <form className="mt-8 flex flex-col gap-5" onSubmit={handleProcess}>
         <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-white/20 bg-transparent p-10 text-center text-slate-400 transition hover:border-white/30 hover:bg-white/5">
