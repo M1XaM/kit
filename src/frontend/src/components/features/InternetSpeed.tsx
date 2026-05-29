@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import RuntimePill from './RuntimePill'
 
 const DOWNLOAD_SIZES = [5_000_000, 12_000_000, 20_000_000]
 const UPLOAD_SIZES = [1_000_000, 3_000_000, 6_000_000]
@@ -185,8 +186,11 @@ function InternetSpeed({ tool }) {
             <p className="text-sm text-slate-400">Client-side speed test powered by Cloudflare endpoints.</p>
           </div>
         </div>
-        <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${error ? 'border-red-400/50 bg-red-900/40 text-red-200' : 'border-sky-400/50 bg-sky-900/40 text-sky-200'}`}>
-          {isRunning ? 'Running' : error ? 'Paused' : 'Ready'}
+        <div className="flex flex-wrap items-center gap-2">
+          <RuntimePill tool={tool} className="text-[0.6rem]" />
+          <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${error ? 'border-red-400/50 bg-red-900/40 text-red-200' : 'border-sky-400/50 bg-sky-900/40 text-sky-200'}`}>
+            {isRunning ? 'Running' : error ? 'Paused' : 'Ready'}
+          </div>
         </div>
       </div>
 

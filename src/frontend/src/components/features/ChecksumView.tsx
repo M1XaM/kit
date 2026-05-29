@@ -5,6 +5,8 @@ import { createMD5 } from 'hash-wasm'
 import { sha1 } from '@noble/hashes/sha1'
 import { sha256 } from '@noble/hashes/sha256'
 import { bytesToHex } from '@noble/hashes/utils'
+import FeatureHeader from './FeatureHeader'
+import type { Tool } from './toolData'
 
 const ALGORITHMS = {
   sha256: { label: 'SHA-256', create: () => sha256.create() },
@@ -12,9 +14,13 @@ const ALGORITHMS = {
   md5: { label: 'MD5', create: async () => createMD5() }
 }
 
-function ChecksumView({ tool }) {
-  const fileInputRef = useRef(null)
-  const [selectedFile, setSelectedFile] = useState(null)
+type ChecksumViewProps = {
+  tool: Tool
+}
+
+function ChecksumView({ tool }: ChecksumViewProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [algorithm, setAlgorithm] = useState('sha256')
   const [expectedHash, setExpectedHash] = useState('')
@@ -24,18 +30,18 @@ function ChecksumView({ tool }) {
   const [progress, setProgress] = useState(0)
   const [errorMessage, setErrorMessage] = useState('')
   const [showGpgPanel, setShowGpgPanel] = useState(false)
-  const [gpgKeyFile, setGpgKeyFile] = useState(null)
-  const [gpgSignatureFile, setGpgSignatureFile] = useState(null)
+  const [gpgKeyFile, setGpgKeyFile] = useState<File | null>(null)
+  const [gpgSignatureFile, setGpgSignatureFile] = useState<File | null>(null)
   const [gpgStatus, setGpgStatus] = useState('idle')
   const [gpgError, setGpgError] = useState('')
   const [isGpgProcessing, setIsGpgProcessing] = useState(false)
   const [gpgFetchStatus, setGpgFetchStatus] = useState('idle')
   const [gpgFetchMessage, setGpgFetchMessage] = useState('')
-  const gpgKeyInputRef = useRef(null)
-  const gpgSignatureInputRef = useRef(null)
+  const gpgKeyInputRef = useRef<HTMLInputElement | null>(null)
+  const gpgSignatureInputRef = useRef<HTMLInputElement | null>(null)
   const dropZoneClass = `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center text-slate-400 transition ${dragActive ? 'border-blue-400/70 bg-blue-600/20 text-slate-200' : 'border-white/20 hover:border-white/30 hover:bg-white/5'}`
 
-  const updateFile = (file) => {
+  const updateFile = (file: File) => {
     setSelectedFile(file)
     setComputedHash('')
     setStatus('idle')
@@ -74,9 +80,9 @@ function ChecksumView({ tool }) {
     }
   }
 
-  const normalizeHash = (value) => value.replace(/[^a-fA-F0-9]/g, '').toLowerCase()
+  const normalizeHash = (value: string) => value.replace(/[^a-fA-F0-9]/g, '').toLowerCase()
 
-  const computeHash = async (file) => {
+  const computeHash = async (file: File) => {
     const hasher = await ALGORITHMS[algorithm].create()
     const total = file.size || 0
     let processed = 0
@@ -223,8 +229,9 @@ function ChecksumView({ tool }) {
       setGpgFetchStatus('success')
       setGpgFetchMessage(`Fetched key ${keyId} from keys.openpgp.org`)
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch public key.'
       setGpgFetchStatus('failed')
-      setGpgFetchMessage(err.message || 'Failed to fetch public key.')
+      setGpgFetchMessage(message)
     }
   }
 
@@ -257,8 +264,9 @@ function ChecksumView({ tool }) {
       await verified
       setGpgStatus('verified')
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Signature verification failed.'
       setGpgStatus('failed')
-      setGpgError(err.message || 'Signature verification failed.')
+      setGpgError(message)
     } finally {
       setIsGpgProcessing(false)
     }
@@ -285,7 +293,8 @@ function ChecksumView({ tool }) {
         setStatus('idle')
       }
     } catch (err) {
-      setErrorMessage(err.message || 'Checksum calculation failed.')
+      const message = err instanceof Error ? err.message : 'Checksum calculation failed.'
+      setErrorMessage(message)
     } finally {
       setIsProcessing(false)
     }
@@ -300,8 +309,18 @@ function ChecksumView({ tool }) {
         </svg>
         Back to Tools
       </Link>
-      <h2 className="text-2xl font-semibold text-slate-50">{tool.title}</h2>
-      <p className="mt-2 text-sm text-slate-400">All hashing runs in your browser with streaming for large files.</p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${tool.colorClass}`}>
+            {Icon ? <Icon /> : null}
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-50">{tool.title}</h2>
+            <p className="text-sm text-slate-400">All hashing runs in your browser with streaming for large files.</p>
+          </div>
+        </div>
+        <RuntimePill tool={tool} />
+      </div>
 
       {errorMessage && <div className="mt-5 rounded-xl border border-red-400/50 bg-red-900/25 px-4 py-3 text-sm text-red-200">{errorMessage}</div>}
 

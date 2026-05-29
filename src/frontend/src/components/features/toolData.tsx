@@ -10,14 +10,15 @@ const COLOR_CLASSES = {
 
 const resolveColorClass = (value) => COLOR_CLASSES[value] || value || ''
 
-const makeSoonTool = (id, title, description, category, icon, colorClass) => ({
+const makeSoonTool = (id, title, description, category, icon, colorClass, runtime = 'server') => ({
   id,
   title,
   description,
   category,
   icon,
   colorClass: resolveColorClass(colorClass),
-  comingSoon: true
+  comingSoon: true,
+  runtime
 })
 
 const TEXT_TOOLS = [
@@ -26,7 +27,7 @@ const TEXT_TOOLS = [
     title: 'Metadata Editor',
     description: 'View file details and export metadata sidecars locally.',
     category: 'text',
-    icon: ICONS.text,
+    icon: ICONS.document,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -34,7 +35,7 @@ const TEXT_TOOLS = [
     title: 'Text Diff/Compare',
     description: 'Compare text and highlight line-by-line changes.',
     category: 'text',
-    icon: ICONS.text,
+    icon: ICONS.compare,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -42,7 +43,7 @@ const TEXT_TOOLS = [
     title: 'Markdown Preview/Diff',
     description: 'Preview Markdown and compare revisions in the browser.',
     category: 'text',
-    icon: ICONS.text,
+    icon: ICONS.code,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -50,7 +51,7 @@ const TEXT_TOOLS = [
     title: 'Hash Generator',
     description: 'Generate MD5, SHA-1, or SHA-256 hashes locally.',
     category: 'text',
-    icon: ICONS.text,
+    icon: ICONS.hash,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -58,7 +59,7 @@ const TEXT_TOOLS = [
     title: 'Base64 Encode/Decode',
     description: 'Encode or decode Base64 text instantly.',
     category: 'text',
-    icon: ICONS.text,
+    icon: ICONS.code,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -66,7 +67,7 @@ const TEXT_TOOLS = [
     title: 'Hex Encode/Decode',
     description: 'Convert text to and from hexadecimal.',
     category: 'text',
-    icon: ICONS.text,
+    icon: ICONS.hash,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -74,7 +75,7 @@ const TEXT_TOOLS = [
     title: 'URL Encode/Decode',
     description: 'Encode or decode URL-safe strings.',
     category: 'text',
-    icon: ICONS.text,
+    icon: ICONS.link,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -82,7 +83,7 @@ const TEXT_TOOLS = [
     title: 'Text Encoding Conversion',
     description: 'Convert text between common encodings.',
     category: 'text',
-    icon: ICONS.text,
+    icon: ICONS.compare,
     colorClass: resolveColorClass('icon-purple')
   }
 ]
@@ -211,7 +212,7 @@ export const TOOLS = [
     title: 'Checksum Verification',
     description: 'Verify file checksums locally without uploading anything.',
     category: 'files',
-    icon: ICONS.files,
+    icon: ICONS.hash,
     colorClass: resolveColorClass('icon-blue'),
     toolType: 'checksum'
   },
@@ -220,15 +221,16 @@ export const TOOLS = [
     title: 'Performance Viewer',
     description: 'Monitor CPU, RAM, storage, network, and GPU activity in real time.',
     category: 'system',
-    icon: ICONS.system,
-    colorClass: resolveColorClass('icon-purple')
+    icon: ICONS.activity,
+    colorClass: resolveColorClass('icon-purple'),
+    runtime: 'server'
   },
   {
     id: 'internet-test',
     title: 'Internet Speed',
     description: 'Measure download and upload speeds using Cloudflare speed test endpoints.',
     category: 'system',
-    icon: ICONS.system,
+    icon: ICONS.speed,
     colorClass: resolveColorClass('icon-purple')
   },
   ...TEXT_TOOLS,

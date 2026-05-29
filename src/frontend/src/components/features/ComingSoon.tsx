@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import RuntimePill from './RuntimePill'
 
 function ComingSoon({ tool }) {
   const Icon = tool.icon
@@ -11,11 +12,12 @@ function ComingSoon({ tool }) {
         </svg>
         Back to Tools
       </Link>
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${tool.colorClass}`}>
           {Icon ? <Icon /> : null}
         </div>
         <span className="rounded-full border border-blue-400/50 bg-blue-600/30 px-2.5 py-1 text-xs font-semibold tracking-wide text-blue-200">Soon</span>
+        <RuntimePill tool={tool} className="px-2.5 py-1 text-[0.6rem]" />
       </div>
       <h2 className="text-2xl font-semibold text-slate-50">{tool.title}</h2>
       <p className="mt-3 text-lg font-extrabold tracking-[0.14em] text-blue-200">COMING SOON</p>

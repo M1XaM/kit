@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import RuntimePill from './RuntimePill'
 
 const MIME_TYPES = [
   'audio/mp4;codecs=mp4a.40.2',
@@ -256,8 +257,11 @@ function RecordAudioView({ tool }) {
             <p className="text-sm text-slate-400">Record, pause, resume, and download audio without uploads.</p>
           </div>
         </div>
-        <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${statusClass}`}>
-          {statusLabel}
+        <div className="flex flex-wrap items-center gap-2">
+          <RuntimePill tool={tool} className="text-[0.6rem]" />
+          <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${statusClass}`}>
+            {statusLabel}
+          </div>
         </div>
       </div>
 

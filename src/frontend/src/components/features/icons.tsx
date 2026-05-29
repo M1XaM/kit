@@ -63,5 +63,45 @@ export const ICONS = {
       <line x1="1" y1="9" x2="4" y2="9"></line>
       <line x1="1" y1="15" x2="4" y2="15"></line>
     </svg>
+  ),
+  compare: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="16 3 21 8 16 13"></polyline>
+      <line x1="21" y1="8" x2="7" y2="8"></line>
+      <polyline points="8 21 3 16 8 11"></polyline>
+      <line x1="3" y1="16" x2="17" y2="16"></line>
+    </svg>
+  ),
+  code: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="16 18 22 12 16 6"></polyline>
+      <polyline points="8 6 2 12 8 18"></polyline>
+    </svg>
+  ),
+  hash: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="9" x2="20" y2="9"></line>
+      <line x1="4" y1="15" x2="20" y2="15"></line>
+      <line x1="10" y1="3" x2="8" y2="21"></line>
+      <line x1="16" y1="3" x2="14" y2="21"></line>
+    </svg>
+  ),
+  link: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 5"></path>
+      <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07L13 19"></path>
+    </svg>
+  ),
+  activity: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+    </svg>
+  ),
+  speed: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 13a8 8 0 1 0-16 0"></path>
+      <line x1="12" y1="13" x2="16" y2="9"></line>
+      <circle cx="12" cy="13" r="1"></circle>
+    </svg>
   )
 }
