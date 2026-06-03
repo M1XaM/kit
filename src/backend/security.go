@@ -10,7 +10,9 @@ import (
 	"strings"
 )
 
-const maxRequestBodyBytes int64 = 55 << 20
+// Large enough to accept video uploads for the local ffmpeg-backed tools.
+// Everything runs on localhost against files the user already has on disk.
+const maxRequestBodyBytes int64 = 2 << 30
 
 type securityPolicy struct {
 	sessionToken   string

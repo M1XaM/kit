@@ -8,11 +8,11 @@ import { bytesToHex } from '@noble/hashes/utils'
 
 const MAX_DIFF_LINES = 400
 
-const INPUT_CLASS = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white dark:placeholder:text-slate-500'
-const LABEL_CLASS = 'text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400'
-const PRIMARY_BUTTON = 'rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400'
-const SECONDARY_BUTTON = 'rounded-lg border px-4 py-2 text-sm font-semibold transition border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-400/40 dark:bg-slate-400/15 dark:text-slate-200 dark:hover:bg-slate-400/25 disabled:cursor-not-allowed disabled:text-slate-400 dark:disabled:text-slate-500'
-const SUBTLE_BUTTON = 'rounded-lg border px-4 py-2 text-sm font-semibold transition border-slate-300 bg-slate-100 text-slate-700 hover:border-slate-300 hover:bg-slate-200 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/10'
+const INPUT_CLASS = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white placeholder:text-slate-500'
+const LABEL_CLASS = 'text-xs uppercase tracking-[0.12em] text-slate-400'
+const PRIMARY_BUTTON = 'rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400'
+const SECONDARY_BUTTON = 'rounded-lg border px-4 py-2 text-sm font-semibold transition border-slate-400/40 bg-slate-400/15 text-slate-200 hover:bg-slate-400/25 disabled:cursor-not-allowed disabled:text-slate-500'
+const SUBTLE_BUTTON = 'rounded-lg border px-4 py-2 text-sm font-semibold transition border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10'
 
 const ENCODING_OPTIONS = [
   { value: 'utf-8', label: 'UTF-8' },
@@ -114,13 +114,13 @@ const renderInlineMarkdown = (value) => {
       return <em key={index}>{part.slice(1, -1)}</em>
     }
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={index} className="rounded px-1 py-0.5 text-xs bg-slate-100 text-slate-700 dark:bg-slate-900/70 dark:text-slate-200">{part.slice(1, -1)}</code>
+      return <code key={index} className="rounded px-1 py-0.5 text-xs bg-slate-900/70 text-slate-200">{part.slice(1, -1)}</code>
     }
     if (part.startsWith('[')) {
       const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
       if (match) {
         return (
-          <a key={index} href={match[2]} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-300 underline">
+          <a key={index} href={match[2]} target="_blank" rel="noreferrer" className="text-blue-300 underline">
             {match[1]}
           </a>
         )
@@ -145,7 +145,7 @@ const renderMarkdownBlocks = (value) => {
         i += 1
       }
       blocks.push(
-        <pre key={`code-${i}`} className="overflow-auto rounded-lg border p-3 text-xs border-slate-300 bg-slate-100 text-slate-700 dark:border-white/10 dark:bg-black/40 dark:text-slate-200">
+        <pre key={`code-${i}`} className="overflow-auto rounded-lg border p-3 text-xs border-white/10 bg-black/40 text-slate-200">
           <code>{codeLines.join('\n')}</code>
         </pre>
       )
@@ -159,12 +159,12 @@ const renderMarkdownBlocks = (value) => {
       const content = headingMatch[2]
       const Tag = `h${level}`
       const headingClass = level === 1
-        ? 'text-2xl font-semibold text-slate-900 dark:text-slate-50'
+        ? 'text-2xl font-semibold text-slate-50'
         : level === 2
-          ? 'text-xl font-semibold text-slate-900 dark:text-slate-50'
+          ? 'text-xl font-semibold text-slate-50'
           : level === 3
-            ? 'text-lg font-semibold text-slate-900 dark:text-slate-100'
-            : 'text-base font-semibold text-slate-800 dark:text-slate-200'
+            ? 'text-lg font-semibold text-slate-100'
+            : 'text-base font-semibold text-slate-200'
       blocks.push(
         <Tag key={`heading-${i}`} className={headingClass}>
           {renderInlineMarkdown(content)}
@@ -184,7 +184,7 @@ const renderMarkdownBlocks = (value) => {
         i += 1
       }
       blocks.push(
-        <ol key={`ol-${i}`} className="list-decimal space-y-1 pl-6 text-sm text-slate-700 dark:text-slate-200">
+        <ol key={`ol-${i}`} className="list-decimal space-y-1 pl-6 text-sm text-slate-200">
           {items.map((item, index) => (
             <li key={index}>{renderInlineMarkdown(item)}</li>
           ))}
@@ -203,7 +203,7 @@ const renderMarkdownBlocks = (value) => {
         i += 1
       }
       blocks.push(
-        <ul key={`ul-${i}`} className="list-disc space-y-1 pl-6 text-sm text-slate-700 dark:text-slate-200">
+        <ul key={`ul-${i}`} className="list-disc space-y-1 pl-6 text-sm text-slate-200">
           {items.map((item, index) => (
             <li key={index}>{renderInlineMarkdown(item)}</li>
           ))}
@@ -214,7 +214,7 @@ const renderMarkdownBlocks = (value) => {
 
     if (line.startsWith('> ')) {
       blocks.push(
-        <blockquote key={`quote-${i}`} className="rounded-lg border-l-4 p-3 text-sm border-blue-300 bg-blue-50 text-slate-700 dark:border-blue-400/60 dark:bg-blue-900/10 dark:text-slate-200">
+        <blockquote key={`quote-${i}`} className="rounded-lg border-l-4 p-3 text-sm border-blue-400/60 bg-blue-900/10 text-slate-200">
           {renderInlineMarkdown(line.slice(2))}
         </blockquote>
       )
@@ -229,7 +229,7 @@ const renderMarkdownBlocks = (value) => {
     }
 
     blocks.push(
-      <p key={`p-${i}`} className="text-sm text-slate-700 dark:text-slate-200">
+      <p key={`p-${i}`} className="text-sm text-slate-200">
         {renderInlineMarkdown(line)}
       </p>
     )
@@ -241,8 +241,8 @@ const renderMarkdownBlocks = (value) => {
 
 function ToolShell({ tool, subtitle, children }) {
   return (
-    <div className="mx-auto max-w-5xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+    <div className="mx-auto max-w-5xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -266,7 +266,7 @@ function MetadataEditor() {
   const [customJson, setCustomJson] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
-  const dropZoneClass = `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition text-slate-500 dark:text-slate-400 ${dragActive ? 'border-blue-400 bg-blue-50 text-slate-900 dark:border-blue-400/70 dark:bg-blue-600/20 dark:text-slate-200' : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:hover:border-white/30 dark:hover:bg-white/5'}`
+  const dropZoneClass = `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition text-slate-400 ${dragActive ? 'border-blue-400/70 bg-blue-600/20 text-slate-200' : 'border-white/20 hover:border-white/30 hover:bg-white/5'}`
 
   const handleDragOver = (event) => {
     event.preventDefault()
@@ -371,15 +371,15 @@ function MetadataEditor() {
             <polyline points="17 8 12 3 7 8"></polyline>
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
-          <div className="text-sm text-slate-700 dark:text-slate-200">
+          <div className="text-sm text-slate-200">
             {selectedFile ? selectedFile.name : 'Drop a file to read basic metadata'}
           </div>
-          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">or click to choose a file</div>
+          <div className="mt-2 text-xs text-slate-400">or click to choose a file</div>
           <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
         </label>
 
         {selectedFile ? (
-          <div className="flex flex-wrap gap-3 rounded-xl border px-4 py-3 text-xs border-slate-300 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-slate-900/50 dark:text-slate-300">
+          <div className="flex flex-wrap gap-3 rounded-xl border px-4 py-3 text-xs border-white/10 bg-slate-900/50 text-slate-300">
             <span>Name: {selectedFile.name}</span>
             <span>Size: {formatBytes(selectedFile.size)}</span>
             <span>Type: {selectedFile.type || 'unknown'}</span>
@@ -415,11 +415,11 @@ function MetadataEditor() {
           onChange={(event) => setCustomJson(event.target.value)}
           placeholder='{"department":"Design","version":"1.2"}'
         />
-        {customParsed.error ? <div className="text-xs text-red-600 dark:text-red-300">{customParsed.error}</div> : null}
+        {customParsed.error ? <div className="text-xs text-red-300">{customParsed.error}</div> : null}
       </div>
 
       {errorMessage ? (
-        <div className="rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>
+        <div className="rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{errorMessage}</div>
       ) : null}
 
       <div className="flex flex-wrap gap-3">
@@ -429,12 +429,12 @@ function MetadataEditor() {
         <button className={SECONDARY_BUTTON} type="button" onClick={copyMetadata}>
           Copy JSON
         </button>
-        <span className="text-xs text-slate-500 dark:text-slate-400">Exports a sidecar file, original file is unchanged.</span>
+        <span className="text-xs text-slate-400">Exports a sidecar file, original file is unchanged.</span>
       </div>
 
-      <div className="rounded-xl border p-4 border-slate-300 bg-slate-50 dark:border-white/10 dark:bg-black/30">
+      <div className="rounded-xl border p-4 border-white/10 bg-black/30">
         <div className={LABEL_CLASS}>Preview</div>
-        <pre className="mt-3 max-h-64 overflow-auto text-xs text-slate-700 dark:text-slate-200">{metadataJson}</pre>
+        <pre className="mt-3 max-h-64 overflow-auto text-xs text-slate-200">{metadataJson}</pre>
       </div>
     </div>
   )
@@ -445,8 +445,8 @@ function DiffViewer({ diff }) {
   let rightLine = 0
 
   return (
-    <div className="mt-4 overflow-hidden rounded-xl border border-slate-300 bg-white dark:border-white/10 dark:bg-slate-950/70">
-      <div className="grid grid-cols-[40px_40px_1fr] gap-2 border-b px-3 py-2 text-[0.7rem] uppercase tracking-[0.14em] border-slate-300 text-slate-500 dark:border-white/10 dark:text-slate-400">
+    <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-slate-950/70">
+      <div className="grid grid-cols-[40px_40px_1fr] gap-2 border-b px-3 py-2 text-[0.7rem] uppercase tracking-[0.14em] border-white/10 text-slate-400">
         <span>Left</span>
         <span>Right</span>
         <span>Line</span>
@@ -459,10 +459,10 @@ function DiffViewer({ diff }) {
           const leftIndex = isAdd ? '' : String(++leftLine)
           const rightIndex = isRemove ? '' : String(++rightLine)
           const rowClass = isAdd
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-200'
+            ? 'bg-emerald-900/25 text-emerald-200'
             : isRemove
-              ? 'bg-red-50 text-red-700 dark:bg-red-900/25 dark:text-red-200'
-              : 'text-slate-600 dark:text-slate-300'
+              ? 'bg-red-900/25 text-red-200'
+              : 'text-slate-300'
 
           return (
             <div key={`${entry.type}-${index}`} className={`grid grid-cols-[40px_40px_1fr] gap-2 px-3 py-1 ${rowClass}`}>
@@ -522,17 +522,17 @@ function TextCompareTool() {
       </div>
 
       {diffResult ? (
-        <div className="rounded-xl border p-4 border-slate-300 bg-slate-50 dark:border-white/10 dark:bg-black/30">
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-300">
+        <div className="rounded-xl border p-4 border-white/10 bg-black/30">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
             <span>Added: {diffResult.stats.added}</span>
             <span>Removed: {diffResult.stats.removed}</span>
             <span>Unchanged: {diffResult.stats.unchanged}</span>
-            {diffResult.trimmed ? <span className="text-amber-600 dark:text-amber-200">Diff trimmed to {MAX_DIFF_LINES} lines per side.</span> : null}
+            {diffResult.trimmed ? <span className="text-amber-200">Diff trimmed to {MAX_DIFF_LINES} lines per side.</span> : null}
           </div>
           <DiffViewer diff={diffResult} />
         </div>
       ) : (
-        <div className="rounded-xl border px-4 py-6 text-sm border-slate-300 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-black/30 dark:text-slate-400">
+        <div className="rounded-xl border px-4 py-6 text-sm border-white/10 bg-black/30 text-slate-400">
           Run a compare to see the line diff.
         </div>
       )}
@@ -572,12 +572,12 @@ function MarkdownDiffTool() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border p-4 border-slate-300 bg-white dark:border-white/10 dark:bg-slate-950/70">
-          <div className="text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Preview A</div>
+        <div className="rounded-xl border p-4 border-white/10 bg-slate-950/70">
+          <div className="text-xs uppercase tracking-[0.12em] text-slate-400">Preview A</div>
           <div className="mt-3 space-y-3">{leftPreview}</div>
         </div>
-        <div className="rounded-xl border p-4 border-slate-300 bg-white dark:border-white/10 dark:bg-slate-950/70">
-          <div className="text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Preview B</div>
+        <div className="rounded-xl border p-4 border-white/10 bg-slate-950/70">
+          <div className="text-xs uppercase tracking-[0.12em] text-slate-400">Preview B</div>
           <div className="mt-3 space-y-3">{rightPreview}</div>
         </div>
       </div>
@@ -599,12 +599,12 @@ function MarkdownDiffTool() {
       </div>
 
       {diffResult ? (
-        <div className="rounded-xl border p-4 border-slate-300 bg-slate-50 dark:border-white/10 dark:bg-black/30">
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-300">
+        <div className="rounded-xl border p-4 border-white/10 bg-black/30">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
             <span>Added: {diffResult.stats.added}</span>
             <span>Removed: {diffResult.stats.removed}</span>
             <span>Unchanged: {diffResult.stats.unchanged}</span>
-            {diffResult.trimmed ? <span className="text-amber-600 dark:text-amber-200">Diff trimmed to {MAX_DIFF_LINES} lines per side.</span> : null}
+            {diffResult.trimmed ? <span className="text-amber-200">Diff trimmed to {MAX_DIFF_LINES} lines per side.</span> : null}
           </div>
           <DiffViewer diff={diffResult} />
         </div>
@@ -673,7 +673,7 @@ function HashGeneratorTool() {
       </div>
 
       {error ? (
-        <div className="rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{error}</div>
+        <div className="rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{error}</div>
       ) : null}
 
       <div className="grid gap-2">
@@ -749,7 +749,7 @@ function TransformTool({ encodeLabel, decodeLabel, encode, decode, inputPlacehol
       </div>
 
       {error ? (
-        <div className="rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{error}</div>
+        <div className="rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{error}</div>
       ) : null}
 
       <div className="grid gap-2">
@@ -905,7 +905,7 @@ function EncodingConvertTool() {
           Load text file
         </button>
         <input ref={fileInputRef} type="file" accept="text/*" className="hidden" onChange={handleFilePick} />
-        <span className="text-xs text-slate-500 dark:text-slate-400">Files are read locally, nothing is uploaded.</span>
+        <span className="text-xs text-slate-400">Files are read locally, nothing is uploaded.</span>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -944,12 +944,12 @@ function EncodingConvertTool() {
         <button className={SECONDARY_BUTTON} type="button" onClick={downloadOutput} disabled={!outputBytes}>
           Download converted file
         </button>
-        {outputBytes ? <span className="text-xs text-slate-500 dark:text-slate-400">Output size: {formatBytes(outputBytes.length)}</span> : null}
-        {replacementCount ? <span className="text-xs text-amber-600 dark:text-amber-200">Replaced {replacementCount} unsupported characters.</span> : null}
+        {outputBytes ? <span className="text-xs text-slate-400">Output size: {formatBytes(outputBytes.length)}</span> : null}
+        {replacementCount ? <span className="text-xs text-amber-200">Replaced {replacementCount} unsupported characters.</span> : null}
       </div>
 
       {errorMessage ? (
-        <div className="rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>
+        <div className="rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{errorMessage}</div>
       ) : null}
 
       <div className="grid gap-2">
@@ -1053,7 +1053,7 @@ function TextToolView({ tool }) {
 
   return (
     <ToolShell tool={tool} subtitle="This tool is not available yet.">
-      <div className="rounded-xl border px-4 py-6 text-sm border-slate-300 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-black/30 dark:text-slate-400">
+      <div className="rounded-xl border px-4 py-6 text-sm border-white/10 bg-black/30 text-slate-400">
         This tool is still in progress.
       </div>
     </ToolShell>

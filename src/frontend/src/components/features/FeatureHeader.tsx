@@ -14,21 +14,21 @@ function FeatureHeader({ tool, subtitle, rightSlot }: FeatureHeaderProps) {
   const Icon = tool.icon
   const favorite = isFavorite(tool.id)
   const favoriteClass = favorite
-    ? 'border-amber-300 bg-amber-100 text-amber-600 dark:border-amber-400/70 dark:bg-amber-400/20 dark:text-amber-300'
-    : 'border-slate-300 bg-slate-50 text-slate-400 dark:border-white/20 dark:bg-white/5 dark:text-slate-500'
+    ? 'border-amber-400/70 bg-amber-400/20 text-amber-300'
+    : 'border-white/20 bg-white/5 text-slate-500'
 
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-      <div className="flex items-center gap-4">
-        <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${tool.colorClass}`}>
+    <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="flex min-w-0 items-center gap-4">
+        <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${tool.colorClass}`}>
           {Icon ? <Icon /> : null}
         </div>
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">{tool.title}</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">{subtitle || tool.description}</p>
+        <div className="min-w-0">
+          <h2 className="text-2xl font-semibold text-slate-50">{tool.title}</h2>
+          <p className="text-sm text-slate-400">{subtitle || tool.description}</p>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <RuntimePill tool={tool} />
         {rightSlot}
         <button

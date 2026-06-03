@@ -108,6 +108,17 @@ const AUDIO_TOOLS = [
     runtime: 'client'
   },
   {
+    id: 'adjust-audio',
+    title: 'Adjust Bitrate/Sample Rate',
+    description: 'Re-encode audio with a new bitrate and sample rate.',
+    category: 'audio',
+    icon: ICONS.sliders,
+    colorClass: resolveColorClass('icon-yellow'),
+    apiEndpoint: '/api/audio/adjust',
+    toolType: 'video',
+    runtime: 'server'
+  },
+  {
     id: 'record-video',
     title: 'Record Video',
     description: 'Record your camera with optional microphone and system audio.',
@@ -116,6 +127,88 @@ const AUDIO_TOOLS = [
     colorClass: resolveColorClass('icon-yellow'),
     toolType: 'video-record',
     runtime: 'client'
+  }
+]
+
+// Video/audio editing tools. These re-encode media with ffmpeg, which is
+// impractical in the browser, so the heavy lifting runs on the Go backend.
+const VIDEO_TOOLS = [
+  {
+    id: 'trim-video',
+    title: 'Trim Video',
+    description: 'Trim videos to a selected range.',
+    category: 'video',
+    icon: ICONS.scissors,
+    colorClass: resolveColorClass('icon-red'),
+    apiEndpoint: '/api/video/trim',
+    toolType: 'video',
+    runtime: 'server'
+  },
+  {
+    id: 'split-video',
+    title: 'Cut/Split Video',
+    description: 'Split videos into multiple clips.',
+    category: 'video',
+    icon: ICONS.scissors,
+    colorClass: resolveColorClass('icon-red'),
+    apiEndpoint: '/api/video/split',
+    toolType: 'video',
+    runtime: 'server'
+  },
+  {
+    id: 'merge-video',
+    title: 'Merge Video Clips',
+    description: 'Combine multiple video clips into one file.',
+    category: 'video',
+    icon: ICONS.layers,
+    colorClass: resolveColorClass('icon-red'),
+    apiEndpoint: '/api/video/merge',
+    toolType: 'video-merge',
+    runtime: 'server'
+  },
+  {
+    id: 'resize-video',
+    title: 'Resize Video',
+    description: 'Change video resolution or aspect.',
+    category: 'video',
+    icon: ICONS.crop,
+    colorClass: resolveColorClass('icon-red'),
+    apiEndpoint: '/api/video/resize',
+    toolType: 'video',
+    runtime: 'server'
+  },
+  {
+    id: 'compress-video',
+    title: 'Compress Video',
+    description: 'Reduce video size while keeping quality.',
+    category: 'video',
+    icon: ICONS.compress,
+    colorClass: resolveColorClass('icon-red'),
+    apiEndpoint: '/api/video/compress',
+    toolType: 'video',
+    runtime: 'server'
+  },
+  {
+    id: 'convert-video',
+    title: 'Convert Video Formats',
+    description: 'Convert videos between formats.',
+    category: 'video',
+    icon: ICONS.swap,
+    colorClass: resolveColorClass('icon-red'),
+    apiEndpoint: '/api/video/convert',
+    toolType: 'video',
+    runtime: 'server'
+  },
+  {
+    id: 'trim-audio',
+    title: 'Trim Audio',
+    description: 'Trim audio clips in seconds.',
+    category: 'video',
+    icon: ICONS.scissors,
+    colorClass: resolveColorClass('icon-red'),
+    apiEndpoint: '/api/audio/trim',
+    toolType: 'video',
+    runtime: 'server'
   }
 ]
 
@@ -198,15 +291,7 @@ const COMING_SOON_TOOLS = [
   makeSoonTool('watermark-documents', 'Watermark Documents', 'Apply image or page watermarks to documents.', 'text', ICONS.lock, 'icon-purple'),
   makeSoonTool('ai-summarize', 'AI Summarize', 'Summarize documents with AI.', 'ai-tools', ICONS.sparkles, 'icon-green'),
   makeSoonTool('ai-remove-background', 'AI Remove Background', 'Remove image backgrounds with AI.', 'ai-tools', ICONS.crop, 'icon-green'),
-  makeSoonTool('trim-video', 'Trim Video', 'Trim videos to a selected range.', 'video', ICONS.scissors, 'icon-red'),
-  makeSoonTool('split-video', 'Cut/Split Video', 'Split videos into multiple clips.', 'video', ICONS.scissors, 'icon-red'),
-  makeSoonTool('merge-video', 'Merge Video Clips', 'Combine video clips into one file.', 'video', ICONS.layers, 'icon-red'),
-  makeSoonTool('resize-video', 'Resize Video', 'Change video resolution or aspect.', 'video', ICONS.crop, 'icon-red'),
-  makeSoonTool('compress-video', 'Compress Video', 'Reduce video size while keeping quality.', 'video', ICONS.compress, 'icon-red'),
-  makeSoonTool('convert-video', 'Convert Video Formats', 'Convert videos between formats.', 'video', ICONS.swap, 'icon-red'),
-  makeSoonTool('trim-audio', 'Trim Audio', 'Trim audio clips in seconds.', 'video', ICONS.scissors, 'icon-red'),
   makeSoonTool('convert-audio', 'Convert Audio Formats', 'Convert audio between formats.', 'audio', ICONS.swap, 'icon-yellow'),
-  makeSoonTool('adjust-audio', 'Adjust Bitrate/Sample Rate', 'Adjust bitrate and sample rate.', 'audio', ICONS.sliders, 'icon-yellow'),
   makeSoonTool('screen-recording', 'Screen Recording', 'Capture your screen with audio.', 'audio', ICONS.system, 'icon-yellow'),
   makeSoonTool('convert-image-formats', 'Convert Image Formats', 'Convert images between popular formats.', 'image', ICONS.swap, 'icon-green'),
   makeSoonTool('batch-image', 'Batch Image Processing', 'Process multiple images at once.', 'image', ICONS.layers, 'icon-green'),
@@ -395,6 +480,7 @@ export const TOOLS = [
   ...DOCUMENT_TOOLS,
   ...TEXT_TOOLS,
   ...AUDIO_TOOLS,
+  ...VIDEO_TOOLS,
   ...IMAGE_TOOLS,
   ...COMING_SOON_TOOLS
 ]

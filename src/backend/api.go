@@ -26,6 +26,14 @@ func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string) {
 	mux.HandleFunc("/api/pdf/protect", policy.wrapAPIHandler(features.HandleProtectPDF))
 	mux.HandleFunc("/api/archive/extract", policy.wrapAPIHandler(features.HandleArchiveExtract))
 	mux.HandleFunc("/api/archive/create", policy.wrapAPIHandler(features.HandleArchiveCreate))
+	mux.HandleFunc("/api/video/trim", policy.wrapAPIHandler(features.HandleTrimVideo))
+	mux.HandleFunc("/api/video/split", policy.wrapAPIHandler(features.HandleSplitVideo))
+	mux.HandleFunc("/api/video/merge", policy.wrapAPIHandler(features.HandleMergeVideo))
+	mux.HandleFunc("/api/video/resize", policy.wrapAPIHandler(features.HandleResizeVideo))
+	mux.HandleFunc("/api/video/compress", policy.wrapAPIHandler(features.HandleCompressVideo))
+	mux.HandleFunc("/api/video/convert", policy.wrapAPIHandler(features.HandleConvertVideo))
+	mux.HandleFunc("/api/audio/trim", policy.wrapAPIHandler(features.HandleTrimAudio))
+	mux.HandleFunc("/api/audio/adjust", policy.wrapAPIHandler(features.HandleAdjustAudio))
 	mux.HandleFunc("/api/system/metrics", policy.wrapAPIHandler(handleSystemMetrics))
 	// /api/open — opens a browser tab on the running server.
 	// Called by kit://start when an instance is already listening on the base port.

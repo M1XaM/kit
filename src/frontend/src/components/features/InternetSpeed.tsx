@@ -1,173 +1,209 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import FeatureHeader from './FeatureHeader'
 
-const DOWNLOAD_SIZES = [5_000_000, 12_000_000, 20_000_000]
-const UPLOAD_SIZES = [1_000_000, 3_000_000, 6_000_000]
 const DOWNLOAD_ENDPOINT = 'https://speed.cloudflare.com/__down'
 const UPLOAD_ENDPOINT = 'https://speed.cloudflare.com/__up'
+
+// Sustained measurement windows. Running each phase for several seconds and
+// averaging over the real bytes transferred is far more accurate than timing a
+// few small fixed payloads (which is dominated by latency and slow-start).
+const MIN_DOWNLOAD_MS = 10_000
+const MIN_UPLOAD_MS = 6_000
+const PING_ESTIMATE_MS = 1_500
+const DOWNLOAD_CHUNK_BYTES = 25_000_000
+const UPLOAD_CHUNK_BYTES = 6_000_000
+const PING_SAMPLES = 6
+const LIVE_INTERVAL_MS = 120
 
 const formatMbps = (value) => {
   if (value == null || Number.isNaN(value)) return '--'
   return value.toFixed(1)
 }
 
-const formatBytes = (value) => {
+const formatMs = (value) => {
   if (value == null || Number.isNaN(value)) return '--'
-  if (value === 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  let size = value
-  let index = 0
-  while (size >= 1024 && index < units.length - 1) {
-    size /= 1024
-    index += 1
-  }
-  return `${size.toFixed(size >= 10 || index === 0 ? 0 : 1)} ${units[index]}`
+  return value.toFixed(0)
 }
 
-const buildDownloadUrl = (bytes) => `${DOWNLOAD_ENDPOINT}?bytes=${bytes}&cacheBust=${Date.now()}`
+const buildDownloadUrl = (bytes) => `${DOWNLOAD_ENDPOINT}?bytes=${bytes}&cacheBust=${Date.now()}-${Math.random()}`
 
-const measureDownload = (bytes, signal) => new Promise((resolve, reject) => {
+// measurePing samples the round-trip time to the edge with empty-body requests,
+// reporting the running best (minimum) as it goes and returning the final value.
+const measurePing = async (onLive) => {
+  const samples = []
+  for (let i = 0; i < PING_SAMPLES; i += 1) {
+    const start = performance.now()
+    await fetch(buildDownloadUrl(0), { cache: 'no-store' })
+    samples.push(performance.now() - start)
+    const effective = samples.slice(1) // drop the connection warm-up sample
+    if (effective.length) onLive(Math.min(...effective))
+  }
+  const effective = samples.slice(1)
+  return effective.length ? Math.min(...effective) : samples[0] || 0
+}
+
+// measureDownload streams real bytes for at least MIN_DOWNLOAD_MS and divides
+// the actual bytes received by the elapsed time, reporting a live running
+// average as it goes. Reading the whole body is what keeps the number honest:
+// an <img>-based probe could report a bogus, inflated speed because the browser
+// aborts a non-image download early while we still assume the full payload came.
+const measureDownload = async (onLive) => {
   const start = performance.now()
-  const img = new Image()
-  let settled = false
+  let totalBytes = 0
+  let lastTick = 0
 
-  const cleanup = () => {
-    img.onload = null
-    img.onerror = null
-    img.src = ''
+  const live = () => {
+    const seconds = (performance.now() - start) / 1000
+    if (seconds > 0) onLive((totalBytes * 8) / (seconds * 1e6))
   }
 
-  const finalize = () => {
-    if (settled) return
-    settled = true
-    if (signal) signal.removeEventListener('abort', onAbort)
-    cleanup()
-    const duration = (performance.now() - start) / 1000
-    resolve({ bytes, duration })
-  }
+  while (performance.now() - start < MIN_DOWNLOAD_MS) {
+    const response = await fetch(buildDownloadUrl(DOWNLOAD_CHUNK_BYTES), { cache: 'no-store' })
+    if (!response.ok) throw new Error(`Download failed (HTTP ${response.status})`)
 
-  const onAbort = () => {
-    if (settled) return
-    settled = true
-    cleanup()
-    reject(new DOMException('Aborted', 'AbortError'))
-  }
-
-  if (signal) {
-    if (signal.aborted) {
-      onAbort()
-      return
+    const reader = response.body?.getReader()
+    if (reader) {
+      let done = false
+      while (!done) {
+        const chunk = await reader.read()
+        done = chunk.done
+        if (chunk.value) totalBytes += chunk.value.length
+        const now = performance.now()
+        if (now - lastTick > LIVE_INTERVAL_MS) {
+          lastTick = now
+          live()
+        }
+        if (now - start >= MIN_DOWNLOAD_MS) {
+          await reader.cancel()
+          break
+        }
+      }
+    } else {
+      const buffer = await response.arrayBuffer()
+      totalBytes += buffer.byteLength
+      live()
     }
-    signal.addEventListener('abort', onAbort)
   }
 
-  img.onload = finalize
-  img.onerror = finalize
-  img.src = buildDownloadUrl(bytes)
-})
+  const seconds = (performance.now() - start) / 1000
+  return seconds > 0 ? (totalBytes * 8) / (seconds * 1e6) : 0
+}
 
-const buildUploadPayload = (bytes) => '0'.repeat(bytes)
-
-const measureUpload = async (bytes, signal) => {
-  const payload = buildUploadPayload(bytes)
+// measureUpload posts fixed payloads for at least MIN_UPLOAD_MS and averages
+// over the bytes actually sent, reporting a live running average.
+const measureUpload = async (onLive) => {
+  const payload = new Blob([new Uint8Array(UPLOAD_CHUNK_BYTES)])
   const start = performance.now()
+  let totalBytes = 0
 
-  await fetch(UPLOAD_ENDPOINT, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: payload,
-    cache: 'no-store',
-    signal
-  })
+  while (performance.now() - start < MIN_UPLOAD_MS) {
+    await fetch(UPLOAD_ENDPOINT, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: payload,
+      cache: 'no-store'
+    })
+    totalBytes += UPLOAD_CHUNK_BYTES
+    const seconds = (performance.now() - start) / 1000
+    if (seconds > 0) onLive((totalBytes * 8) / (seconds * 1e6))
+  }
 
-  const duration = (performance.now() - start) / 1000
-  return { bytes, duration }
+  const seconds = (performance.now() - start) / 1000
+  return seconds > 0 ? (totalBytes * 8) / (seconds * 1e6) : 0
 }
 
 function InternetSpeed({ tool }) {
-  const controllerRef = useRef(null)
   const [isRunning, setIsRunning] = useState(false)
   const [phase, setPhase] = useState('idle')
   const [progress, setProgress] = useState(0)
+  const [pingMs, setPingMs] = useState(null)
   const [downloadMbps, setDownloadMbps] = useState(null)
   const [uploadMbps, setUploadMbps] = useState(null)
   const [lastRun, setLastRun] = useState(null)
   const [error, setError] = useState('')
 
+  // Progress is driven by a time-based animation loop so the bar advances
+  // smoothly regardless of how often network data events fire.
+  const rafRef = useRef(0)
+  const phaseRef = useRef(null)
+
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), [])
+
+  const enterPhase = (expected, base, span) => {
+    phaseRef.current = { expected, base, span, start: performance.now() }
+  }
+
+  const startProgressLoop = () => {
+    cancelAnimationFrame(rafRef.current)
+    const tick = () => {
+      const ph = phaseRef.current
+      if (ph) {
+        const local = Math.min((performance.now() - ph.start) / ph.expected, 1)
+        setProgress((prev) => Math.max(prev, ph.base + ph.span * local))
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+  }
+
   const runTest = async () => {
     if (isRunning) return
 
     setIsRunning(true)
-    setPhase('download')
+    setPhase('ping')
     setProgress(0)
     setError('')
+    setPingMs(null)
     setDownloadMbps(null)
     setUploadMbps(null)
 
-    const controller = new AbortController()
-    controllerRef.current = controller
+    phaseRef.current = null
+    startProgressLoop()
 
-    const totalSteps = DOWNLOAD_SIZES.length + UPLOAD_SIZES.length
-    let completedSteps = 0
-
-    const updateProgress = () => {
-      const ratio = completedSteps / totalSteps
-      setProgress(Math.min(Math.max(ratio, 0), 1))
-    }
-
+    let ok = false
     try {
-      let downloadBytes = 0
-      let downloadTime = 0
-      for (const size of DOWNLOAD_SIZES) {
-        const result = await measureDownload(size, controller.signal)
-        downloadBytes += result.bytes
-        downloadTime += result.duration
-        completedSteps += 1
-        updateProgress()
-      }
+      enterPhase(PING_ESTIMATE_MS, 0, 0.08)
+      const ping = await measurePing(setPingMs)
+      setPingMs(ping)
 
-      const calculatedDownload = downloadTime > 0 ? (downloadBytes * 8) / (downloadTime * 1e6) : 0
-      setDownloadMbps(calculatedDownload)
+      setPhase('download')
+      enterPhase(MIN_DOWNLOAD_MS, 0.08, 0.57)
+      const download = await measureDownload(setDownloadMbps)
+      setDownloadMbps(download)
 
       setPhase('upload')
-      let uploadBytes = 0
-      let uploadTime = 0
-      for (const size of UPLOAD_SIZES) {
-        const result = await measureUpload(size, controller.signal)
-        uploadBytes += result.bytes
-        uploadTime += result.duration
-        completedSteps += 1
-        updateProgress()
-      }
+      enterPhase(MIN_UPLOAD_MS, 0.65, 0.35)
+      const upload = await measureUpload(setUploadMbps)
+      setUploadMbps(upload)
 
-      const calculatedUpload = uploadTime > 0 ? (uploadBytes * 8) / (uploadTime * 1e6) : 0
-      setUploadMbps(calculatedUpload)
       setPhase('done')
       setLastRun(new Date())
+      ok = true
     } catch (err) {
-      if (err.name === 'AbortError') {
-        setError('Test stopped')
-      } else {
-        setError(err.message || 'Speed test failed')
-      }
+      setError(err?.message || 'Speed test failed')
       setPhase('idle')
     } finally {
+      cancelAnimationFrame(rafRef.current)
+      phaseRef.current = null
+      setProgress(ok ? 1 : 0)
       setIsRunning(false)
-      setProgress(0)
-      controllerRef.current = null
     }
   }
 
-  const stopTest = () => {
-    if (!controllerRef.current) return
-    controllerRef.current.abort()
-    controllerRef.current = null
-  }
+  const buttonLabel = !isRunning
+    ? 'Start Test'
+    : phase === 'ping'
+      ? 'Pinging...'
+      : phase === 'download'
+        ? 'Downloading...'
+        : phase === 'upload'
+          ? 'Uploading...'
+          : 'Running...'
 
   return (
-    <div className="mx-auto max-w-5xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+    <div className="mx-auto max-w-5xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -178,61 +214,43 @@ function InternetSpeed({ tool }) {
       <FeatureHeader
         tool={tool}
         subtitle="Client-side speed test powered by Cloudflare endpoints."
-        rightSlot={(
-          <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${error ? 'border-red-200 bg-red-100 text-red-700 dark:border-red-400/50 dark:bg-red-900/40 dark:text-red-200' : 'border-sky-200 bg-sky-100 text-sky-700 dark:border-sky-400/50 dark:bg-sky-900/40 dark:text-sky-200'}`}>
-            {isRunning ? 'Running' : error ? 'Paused' : 'Ready'}
-          </div>
-        )}
       />
 
       {error ? (
-        <div className="mb-4 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{error}</div>
+        <div className="mb-4 rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{error}</div>
       ) : null}
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
-        <div className="rounded-2xl border p-5 animate-rise border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_18px_40px_rgba(15,23,42,0.35)]" style={{ animationDelay: '0ms' }}>
-          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Download</div>
-          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-slate-50">{formatMbps(downloadMbps)}</div>
-          <div className="text-sm text-slate-600 dark:text-slate-300">Mbps</div>
-          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">Payload: {DOWNLOAD_SIZES.map(formatBytes).join(' + ')}</div>
+        <div className="rounded-2xl border p-5 animate-rise border-white/10 bg-slate-950/70 shadow-[0_18px_40px_rgba(15,23,42,0.35)]" style={{ animationDelay: '0ms' }}>
+          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">Download</div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-50">{formatMbps(downloadMbps)}</div>
+          <div className="text-sm text-slate-300">Mbps</div>
         </div>
 
-        <div className="rounded-2xl border p-5 animate-rise border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_18px_40px_rgba(15,23,42,0.35)]" style={{ animationDelay: '80ms' }}>
-          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Upload</div>
-          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-slate-50">{formatMbps(uploadMbps)}</div>
-          <div className="text-sm text-slate-600 dark:text-slate-300">Mbps</div>
-          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">Payload: {UPLOAD_SIZES.map(formatBytes).join(' + ')}</div>
+        <div className="rounded-2xl border p-5 animate-rise border-white/10 bg-slate-950/70 shadow-[0_18px_40px_rgba(15,23,42,0.35)]" style={{ animationDelay: '80ms' }}>
+          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">Upload</div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-50">{formatMbps(uploadMbps)}</div>
+          <div className="text-sm text-slate-300">Mbps</div>
         </div>
 
-        <div className="rounded-2xl border p-5 animate-rise border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_18px_40px_rgba(15,23,42,0.35)]" style={{ animationDelay: '160ms' }}>
-          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Status</div>
-          <div className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-slate-50">
-            {phase === 'download' ? 'Downloading' : phase === 'upload' ? 'Uploading' : phase === 'done' ? 'Complete' : 'Idle'}
-          </div>
-          <div className="text-sm text-slate-600 dark:text-slate-300">{lastRun ? `Last run: ${lastRun.toLocaleTimeString()}` : 'Not run yet'}</div>
-          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">Endpoint: speed.cloudflare.com</div>
+        <div className="rounded-2xl border p-5 animate-rise border-white/10 bg-slate-950/70 shadow-[0_18px_40px_rgba(15,23,42,0.35)]" style={{ animationDelay: '160ms' }}>
+          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">Ping</div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-50">{formatMs(pingMs)}</div>
+          <div className="text-sm text-slate-300">ms</div>
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <button className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400" type="button" onClick={runTest} disabled={isRunning}>
-          {isRunning ? 'Running...' : 'Start Speed Test'}
+      <div className="mt-6 flex justify-center">
+        <button className="rounded-lg bg-blue-600 px-8 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400" type="button" onClick={runTest} disabled={isRunning}>
+          {buttonLabel}
         </button>
-        <button className="rounded-lg border px-4 py-2 text-sm font-semibold transition border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-400/40 dark:bg-slate-400/15 dark:text-slate-200 dark:hover:bg-slate-400/25 disabled:cursor-not-allowed disabled:text-slate-400 dark:disabled:text-slate-500" type="button" onClick={stopTest} disabled={!isRunning}>
-          Stop
-        </button>
-        <span className="text-xs text-slate-500 dark:text-slate-400">Runs fully in the browser. No backend traffic is used.</span>
       </div>
 
-      {isRunning ? (
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700/40">
+      {isRunning || progress > 0 ? (
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-700/40">
           <div className="h-full bg-gradient-to-r from-sky-400 via-cyan-400 to-fuchsia-500" style={{ width: `${Math.round(progress * 100)}%` }}></div>
         </div>
       ) : null}
-
-      <div className="mt-6 text-xs text-slate-500 dark:text-slate-400">
-        Download endpoint: {DOWNLOAD_ENDPOINT}. Upload endpoint: {UPLOAD_ENDPOINT}.
-      </div>
     </div>
   )
 }

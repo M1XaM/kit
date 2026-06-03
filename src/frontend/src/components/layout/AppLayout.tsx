@@ -6,40 +6,23 @@ import NotFound from './NotFound'
 import ToolView from '../features/ToolView'
 import { FavoritesProvider } from '../../state/favorites'
 
-type ThemeMode = 'light' | 'dark'
-
 const FOOTER_REPO_URL = 'https://github.com/M1XaM/kit'
 const FOOTER_AUTHOR_NAME = 'Isacescu Maxim'
-const THEME_STORAGE_KEY = 'kit-theme'
-
-const getInitialTheme = (): ThemeMode => {
-  if (typeof window === 'undefined') return 'dark'
-  try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY)
-    if (stored === 'light' || stored === 'dark') return stored
-  } catch {}
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-    return 'light'
-  }
-  return 'dark'
-}
 
 type HeaderBarProps = {
-  isDark: boolean
   status: string
-  onToggleTheme: () => void
 }
 
-function HeaderBar({ isDark, status, onToggleTheme }: HeaderBarProps) {
-  const pillClass = 'inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[0.95rem] transition border-slate-300 bg-white text-slate-600 shadow-sm hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:text-blue-300 dark:shadow-none dark:hover:border-white/20 dark:hover:bg-white/10'
+function HeaderBar({ status }: HeaderBarProps) {
+  const pillClass = 'inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[0.95rem] transition border-white/10 bg-white/5 text-blue-300 hover:border-white/20 hover:bg-white/10'
   const statusDotClass = status === 'Connected'
-    ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)] animate-pulse dark:bg-blue-400 dark:shadow-[0_0_8px_rgba(96,165,250,0.9)]'
-    : 'bg-slate-400 shadow-[0_0_6px_rgba(148,163,184,0.6)] dark:bg-slate-500 dark:shadow-[0_0_8px_rgba(100,116,139,0.6)]'
-  const soonBadgeClass = 'rounded-full border px-2 py-0.5 text-[0.7rem] font-semibold tracking-wide border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-400/50 dark:bg-blue-600/30 dark:text-blue-200'
-  const tooltipClass = 'border-slate-300 bg-white text-slate-600 shadow-lg dark:border-blue-400/40 dark:bg-slate-950/95 dark:text-blue-200 dark:shadow-none'
+    ? 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.9)] animate-pulse'
+    : 'bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.6)]'
+  const soonBadgeClass = 'rounded-full border px-2 py-0.5 text-[0.7rem] font-semibold tracking-wide border-blue-400/50 bg-blue-600/30 text-blue-200'
+  const tooltipClass = 'border-blue-400/40 bg-slate-950/95 text-blue-200'
 
   return (
-    <div className="sticky top-0 z-20 flex flex-col gap-2 border-b px-6 py-2 text-sm backdrop-blur md:flex-row md:items-center md:justify-between border-slate-300 bg-white/80 text-slate-600 shadow-sm dark:border-white/10 dark:bg-black/80 dark:text-slate-400 dark:shadow-none">
+    <div className="sticky top-0 z-20 flex flex-col gap-2 border-b px-6 py-2 text-sm backdrop-blur md:flex-row md:items-center md:justify-between border-white/10 bg-black/80 text-slate-400">
       <div className="flex flex-wrap items-center gap-3">
         <p className={pillClass}>
           Drag <a href="kit://start" className="underline decoration-slate-400 text-current">Kit</a> to your bookmarks!
@@ -50,10 +33,6 @@ function HeaderBar({ isDark, status, onToggleTheme }: HeaderBarProps) {
         </a>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <a href="https://m1xam.github.io/kit/" className={pillClass}>Landing page</a>
-        <button type="button" className={pillClass} onClick={onToggleTheme} aria-pressed={isDark}>
-          Theme: {isDark ? 'Dark' : 'Light'}
-        </button>
         <div className="relative group">
           <div className={`${pillClass} cursor-default`}>
             <span className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${statusDotClass}`}></span>
@@ -70,17 +49,7 @@ function HeaderBar({ isDark, status, onToggleTheme }: HeaderBarProps) {
 
 function AppLayout() {
   const location = useLocation()
-  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme)
   const [status, setStatus] = useState('Connecting...')
-
-  useEffect(() => {
-    const themeClass = theme === 'light' ? 'theme-light' : 'theme-dark'
-    document.body.classList.remove('theme-light', 'theme-dark')
-    document.body.classList.add(themeClass)
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme)
-    } catch {}
-  }, [theme])
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -127,17 +96,16 @@ function AppLayout() {
   }, [])
 
   const showFooter = location.pathname === '/'
-  const isDark = theme === 'dark'
-  const gridColor = isDark ? 'rgba(255,255,255,0.02)' : 'rgba(15,23,42,0.06)'
+  const gridColor = 'rgba(255,255,255,0.02)'
 
   return (
     <div className="relative min-h-screen flex flex-col">
-      <HeaderBar isDark={isDark} status={status} onToggleTheme={() => setTheme(isDark ? 'light' : 'dark')} />
+      <HeaderBar status={status} />
 
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute -top-28 left-1/2 h-[520px] w-[min(1000px,90vw)] -translate-x-1/2 rounded-full bg-sky-200/40 dark:bg-blue-500/15 blur-[150px]" />
+        <div className="absolute -top-28 left-1/2 h-[520px] w-[min(1000px,90vw)] -translate-x-1/2 rounded-full bg-blue-500/15 blur-[150px]" />
         <div
-          className="absolute inset-0 opacity-50 dark:opacity-70"
+          className="absolute inset-0 opacity-70"
           style={{
             backgroundImage: `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`,
             backgroundSize: '40px 40px'

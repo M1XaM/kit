@@ -11,12 +11,7 @@
   }
 
   body {
-    @apply m-0 min-h-screen overflow-x-hidden p-0 font-sans bg-slate-100 text-slate-900;
-    color-scheme: light;
-  }
-
-  body.theme-dark {
-    @apply bg-black text-white;
+    @apply m-0 min-h-screen overflow-x-hidden p-0 font-sans bg-black text-white;
     color-scheme: dark;
   }
 

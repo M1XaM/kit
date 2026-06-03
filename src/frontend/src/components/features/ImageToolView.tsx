@@ -9,8 +9,8 @@ type ImageToolViewProps = {
 
 const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, '')
 
-const labelClass = 'mb-1.5 block text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400'
-const inputClass = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white'
+const labelClass = 'mb-1.5 block text-xs uppercase tracking-[0.12em] text-slate-400'
+const inputClass = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white'
 
 // Per-filter amount metadata: slider bounds, default and a human label.
 const FILTERS: Record<string, { label: string; amount?: { min: number; max: number; step: number; default: number; suffix: string } }> = {
@@ -70,10 +70,10 @@ function ImageToolView({ tool }: ImageToolViewProps) {
 
   const dropZoneClass = useMemo(
     () =>
-      `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition text-slate-500 dark:text-slate-400 ${
+      `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition text-slate-400 ${
         dragActive
-          ? 'border-blue-400 bg-blue-50 text-slate-900 dark:border-blue-400/70 dark:bg-blue-600/20 dark:text-slate-200'
-          : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:hover:border-white/30 dark:hover:bg-white/5'
+          ? 'border-blue-400/70 bg-blue-600/20 text-slate-200'
+          : 'border-white/20 hover:border-white/30 hover:bg-white/5'
       }`,
     [dragActive]
   )
@@ -177,8 +177,8 @@ function ImageToolView({ tool }: ImageToolViewProps) {
     ((tool.id === 'resize-image' || tool.id === 'image-filters') && (format === 'jpeg' || format === 'jpg'))
 
   return (
-    <div className="mx-auto max-w-xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+    <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -189,7 +189,7 @@ function ImageToolView({ tool }: ImageToolViewProps) {
       <FeatureHeader tool={tool} subtitle="Processed by the local Go engine — large images stay off the browser's memory budget." />
 
       {errorMessage && (
-        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>
+        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{errorMessage}</div>
       )}
 
       <form className="mt-6 flex flex-col gap-5" onSubmit={handleSubmit}>
@@ -208,8 +208,8 @@ function ImageToolView({ tool }: ImageToolViewProps) {
               <polyline points="21 15 16 10 5 21"></polyline>
             </svg>
           )}
-          <div className="text-sm text-slate-700 dark:text-slate-200">{file ? file.name : 'Drag and drop an image here'}</div>
-          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">or click to choose an image</div>
+          <div className="text-sm text-slate-200">{file ? file.name : 'Drag and drop an image here'}</div>
+          <div className="mt-2 text-xs text-slate-400">or click to choose an image</div>
           <input
             type="file"
             accept="image/*"
@@ -281,11 +281,11 @@ function ImageToolView({ tool }: ImageToolViewProps) {
             <div>
               <label className={labelClass}>Border color</label>
               <div className="flex items-center gap-3">
-                <input type="color" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} disabled={isProcessing} className="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 bg-white dark:border-slate-800 dark:bg-slate-900/70" />
+                <input type="color" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} disabled={isProcessing} className="h-10 w-14 cursor-pointer rounded-lg border border-slate-800 bg-slate-900/70" />
                 <input className={inputClass} type="text" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} disabled={isProcessing} />
               </div>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Output is PNG so rounded corners stay transparent.</p>
+            <p className="text-xs text-slate-400">Output is PNG so rounded corners stay transparent.</p>
           </div>
         )}
 
@@ -346,7 +346,7 @@ function ImageToolView({ tool }: ImageToolViewProps) {
         )}
 
         <button
-          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
           type="submit"
           disabled={isProcessing || !file}
         >

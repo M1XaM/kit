@@ -142,8 +142,8 @@ const encodeMp3 = (buffer: AudioBuffer, kbps: number): Blob => {
   return new Blob(chunks as BlobPart[], { type: 'audio/mpeg' })
 }
 
-const labelClass = 'mb-1.5 block text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400'
-const inputClass = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white'
+const labelClass = 'mb-1.5 block text-xs uppercase tracking-[0.12em] text-slate-400'
+const inputClass = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white'
 
 function MergeAudioView({ tool }: MergeAudioViewProps) {
   const [tracks, setTracks] = useState<Track[]>([])
@@ -307,20 +307,20 @@ function MergeAudioView({ tool }: MergeAudioViewProps) {
 
   const dropZoneClass = useMemo(
     () =>
-      `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition text-slate-500 dark:text-slate-400 ${
+      `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition text-slate-400 ${
         dragActive
-          ? 'border-blue-400 bg-blue-50 text-slate-900 dark:border-blue-400/70 dark:bg-blue-600/20 dark:text-slate-200'
-          : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:hover:border-white/30 dark:hover:bg-white/5'
+          ? 'border-blue-400/70 bg-blue-600/20 text-slate-200'
+          : 'border-white/20 hover:border-white/30 hover:bg-white/5'
       }`,
     [dragActive]
   )
 
   const moveBtnClass =
-    'rounded-md border px-2 py-1 text-xs font-semibold transition border-slate-300 bg-white text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'
+    'rounded-md border px-2 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'
 
   return (
-    <div className="mx-auto max-w-2xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+    <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -331,7 +331,7 @@ function MergeAudioView({ tool }: MergeAudioViewProps) {
       <FeatureHeader tool={tool} subtitle="Preview, reorder, and combine audio files into one — entirely in your browser, no uploads." />
 
       {errorMessage && (
-        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>
+        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{errorMessage}</div>
       )}
 
       <div className="mt-6 flex flex-col gap-5">
@@ -346,27 +346,27 @@ function MergeAudioView({ tool }: MergeAudioViewProps) {
             <circle cx="6" cy="18" r="3"></circle>
             <circle cx="18" cy="16" r="3"></circle>
           </svg>
-          <div className="text-sm text-slate-700 dark:text-slate-200">Drag and drop audio files here</div>
-          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">or click to add — MP3, WAV, OGG, M4A, FLAC…</div>
+          <div className="text-sm text-slate-200">Drag and drop audio files here</div>
+          <div className="mt-1 text-xs text-slate-400">or click to add — MP3, WAV, OGG, M4A, FLAC…</div>
           <input type="file" accept="audio/*" multiple disabled={isProcessing} onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} className="hidden" />
         </label>
 
         {tracks.length > 0 && (
           <div className="flex flex-col gap-3">
             {tracks.map((track, index) => (
-              <div key={track.id} className="rounded-xl border p-3 border-slate-300 bg-slate-50 dark:border-white/10 dark:bg-slate-950/50">
+              <div key={track.id} className="rounded-xl border p-3 border-white/10 bg-slate-950/50">
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col gap-1">
                     <button type="button" className={moveBtnClass} onClick={() => moveTrack(index, -1)} disabled={isProcessing || index === 0} aria-label="Move up">▲</button>
                     <button type="button" className={moveBtnClass} onClick={() => moveTrack(index, 1)} disabled={isProcessing || index === tracks.length - 1} aria-label="Move down">▼</button>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100" title={track.name}>
+                    <div className="truncate text-sm font-semibold text-slate-100" title={track.name}>
                       <span className="mr-1 text-slate-400">{index + 1}.</span>{track.name}
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                    <div className="text-xs text-slate-400">
                       {track.status === 'decoding' && 'Decoding…'}
-                      {track.status === 'error' && <span className="text-red-600 dark:text-red-300">Could not decode — will be skipped</span>}
+                      {track.status === 'error' && <span className="text-red-300">Could not decode — will be skipped</span>}
                       {track.status === 'ready' && `${formatTime(track.durationMs)} · ${formatBytes(track.size)}`}
                     </div>
                   </div>
@@ -374,7 +374,7 @@ function MergeAudioView({ tool }: MergeAudioViewProps) {
                     type="button"
                     onClick={() => removeTrack(track.id)}
                     disabled={isProcessing}
-                    className="rounded-md border px-2 py-1 text-xs font-semibold transition border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-white/15 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+                    className="rounded-md border px-2 py-1 text-xs font-semibold transition border-white/15 bg-white/5 text-slate-300 hover:bg-white/10"
                   >
                     Remove
                   </button>
@@ -421,7 +421,7 @@ function MergeAudioView({ tool }: MergeAudioViewProps) {
           type="button"
           onClick={mergeAndExport}
           disabled={isProcessing || readyTracks.length < 2}
-          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
         >
           {isProcessing
             ? 'Merging…'
@@ -429,15 +429,15 @@ function MergeAudioView({ tool }: MergeAudioViewProps) {
         </button>
 
         {readyTracks.length < 2 && tracks.length > 0 && decodingCount === 0 && (
-          <p className="text-center text-xs text-slate-500 dark:text-slate-400">Add at least two playable files to enable merging.</p>
+          <p className="text-center text-xs text-slate-400">Add at least two playable files to enable merging.</p>
         )}
 
         {result && (
-          <div className="rounded-2xl border p-5 border-emerald-300 bg-emerald-50 dark:border-emerald-400/40 dark:bg-emerald-900/20">
+          <div className="rounded-2xl border p-5 border-emerald-400/40 bg-emerald-900/20">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{result.name}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
+                <div className="text-sm font-semibold text-slate-100">{result.name}</div>
+                <div className="text-xs text-slate-400">
                   {formatTime(result.durationMs)} · {formatBytes(result.size)} · {result.format.toUpperCase()}
                 </div>
               </div>
@@ -445,7 +445,7 @@ function MergeAudioView({ tool }: MergeAudioViewProps) {
                 <a className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700" href={result.url} download={result.name}>
                   Download
                 </a>
-                <button type="button" onClick={startOver} className="rounded-lg border px-3 py-2 text-xs font-semibold transition border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-white/15 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10">
+                <button type="button" onClick={startOver} className="rounded-lg border px-3 py-2 text-xs font-semibold transition border-white/15 bg-white/5 text-slate-300 hover:bg-white/10">
                   Clear result
                 </button>
               </div>
