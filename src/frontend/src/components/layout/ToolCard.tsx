@@ -11,19 +11,19 @@ function ToolCard({ tool, onNavigate }: ToolCardProps) {
   const Icon = tool.icon
   const favorite = isFavorite(tool.id)
   const favoriteClass = favorite
-    ? 'border-amber-400/70 bg-amber-400/20 text-amber-300'
-    : 'border-white/20 bg-white/5 text-slate-500'
+    ? 'border-amber-300 bg-amber-100 text-amber-600 dark:border-amber-400/70 dark:bg-amber-400/20 dark:text-amber-300'
+    : 'border-slate-300 bg-slate-50 text-slate-400 dark:border-white/20 dark:bg-white/5 dark:text-slate-500'
 
   return (
     <div
-      className="relative flex h-full min-h-[240px] cursor-pointer flex-col rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10"
+      className="relative flex h-full min-h-[240px] cursor-pointer flex-col rounded-2xl border p-5 transition hover:-translate-y-0.5 border-slate-300 bg-white shadow-md hover:border-slate-300 hover:shadow-lg dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none dark:hover:border-white/20 dark:hover:bg-white/10"
       onClick={() => onNavigate(tool.id)}
     >
       <div className="absolute right-3 top-3 flex items-center gap-2">
         {tool.comingSoon && (
           <button
             type="button"
-            className="rounded-full border border-blue-400/50 bg-blue-600/30 px-2.5 py-1 text-[0.7rem] font-semibold tracking-wide text-blue-200"
+            className="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold tracking-wide border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-400/50 dark:bg-blue-600/30 dark:text-blue-200"
             aria-label={`${tool.title} is coming soon`}
             title="Coming soon"
             onClick={(event) => {
@@ -52,8 +52,8 @@ function ToolCard({ tool, onNavigate }: ToolCardProps) {
       <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg ${tool.colorClass}`}>
         {Icon ? <Icon /> : null}
       </div>
-      <h3 className="mb-2 text-base font-semibold text-slate-50">{tool.title}</h3>
-      <p className="text-sm text-slate-400 leading-relaxed line-clamp-3">{tool.description}</p>
+      <h3 className="mb-2 text-base font-semibold text-slate-900 dark:text-slate-50">{tool.title}</h3>
+      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3">{tool.description}</p>
     </div>
   )
 }

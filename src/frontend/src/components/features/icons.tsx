@@ -103,5 +103,99 @@ export const ICONS = {
       <line x1="12" y1="13" x2="16" y2="9"></line>
       <circle cx="12" cy="13" r="1"></circle>
     </svg>
+  ),
+  lock: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    </svg>
+  ),
+  scissors: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="6" r="2.5"></circle>
+      <circle cx="6" cy="18" r="2.5"></circle>
+      <line x1="8.5" y1="7.5" x2="20" y2="19"></line>
+      <line x1="8.5" y1="16.5" x2="20" y2="5"></line>
+    </svg>
+  ),
+  swap: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 4 23 10 17 10"></polyline>
+      <polyline points="1 20 1 14 7 14"></polyline>
+      <path d="M3.5 9a9 9 0 0 1 15-3"></path>
+      <path d="M20.5 15a9 9 0 0 1-15 3"></path>
+    </svg>
+  ),
+  compress: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 3 9 9 3 9"></polyline>
+      <polyline points="15 21 15 15 21 15"></polyline>
+      <polyline points="15 3 15 9 21 9"></polyline>
+      <polyline points="9 21 9 15 3 15"></polyline>
+    </svg>
+  ),
+  crop: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
+      <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+    </svg>
+  ),
+  layers: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+      <polyline points="2 12 12 17 22 12"></polyline>
+      <polyline points="2 17 12 22 22 17"></polyline>
+    </svg>
+  ),
+  sliders: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="21" x2="4" y2="14"></line>
+      <line x1="4" y1="10" x2="4" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="12"></line>
+      <line x1="12" y1="8" x2="12" y2="3"></line>
+      <line x1="20" y1="21" x2="20" y2="16"></line>
+      <line x1="20" y1="12" x2="20" y2="3"></line>
+      <line x1="1" y1="14" x2="7" y2="14"></line>
+      <line x1="9" y1="8" x2="15" y2="8"></line>
+      <line x1="17" y1="16" x2="23" y2="16"></line>
+    </svg>
+  ),
+  rotate: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="1 4 1 10 7 10"></polyline>
+      <path d="M3.5 15a7 7 0 1 0 2.5-9"></path>
+    </svg>
+  ),
+  trash: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+      <path d="M10 11v6"></path>
+      <path d="M14 11v6"></path>
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+    </svg>
+  ),
+  sparkles: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m12 2 1.8 4.6 4.9.4-3.8 3.1 1.2 4.8L12 12.9 7.9 14.9 9.1 10.1 5.3 7 10.2 6.6z"></path>
+      <circle cx="18" cy="18" r="1"></circle>
+      <circle cx="6" cy="16" r="1"></circle>
+    </svg>
+  ),
+  grid: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+      <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+      <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+      <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+    </svg>
+  ),
+  palette: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2a10 10 0 0 0-4 19.2 2 2 0 0 0 2.4-1.4 2 2 0 0 1 2-1.4h1.5a4 4 0 0 0 0-8H12a2 2 0 0 1 0-4z"></path>
+      <circle cx="7" cy="10" r="1"></circle>
+      <circle cx="10" cy="7" r="1"></circle>
+      <circle cx="15" cy="7" r="1"></circle>
+    </svg>
   )
 }

@@ -1,20 +1,24 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
-func main() {
-	showTerm := flag.Bool("term", true, "Show terminal with logs when launched via URL scheme")
-	flag.Parse()
+var withTerminal = "false"
 
-	registerCustomScheme(*showTerm)
+func terminalEnabled() bool {
+	return strings.EqualFold(withTerminal, "true")
+}
+
+func main() {
+	showTerm := terminalEnabled()
+	registerCustomScheme(showTerm)
 
 	basePort := 8080
 	port := strconv.Itoa(basePort)

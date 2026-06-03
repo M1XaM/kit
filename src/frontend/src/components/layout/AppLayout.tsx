@@ -31,29 +31,15 @@ type HeaderBarProps = {
 }
 
 function HeaderBar({ isDark, status, onToggleTheme }: HeaderBarProps) {
-  const pillClass = `inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[0.95rem] transition ${
-    isDark
-      ? 'border-white/10 bg-white/5 text-blue-300 hover:border-white/20 hover:bg-white/10'
-      : 'border-slate-200/80 bg-white text-slate-600 shadow-sm hover:border-slate-300'
-  }`
+  const pillClass = 'inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[0.95rem] transition border-slate-300 bg-white text-slate-600 shadow-sm hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:text-blue-300 dark:shadow-none dark:hover:border-white/20 dark:hover:bg-white/10'
   const statusDotClass = status === 'Connected'
-    ? isDark
-      ? 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.9)] animate-pulse'
-      : 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)] animate-pulse'
-    : isDark
-      ? 'bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.6)]'
-      : 'bg-slate-400 shadow-[0_0_6px_rgba(148,163,184,0.6)]'
-  const soonBadgeClass = isDark
-    ? 'rounded-full border border-blue-400/50 bg-blue-600/30 px-2 py-0.5 text-[0.7rem] font-semibold tracking-wide text-blue-200'
-    : 'rounded-full border border-blue-200 bg-blue-100 px-2 py-0.5 text-[0.7rem] font-semibold tracking-wide text-blue-700'
-  const tooltipClass = isDark
-    ? 'border-blue-400/40 bg-slate-950/95 text-blue-200'
-    : 'border-slate-200 bg-white text-slate-600'
+    ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)] animate-pulse dark:bg-blue-400 dark:shadow-[0_0_8px_rgba(96,165,250,0.9)]'
+    : 'bg-slate-400 shadow-[0_0_6px_rgba(148,163,184,0.6)] dark:bg-slate-500 dark:shadow-[0_0_8px_rgba(100,116,139,0.6)]'
+  const soonBadgeClass = 'rounded-full border px-2 py-0.5 text-[0.7rem] font-semibold tracking-wide border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-400/50 dark:bg-blue-600/30 dark:text-blue-200'
+  const tooltipClass = 'border-slate-300 bg-white text-slate-600 shadow-lg dark:border-blue-400/40 dark:bg-slate-950/95 dark:text-blue-200 dark:shadow-none'
 
   return (
-    <div className={`sticky top-0 z-20 flex flex-col gap-2 border-b px-6 py-2 text-sm backdrop-blur md:flex-row md:items-center md:justify-between ${
-      isDark ? 'border-white/10 bg-black/80 text-slate-400' : 'border-slate-200 bg-white/80 text-slate-600'
-    }`}>
+    <div className="sticky top-0 z-20 flex flex-col gap-2 border-b px-6 py-2 text-sm backdrop-blur md:flex-row md:items-center md:justify-between border-slate-300 bg-white/80 text-slate-600 shadow-sm dark:border-white/10 dark:bg-black/80 dark:text-slate-400 dark:shadow-none">
       <div className="flex flex-wrap items-center gap-3">
         <p className={pillClass}>
           Drag <a href="kit://start" className="underline decoration-slate-400 text-current">Kit</a> to your bookmarks!
@@ -149,9 +135,9 @@ function AppLayout() {
       <HeaderBar isDark={isDark} status={status} onToggleTheme={() => setTheme(isDark ? 'light' : 'dark')} />
 
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className={`absolute -top-28 left-1/2 h-[520px] w-[min(1000px,90vw)] -translate-x-1/2 rounded-full ${isDark ? 'bg-blue-500/15' : 'bg-sky-200/70'} blur-[150px]`} />
+        <div className="absolute -top-28 left-1/2 h-[520px] w-[min(1000px,90vw)] -translate-x-1/2 rounded-full bg-sky-200/40 dark:bg-blue-500/15 blur-[150px]" />
         <div
-          className={`absolute inset-0 ${isDark ? 'opacity-70' : 'opacity-50'}`}
+          className="absolute inset-0 opacity-50 dark:opacity-70"
           style={{
             backgroundImage: `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`,
             backgroundSize: '40px 40px'
@@ -159,8 +145,8 @@ function AppLayout() {
         />
       </div>
 
-      <main className="relative z-10 flex-1">
-        <div className="container mx-auto max-w-6xl px-5 pb-10 pt-12">
+      <main className="relative z-10 flex-1 flex flex-col">
+        <div className="container mx-auto max-w-6xl px-5 pb-10 pt-12 flex-1">
           <FavoritesProvider>
             <Routes>
               <Route path="/" element={<HomeGrid />} />
@@ -169,15 +155,13 @@ function AppLayout() {
             </Routes>
           </FavoritesProvider>
         </div>
-      </main>
 
-      {showFooter && (
-        <div className="relative z-10 mt-auto">
-          <div className="container mx-auto max-w-6xl px-5 pb-8">
+        {showFooter && (
+          <div className="container mx-auto max-w-6xl px-5 pb-8 mt-auto">
             <Footer repoUrl={FOOTER_REPO_URL} authorName={FOOTER_AUTHOR_NAME} />
           </div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   )
 }

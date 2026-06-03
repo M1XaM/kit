@@ -19,6 +19,7 @@ RUN npm run build
 # ==========================================
 FROM golang:alpine AS backend
 ARG TARGET_OS=all
+ARG WITH_TERMINAL=false
 WORKDIR /app
 
 # Ensure correct CGO state for pure static cross-compilation
@@ -46,21 +47,27 @@ RUN for os in $TARGET_OS; do \
 # Linux
 RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " linux "; then \
 			mkdir -p /out/linux; \
-			GOOS=linux GOARCH=amd64 go build -o /out/linux/kit ./backend; \
+			LDFLAGS=""; \
+			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="-ldflags=-X=main.withTerminal=true"; fi; \
+			GOOS=linux GOARCH=amd64 go build $LDFLAGS -o /out/linux/kit ./backend; \
 			GOOS=linux GOARCH=amd64 go build -o /out/linux/delete-kit ./uninstall/main.go; \
 		fi
 
 # Windows
 RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " windows "; then \
 			mkdir -p /out/windows; \
-			GOOS=windows GOARCH=amd64 go build -o /out/windows/kit.exe ./backend; \
+			LDFLAGS=""; \
+			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="-ldflags=-X=main.withTerminal=true"; fi; \
+			GOOS=windows GOARCH=amd64 go build $LDFLAGS -o /out/windows/kit.exe ./backend; \
 			GOOS=windows GOARCH=amd64 go build -o /out/windows/delete-kit.exe ./uninstall/main.go; \
 		fi
 
 # macOS (Apple Silicon)
 RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " macos "; then \
 			mkdir -p /out/macos; \
-			GOOS=darwin GOARCH=arm64 go build -o /out/macos/kit ./backend; \
+			LDFLAGS=""; \
+			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="-ldflags=-X=main.withTerminal=true"; fi; \
+			GOOS=darwin GOARCH=arm64 go build $LDFLAGS -o /out/macos/kit ./backend; \
 			GOOS=darwin GOARCH=arm64 go build -o /out/macos/delete-kit ./uninstall/main.go; \
 		fi
 

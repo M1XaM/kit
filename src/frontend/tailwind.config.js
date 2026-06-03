@@ -1,5 +1,6 @@
 export default {
   content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+  darkMode: ['selector', '.theme-dark'],
   theme: {
     extend: {
       keyframes: {
