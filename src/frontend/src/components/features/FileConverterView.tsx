@@ -27,10 +27,10 @@ function FileConverterView({ tool }: FileConverterViewProps) {
 
   const dropZoneClass = useMemo(
     () =>
-      `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition text-slate-500 dark:text-slate-400 ${
+      `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition text-slate-400 ${
         dragActive
-          ? 'border-blue-400 bg-blue-50 text-slate-900 dark:border-blue-400/70 dark:bg-blue-600/20 dark:text-slate-200'
-          : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:hover:border-white/30 dark:hover:bg-white/5'
+          ? 'border-blue-400/70 bg-blue-600/20 text-slate-200'
+          : 'border-white/20 hover:border-white/30 hover:bg-white/5'
       }`,
     [dragActive]
   )
@@ -127,8 +127,8 @@ function FileConverterView({ tool }: FileConverterViewProps) {
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+    <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -138,7 +138,7 @@ function FileConverterView({ tool }: FileConverterViewProps) {
 
       <FeatureHeader tool={tool} subtitle="Convert images to a PDF and back, locally on your machine." />
 
-      <div className="mt-6 inline-flex rounded-lg border border-slate-300 bg-slate-100 p-1 dark:border-white/10 dark:bg-white/5">
+      <div className="mt-6 inline-flex rounded-lg border p-1 border-white/10 bg-white/5">
         {MODES.map((option) => (
           <button
             key={option.value}
@@ -147,7 +147,7 @@ function FileConverterView({ tool }: FileConverterViewProps) {
             className={`rounded-md px-4 py-1.5 text-sm font-semibold transition ${
               mode === option.value
                 ? 'bg-blue-600 text-white'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                : 'text-slate-300 hover:text-white'
             }`}
           >
             {option.label}
@@ -156,7 +156,7 @@ function FileConverterView({ tool }: FileConverterViewProps) {
       </div>
 
       {errorMessage && (
-        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>
+        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{errorMessage}</div>
       )}
 
       <form className="mt-6 flex flex-col gap-5" onSubmit={handleSubmit}>
@@ -166,7 +166,7 @@ function FileConverterView({ tool }: FileConverterViewProps) {
             <polyline points="17 8 12 3 7 8"></polyline>
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
-          <div className="text-sm text-slate-700 dark:text-slate-200">
+          <div className="text-sm text-slate-200">
             {selectedFiles.length
               ? isImageToPdf
                 ? `${selectedFiles.length} image${selectedFiles.length === 1 ? '' : 's'} selected`
@@ -175,7 +175,7 @@ function FileConverterView({ tool }: FileConverterViewProps) {
                 ? 'Drag and drop images here'
                 : 'Drag and drop a PDF here'}
           </div>
-          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">or click to choose {isImageToPdf ? 'images' : 'a file'}</div>
+          <div className="mt-2 text-xs text-slate-400">or click to choose {isImageToPdf ? 'images' : 'a file'}</div>
           <input
             type="file"
             accept={isImageToPdf ? 'image/*' : 'application/pdf'}
@@ -190,7 +190,7 @@ function FileConverterView({ tool }: FileConverterViewProps) {
         {isImageToPdf && selectedFiles.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {selectedFiles.map((file, index) => (
-              <span key={`${file.name}-${index}`} className="rounded-full border px-3 py-1 text-xs border-slate-300 bg-slate-100 text-slate-700 dark:border-white/20 dark:bg-slate-900/60 dark:text-slate-200">
+              <span key={`${file.name}-${index}`} className="rounded-full border px-3 py-1 text-xs border-white/20 bg-slate-900/60 text-slate-200">
                 {index + 1}. {file.name}
               </span>
             ))}
@@ -198,13 +198,13 @@ function FileConverterView({ tool }: FileConverterViewProps) {
         )}
 
         {!isImageToPdf && (
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="text-xs text-slate-400">
             Extracts images embedded in the PDF (works great for PDFs built from images). Text or vector-only pages contain no embedded images to extract.
           </div>
         )}
 
         <button
-          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
           type="submit"
           disabled={isProcessing || !selectedFiles.length}
         >

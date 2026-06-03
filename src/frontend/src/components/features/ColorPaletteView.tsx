@@ -143,8 +143,8 @@ function ColorPaletteView({ tool }: ColorPaletteViewProps) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+    <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -155,21 +155,21 @@ function ColorPaletteView({ tool }: ColorPaletteViewProps) {
       <FeatureHeader tool={tool} subtitle="Extract a dominant color palette in your browser — no upload needed." />
 
       {errorMessage && (
-        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>
+        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{errorMessage}</div>
       )}
 
-      <label className="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 p-8 text-center text-slate-500 transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:text-slate-400 dark:hover:border-white/30 dark:hover:bg-white/5">
-        <div className="text-sm text-slate-700 dark:text-slate-200">{fileName || 'Click to choose an image'}</div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">PNG, JPG, GIF, WebP…</div>
+      <label className="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition border-white/20 text-slate-400 hover:border-white/30 hover:bg-white/5">
+        <div className="text-sm text-slate-200">{fileName || 'Click to choose an image'}</div>
+        <div className="mt-1 text-xs text-slate-400">PNG, JPG, GIF, WebP…</div>
         <input type="file" accept="image/*" onChange={(e) => onPick(e.target.files)} className="hidden" />
       </label>
 
       {previewUrl && (
         <div className="mt-6 flex flex-col gap-5">
-          <img src={previewUrl} alt="Selected" className="mx-auto max-h-56 rounded-lg border border-slate-300 object-contain dark:border-white/15" />
+          <img src={previewUrl} alt="Selected" className="mx-auto max-h-56 rounded-lg border object-contain border-white/15" />
 
           <div>
-            <label className="mb-1.5 block text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Colors: {colorCount}</label>
+            <label className="mb-1.5 block text-xs uppercase tracking-[0.12em] text-slate-400">Colors: {colorCount}</label>
             <input
               type="range"
               min="3"
@@ -180,7 +180,7 @@ function ColorPaletteView({ tool }: ColorPaletteViewProps) {
             />
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-300 dark:border-white/15">
+          <div className="overflow-hidden rounded-xl border border-white/15">
             <div className="flex h-16">
               {palette.map((swatch) => (
                 <div key={swatch.hex} className="flex-1" style={{ backgroundColor: swatch.hex }} title={swatch.hex} />
@@ -194,10 +194,10 @@ function ColorPaletteView({ tool }: ColorPaletteViewProps) {
                 key={swatch.hex}
                 type="button"
                 onClick={() => copy(swatch.hex)}
-                className="flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition border-slate-300 bg-white hover:bg-slate-50 dark:border-white/15 dark:bg-white/5 dark:hover:bg-white/10"
+                className="flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition border-white/15 bg-white/5 hover:bg-white/10"
               >
                 <span className="h-6 w-6 shrink-0 rounded border border-black/10" style={{ backgroundColor: swatch.hex }} />
-                <span className="font-mono text-slate-700 dark:text-slate-200">{copied === swatch.hex ? 'Copied!' : swatch.hex}</span>
+                <span className="font-mono text-slate-200">{copied === swatch.hex ? 'Copied!' : swatch.hex}</span>
               </button>
             ))}
           </div>

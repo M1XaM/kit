@@ -49,11 +49,13 @@ func setupServer(port string) *http.Server {
 	setupAPI(mux, security, port)
 
 	return &http.Server{
-		Addr:              ":" + port,
-		Handler:           security.wrapRootHandler(mux),
+		Addr:    ":" + port,
+		Handler: security.wrapRootHandler(mux),
+		// ReadHeaderTimeout still guards against slow-header clients, but the
+		// body Read/Write timeouts are left unset: video uploads can be large
+		// and ffmpeg transcodes can run for minutes. Long-running handlers
+		// bound their own work via a context deadline (see ffmpegTimeout).
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      90 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    1 << 20,
 	}

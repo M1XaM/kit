@@ -17,6 +17,8 @@ import CropRotateFlipView from './CropRotateFlipView'
 import ColorPaletteView from './ColorPaletteView'
 import MergeAudioView from './MergeAudioView'
 import RecordVideoView from './RecordVideoView'
+import VideoToolView from './VideoToolView'
+import MergeVideoView from './MergeVideoView'
 import FeatureHeader from './FeatureHeader'
 
 function ToolView() {
@@ -55,7 +57,15 @@ function ToolView() {
     'text-encoding-convert': TextToolView,
     'record-audio': RecordAudioView,
     'merge-audio': MergeAudioView,
+    'adjust-audio': VideoToolView,
     'record-video': RecordVideoView,
+    'trim-video': VideoToolView,
+    'merge-video': MergeVideoView,
+    'split-video': VideoToolView,
+    'resize-video': VideoToolView,
+    'compress-video': VideoToolView,
+    'convert-video': VideoToolView,
+    'trim-audio': VideoToolView,
     'file-converter': FileConverterView,
     'resize-image': ImageToolView,
     'compress-image': ImageToolView,
@@ -143,8 +153,8 @@ function ToolView() {
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+    <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -158,13 +168,13 @@ function ToolView() {
       />
 
       <form className="mt-8 flex flex-col gap-5" onSubmit={handleProcess}>
-        <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed bg-transparent p-10 text-center transition border-slate-300 text-slate-500 hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:text-slate-400 dark:hover:border-white/30 dark:hover:bg-white/5">
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed bg-transparent p-10 text-center transition border-white/20 text-slate-400 hover:border-white/30 hover:bg-white/5">
           <svg className="mb-2" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="17 8 12 3 7 8"></polyline>
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
-          <div className="text-sm text-slate-700 dark:text-slate-200">{selectedFileName ? selectedFileName : 'Click or drag a file to upload'}</div>
+          <div className="text-sm text-slate-200">{selectedFileName ? selectedFileName : 'Click or drag a file to upload'}</div>
           <input
             type="file"
             accept={id === 'png-to-jpg' ? 'image/png' : id === 'split-pdf' ? 'application/pdf' : '*'}
@@ -176,12 +186,12 @@ function ToolView() {
         </label>
         {id === 'split-pdf' && (
           <div className="text-left">
-            <label className="mb-2 block text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Split mode</label>
+            <label className="mb-2 block text-xs uppercase tracking-[0.12em] text-slate-400">Split mode</label>
             <select
               value={splitMode}
               onChange={(event) => setSplitMode(event.target.value)}
               disabled={isProcessing}
-              className="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white"
+              className="w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white"
             >
               <option value="range">By range</option>
               <option value="per-page">Per page (ZIP)</option>
@@ -189,21 +199,21 @@ function ToolView() {
 
             {splitMode === 'range' && (
               <>
-                <label className="mb-2 mt-4 block text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Page range</label>
+                <label className="mb-2 mt-4 block text-xs uppercase tracking-[0.12em] text-slate-400">Page range</label>
                 <input
                   type="text"
                   value={splitRange}
                   onChange={(event) => setSplitRange(event.target.value)}
                   disabled={isProcessing}
                   placeholder="Example: 1-3,5"
-                  className="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white"
+                  className="w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white"
                 />
               </>
             )}
           </div>
         )}
         <button
-          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
           type="submit"
           disabled={isProcessing || !selectedFileName || (id === 'split-pdf' && splitMode === 'range' && !splitRange.trim())}
         >

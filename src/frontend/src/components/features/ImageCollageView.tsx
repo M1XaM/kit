@@ -7,8 +7,8 @@ type ImageCollageViewProps = {
   tool: Tool
 }
 
-const labelClass = 'mb-1.5 block text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400'
-const inputClass = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white'
+const labelClass = 'mb-1.5 block text-xs uppercase tracking-[0.12em] text-slate-400'
+const inputClass = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white'
 
 type Thumb = { file: File; url: string }
 
@@ -28,10 +28,10 @@ function ImageCollageView({ tool }: ImageCollageViewProps) {
 
   const dropZoneClass = useMemo(
     () =>
-      `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition text-slate-500 dark:text-slate-400 ${
+      `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition text-slate-400 ${
         dragActive
-          ? 'border-blue-400 bg-blue-50 text-slate-900 dark:border-blue-400/70 dark:bg-blue-600/20 dark:text-slate-200'
-          : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:hover:border-white/30 dark:hover:bg-white/5'
+          ? 'border-blue-400/70 bg-blue-600/20 text-slate-200'
+          : 'border-white/20 hover:border-white/30 hover:bg-white/5'
       }`,
     [dragActive]
   )
@@ -96,8 +96,8 @@ function ImageCollageView({ tool }: ImageCollageViewProps) {
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+    <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -108,7 +108,7 @@ function ImageCollageView({ tool }: ImageCollageViewProps) {
       <FeatureHeader tool={tool} subtitle="Compose many images into one grid — assembled by the local Go engine." />
 
       {errorMessage && (
-        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>
+        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{errorMessage}</div>
       )}
 
       <form className="mt-6 flex flex-col gap-5" onSubmit={handleSubmit}>
@@ -124,15 +124,15 @@ function ImageCollageView({ tool }: ImageCollageViewProps) {
             <rect x="3" y="14" width="7" height="7" rx="1"></rect>
             <rect x="14" y="14" width="7" height="7" rx="1"></rect>
           </svg>
-          <div className="text-sm text-slate-700 dark:text-slate-200">{thumbs.length ? `${thumbs.length} image${thumbs.length === 1 ? '' : 's'} selected` : 'Drag and drop images here'}</div>
-          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">or click to add more images</div>
+          <div className="text-sm text-slate-200">{thumbs.length ? `${thumbs.length} image${thumbs.length === 1 ? '' : 's'} selected` : 'Drag and drop images here'}</div>
+          <div className="mt-2 text-xs text-slate-400">or click to add more images</div>
           <input type="file" accept="image/*" multiple disabled={isProcessing} onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} className="hidden" />
         </label>
 
         {thumbs.length > 0 && (
           <div className="grid grid-cols-4 gap-2">
             {thumbs.map((t, index) => (
-              <div key={t.url} className="group relative aspect-square overflow-hidden rounded-lg border border-slate-300 dark:border-white/10">
+              <div key={t.url} className="group relative aspect-square overflow-hidden rounded-lg border border-white/10">
                 <img src={t.url} alt={t.file.name} className="h-full w-full object-cover" />
                 <button
                   type="button"
@@ -170,13 +170,13 @@ function ImageCollageView({ tool }: ImageCollageViewProps) {
         <div>
           <label className={labelClass}>Background color</label>
           <div className="flex items-center gap-3">
-            <input type="color" value={background} onChange={(e) => setBackground(e.target.value)} disabled={isProcessing} className="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 bg-white dark:border-slate-800 dark:bg-slate-900/70" />
+            <input type="color" value={background} onChange={(e) => setBackground(e.target.value)} disabled={isProcessing} className="h-10 w-14 cursor-pointer rounded-lg border border-slate-800 bg-slate-900/70" />
             <input className={inputClass} type="text" value={background} onChange={(e) => setBackground(e.target.value)} disabled={isProcessing} />
           </div>
         </div>
 
         <button
-          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
           type="submit"
           disabled={isProcessing || thumbs.length < 2}
         >

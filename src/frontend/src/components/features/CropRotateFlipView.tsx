@@ -189,12 +189,12 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
     `rounded-lg border px-3 py-2 text-sm font-semibold transition ${
       active
         ? 'border-blue-500 bg-blue-600 text-white'
-        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/15 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10'
+        : 'border-white/15 bg-white/5 text-slate-200 hover:bg-white/10'
     }`
 
   return (
-    <div className="mx-auto max-w-2xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+    <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -205,17 +205,17 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
       <FeatureHeader tool={tool} subtitle="Crop, rotate and flip entirely in your browser — nothing is uploaded." />
 
       {errorMessage && (
-        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>
+        <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{errorMessage}</div>
       )}
 
       {!loaded ? (
-        <label className="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 p-10 text-center text-slate-500 transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:text-slate-400 dark:hover:border-white/30 dark:hover:bg-white/5">
+        <label className="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition border-white/20 text-slate-400 hover:border-white/30 hover:bg-white/5">
           <svg className="mb-2" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
             <circle cx="8.5" cy="8.5" r="1.5"></circle>
             <polyline points="21 15 16 10 5 21"></polyline>
           </svg>
-          <div className="text-sm text-slate-700 dark:text-slate-200">Click to choose an image</div>
+          <div className="text-sm text-slate-200">Click to choose an image</div>
           <input type="file" accept="image/*" onChange={(e) => loadFile(e.target.files)} className="hidden" />
         </label>
       ) : (
@@ -226,7 +226,7 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
-              className="max-w-full cursor-crosshair touch-none rounded-lg border border-slate-300 dark:border-white/15"
+              className="max-w-full cursor-crosshair touch-none rounded-lg border border-white/15"
             />
             {selection && selection.w > 0 && selection.h > 0 && (
               <div
@@ -236,7 +236,7 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
             )}
           </div>
 
-          <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-center text-xs text-slate-400">
             Drag on the image to select a crop region. {selection ? 'Selection active.' : 'No selection — the full image is exported.'}
           </p>
 
@@ -249,7 +249,7 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <label className="cursor-pointer text-sm text-blue-600 hover:underline dark:text-blue-300">
+            <label className="cursor-pointer text-sm hover:underline text-blue-300">
               Choose a different image
               <input type="file" accept="image/*" onChange={(e) => loadFile(e.target.files)} className="hidden" />
             </label>
