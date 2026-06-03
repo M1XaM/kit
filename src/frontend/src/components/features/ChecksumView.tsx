@@ -39,7 +39,7 @@ function ChecksumView({ tool }: ChecksumViewProps) {
   const [gpgFetchMessage, setGpgFetchMessage] = useState('')
   const gpgKeyInputRef = useRef<HTMLInputElement | null>(null)
   const gpgSignatureInputRef = useRef<HTMLInputElement | null>(null)
-  const dropZoneClass = `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center text-slate-400 transition ${dragActive ? 'border-blue-400/70 bg-blue-600/20 text-slate-200' : 'border-white/20 hover:border-white/30 hover:bg-white/5'}`
+  const dropZoneClass = `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition text-slate-500 dark:text-slate-400 ${dragActive ? 'border-blue-400 bg-blue-50 text-slate-900 dark:border-blue-400/70 dark:bg-blue-600/20 dark:text-slate-200' : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:hover:border-white/30 dark:hover:bg-white/5'}`
 
   const updateFile = (file: File) => {
     setSelectedFile(file)
@@ -301,28 +301,20 @@ function ChecksumView({ tool }: ChecksumViewProps) {
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-2xl border border-white/10 bg-white/5 p-10 text-left backdrop-blur">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+    <div className="mx-auto max-w-xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
         Back to Tools
       </Link>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${tool.colorClass}`}>
-            {Icon ? <Icon /> : null}
-          </div>
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-50">{tool.title}</h2>
-            <p className="text-sm text-slate-400">All hashing runs in your browser with streaming for large files.</p>
-          </div>
-        </div>
-        <RuntimePill tool={tool} />
-      </div>
+      <FeatureHeader
+        tool={tool}
+        subtitle="All hashing runs in your browser with streaming for large files."
+      />
 
-      {errorMessage && <div className="mt-5 rounded-xl border border-red-400/50 bg-red-900/25 px-4 py-3 text-sm text-red-200">{errorMessage}</div>}
+      {errorMessage && <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>}
 
       <form className="mt-8 flex flex-col gap-5" onSubmit={handleCompute}>
         <label
@@ -336,10 +328,10 @@ function ChecksumView({ tool }: ChecksumViewProps) {
             <polyline points="17 8 12 3 7 8"></polyline>
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
-          <div className="text-sm text-slate-200">
+          <div className="text-sm text-slate-700 dark:text-slate-200">
             {selectedFile ? selectedFile.name : 'Drag and drop a file here'}
           </div>
-          <div className="mt-2 text-xs text-slate-400">or click to choose a file</div>
+          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">or click to choose a file</div>
           <input
             type="file"
             ref={fileInputRef}
@@ -351,13 +343,13 @@ function ChecksumView({ tool }: ChecksumViewProps) {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <label htmlFor="checksum-algorithm" className="text-xs uppercase tracking-[0.12em] text-slate-400">Algorithm</label>
+            <label htmlFor="checksum-algorithm" className="text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Algorithm</label>
             <select
               id="checksum-algorithm"
               value={algorithm}
               onChange={(event) => setAlgorithm(event.target.value)}
               disabled={isProcessing}
-              className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white"
             >
               {Object.entries(ALGORITHMS).map(([value, { label }]) => (
                 <option key={value} value={value}>{label}</option>
@@ -365,7 +357,7 @@ function ChecksumView({ tool }: ChecksumViewProps) {
             </select>
           </div>
           <div className="flex flex-col gap-2">
-            <label htmlFor="checksum-expected" className="text-xs uppercase tracking-[0.12em] text-slate-400">Expected hash (optional)</label>
+            <label htmlFor="checksum-expected" className="text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Expected hash (optional)</label>
             <div className="relative">
               <input
                 id="checksum-expected"
@@ -374,11 +366,11 @@ function ChecksumView({ tool }: ChecksumViewProps) {
                 onChange={(event) => setExpectedHash(event.target.value)}
                 disabled={isProcessing}
                 placeholder="Paste checksum to verify"
-                className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 pr-24 text-sm text-white"
+                className="w-full rounded-lg border px-3 py-2 pr-24 text-sm border-slate-300 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white"
               />
               <button
                 type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg border border-blue-400/40 bg-blue-600/20 px-2.5 py-1 text-[0.7rem] font-semibold text-blue-200"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg border px-2.5 py-1 text-[0.7rem] font-semibold border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-400/40 dark:bg-blue-600/20 dark:text-blue-200"
                 onClick={handleGpgSignaturePick}
                 disabled={isProcessing}
               >
@@ -396,23 +388,23 @@ function ChecksumView({ tool }: ChecksumViewProps) {
         </div>
 
         {(showGpgPanel || gpgKeyFile) && (
-          <div className="rounded-xl border border-white/10 bg-slate-900/50 p-4">
+          <div className="rounded-xl border p-4 border-slate-300 bg-slate-50 dark:border-white/10 dark:bg-slate-900/50">
             <div className="grid gap-3 md:grid-cols-[minmax(90px,auto)_1fr_auto] items-center">
-              <div className="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">Public key</div>
-              <div className="text-sm text-slate-200 break-all">{gpgKeyFile ? gpgKeyFile.name : 'Not selected'}</div>
-              <button type="button" className="rounded-lg border border-slate-400/40 bg-slate-400/15 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-400/25" onClick={handleGpgKeyPick}>
+              <div className="text-[0.7rem] uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Public key</div>
+              <div className="text-sm text-slate-700 dark:text-slate-200 break-all">{gpgKeyFile ? gpgKeyFile.name : 'Not selected'}</div>
+              <button type="button" className="rounded-lg border px-3 py-1.5 text-xs font-semibold border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-400/40 dark:bg-slate-400/15 dark:text-slate-200 dark:hover:bg-slate-400/25" onClick={handleGpgKeyPick}>
                 Choose key
               </button>
             </div>
             {gpgFetchStatus !== 'idle' && (
-              <div className={`mt-2 text-xs ${gpgFetchStatus === 'success' ? 'text-emerald-300' : gpgFetchStatus === 'loading' ? 'text-slate-300' : 'text-red-300'}`}>
+              <div className={`mt-2 text-xs ${gpgFetchStatus === 'success' ? 'text-emerald-600 dark:text-emerald-300' : gpgFetchStatus === 'loading' ? 'text-slate-600 dark:text-slate-300' : 'text-red-600 dark:text-red-300'}`}>
                 {gpgFetchStatus === 'loading' ? 'Fetching key from keys.openpgp.org...' : gpgFetchMessage}
               </div>
             )}
             <div className="mt-3 grid gap-3 md:grid-cols-[minmax(90px,auto)_1fr_auto] items-center">
-              <div className="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">Signature</div>
-              <div className="text-sm text-slate-200 break-all">{gpgSignatureFile ? gpgSignatureFile.name : 'Not selected'}</div>
-              <button type="button" className="rounded-lg border border-slate-400/40 bg-slate-400/15 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-400/25" onClick={handleGpgSignaturePick}>
+              <div className="text-[0.7rem] uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Signature</div>
+              <div className="text-sm text-slate-700 dark:text-slate-200 break-all">{gpgSignatureFile ? gpgSignatureFile.name : 'Not selected'}</div>
+              <button type="button" className="rounded-lg border px-3 py-1.5 text-xs font-semibold border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-400/40 dark:bg-slate-400/15 dark:text-slate-200 dark:hover:bg-slate-400/25" onClick={handleGpgSignaturePick}>
                 Choose signature
               </button>
               <input
@@ -426,35 +418,35 @@ function ChecksumView({ tool }: ChecksumViewProps) {
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
                 disabled={isGpgProcessing || !selectedFile || !gpgKeyFile || !gpgSignatureFile}
                 onClick={verifySignature}
               >
                 {isGpgProcessing ? 'Verifying...' : 'Verify Signature'}
               </button>
               {gpgStatus !== 'idle' && (
-                <div className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] ${gpgStatus === 'verified' ? 'border-emerald-400/50 bg-emerald-500/20 text-emerald-200' : 'border-red-400/50 bg-red-500/20 text-red-200'}`}>
+                <div className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] ${gpgStatus === 'verified' ? 'border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-200' : 'border-red-300 bg-red-100 text-red-700 dark:border-red-400/50 dark:bg-red-500/20 dark:text-red-200'}`}>
                   {gpgStatus === 'verified' ? 'Signature verified' : 'Signature failed'}
                 </div>
               )}
             </div>
-            {gpgError && <div className="mt-3 rounded-xl border border-red-400/50 bg-red-900/25 px-4 py-3 text-sm text-red-200">{gpgError}</div>}
-            <div className="mt-3 text-xs text-slate-400">Signature verification uses the selected public key and does not upload files.</div>
+            {gpgError && <div className="mt-3 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{gpgError}</div>}
+            <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">Signature verification uses the selected public key and does not upload files.</div>
           </div>
         )}
 
         {isProcessing && (
-          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700/40">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700/40">
             <div className="h-full bg-gradient-to-r from-sky-400 via-cyan-400 to-fuchsia-500" style={{ width: `${progress}%` }} />
           </div>
         )}
 
         {computedHash && (
-          <div className="rounded-xl border border-slate-400/20 bg-slate-900/50 p-4">
-            <div className="text-[0.7rem] uppercase tracking-[0.14em] text-slate-400">Computed hash</div>
-            <div className="mt-2 font-mono text-sm text-slate-200 break-all">{computedHash}</div>
+          <div className="rounded-xl border p-4 border-slate-300 bg-slate-50 dark:border-slate-400/20 dark:bg-slate-900/50">
+            <div className="text-[0.7rem] uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Computed hash</div>
+            <div className="mt-2 font-mono text-sm text-slate-700 dark:text-slate-200 break-all">{computedHash}</div>
             {expectedHash.trim() && status !== 'idle' && (
-              <div className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] ${status === 'match' ? 'border-emerald-400/50 bg-emerald-500/20 text-emerald-200' : 'border-red-400/50 bg-red-500/20 text-red-200'}`}>
+              <div className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] ${status === 'match' ? 'border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-200' : 'border-red-300 bg-red-100 text-red-700 dark:border-red-400/50 dark:bg-red-500/20 dark:text-red-200'}`}>
                 {status === 'match' ? 'Match' : 'Mismatch'}
               </div>
             )}
@@ -462,7 +454,7 @@ function ChecksumView({ tool }: ChecksumViewProps) {
         )}
 
         <button
-          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
           type="submit"
           disabled={isProcessing || !selectedFile}
         >

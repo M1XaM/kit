@@ -27,7 +27,7 @@ const TEXT_TOOLS = [
     title: 'Metadata Editor',
     description: 'View file details and export metadata sidecars locally.',
     category: 'text',
-    icon: ICONS.document,
+    icon: ICONS.text,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -59,7 +59,7 @@ const TEXT_TOOLS = [
     title: 'Base64 Encode/Decode',
     description: 'Encode or decode Base64 text instantly.',
     category: 'text',
-    icon: ICONS.code,
+    icon: ICONS.swap,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -67,7 +67,7 @@ const TEXT_TOOLS = [
     title: 'Hex Encode/Decode',
     description: 'Convert text to and from hexadecimal.',
     category: 'text',
-    icon: ICONS.hash,
+    icon: ICONS.code,
     colorClass: resolveColorClass('icon-purple')
   },
   {
@@ -83,7 +83,7 @@ const TEXT_TOOLS = [
     title: 'Text Encoding Conversion',
     description: 'Convert text between common encodings.',
     category: 'text',
-    icon: ICONS.compare,
+    icon: ICONS.sliders,
     colorClass: resolveColorClass('icon-purple')
   }
 ]
@@ -99,42 +99,108 @@ const AUDIO_TOOLS = [
   }
 ]
 
+const DOCUMENT_TOOLS = [
+  {
+    id: 'merge-pdf',
+    title: 'Merge PDF',
+    description: 'Combine multiple PDFs into a single file.',
+    category: 'documents',
+    icon: ICONS.layers,
+    colorClass: resolveColorClass('icon-blue'),
+    apiEndpoint: '/api/pdf/merge',
+    runtime: 'server'
+  },
+  {
+    id: 'encrypt-decrypt-pdf',
+    title: 'Encrypt/Decrypt PDF',
+    description: 'Add or remove password protection from PDFs.',
+    category: 'documents',
+    icon: ICONS.lock,
+    colorClass: resolveColorClass('icon-blue'),
+    apiEndpoint: '/api/pdf/protect',
+    runtime: 'server'
+  },
+  {
+    id: 'extract-pages',
+    title: 'Extract Pages',
+    description: 'Extract selected pages into a new PDF.',
+    category: 'documents',
+    icon: ICONS.scissors,
+    colorClass: resolveColorClass('icon-blue'),
+    apiEndpoint: '/api/pdf/extract-pages',
+    runtime: 'server'
+  },
+  {
+    id: 'delete-pages',
+    title: 'Delete Pages',
+    description: 'Remove unwanted pages from a PDF.',
+    category: 'documents',
+    icon: ICONS.trash,
+    colorClass: resolveColorClass('icon-blue'),
+    apiEndpoint: '/api/pdf/delete-pages',
+    runtime: 'server'
+  },
+  {
+    id: 'reorder-pages',
+    title: 'Reorder Pages',
+    description: 'Rearrange PDF pages in any order.',
+    category: 'documents',
+    icon: ICONS.swap,
+    colorClass: resolveColorClass('icon-blue'),
+    apiEndpoint: '/api/pdf/reorder-pages',
+    runtime: 'server'
+  },
+  {
+    id: 'rotate-pages',
+    title: 'Rotate Pages',
+    description: 'Rotate PDF pages to the correct orientation.',
+    category: 'documents',
+    icon: ICONS.rotate,
+    colorClass: resolveColorClass('icon-blue'),
+    apiEndpoint: '/api/pdf/rotate',
+    runtime: 'server'
+  },
+  {
+    id: 'file-converter',
+    title: 'File Converter',
+    description: 'Convert images into a PDF and extract embedded images back out.',
+    category: 'documents',
+    icon: ICONS.swap,
+    colorClass: resolveColorClass('icon-blue'),
+    apiEndpoint: '/api/convert/image-to-pdf',
+    runtime: 'server'
+  }
+]
+
 const COMING_SOON_TOOLS = [
-  makeSoonTool('merge-pdf', 'Merge PDF', 'Combine multiple PDFs into a single file.', 'documents', ICONS.document, 'icon-blue'),
-  makeSoonTool('encrypt-decrypt-pdf', 'Encrypt/Decrypt PDF', 'Add or remove password protection from PDFs.', 'documents', ICONS.document, 'icon-blue'),
-  makeSoonTool('extract-pages', 'Extract Pages', 'Extract selected pages into a new PDF.', 'documents', ICONS.document, 'icon-blue'),
-  makeSoonTool('delete-pages', 'Delete Pages', 'Remove unwanted pages from a PDF.', 'documents', ICONS.document, 'icon-blue'),
-  makeSoonTool('reorder-pages', 'Reorder Pages', 'Rearrange PDF pages in any order.', 'documents', ICONS.document, 'icon-blue'),
-  makeSoonTool('rotate-pages', 'Rotate Pages', 'Rotate PDF pages to the correct orientation.', 'documents', ICONS.document, 'icon-blue'),
-  makeSoonTool('file-converter', 'File Converter', 'Convert documents between common formats.', 'documents', ICONS.document, 'icon-blue'),
-  makeSoonTool('ocr', 'OCR', 'Extract text from images and scans.', 'text', ICONS.text, 'icon-purple'),
+  makeSoonTool('ocr', 'OCR', 'Extract text from images and scans.', 'text', ICONS.sparkles, 'icon-purple'),
   makeSoonTool('extract-text-pdf', 'Extract Text from PDF', 'Pull plain text from PDF files.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('watermark-documents', 'Watermark Documents', 'Apply image or page watermarks to documents.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('ai-summarize', 'AI Summarize', 'Summarize documents with AI.', 'ai-tools', ICONS.ai, 'icon-green'),
-  makeSoonTool('ai-remove-background', 'AI Remove Background', 'Remove image backgrounds with AI.', 'ai-tools', ICONS.ai, 'icon-green'),
-  makeSoonTool('trim-video', 'Trim Video', 'Trim videos to a selected range.', 'video', ICONS.video, 'icon-red'),
-  makeSoonTool('split-video', 'Cut/Split Video', 'Split videos into multiple clips.', 'video', ICONS.video, 'icon-red'),
-  makeSoonTool('merge-video', 'Merge Video Clips', 'Combine video clips into one file.', 'video', ICONS.video, 'icon-red'),
-  makeSoonTool('resize-video', 'Resize Video', 'Change video resolution or aspect.', 'video', ICONS.video, 'icon-red'),
-  makeSoonTool('compress-video', 'Compress Video', 'Reduce video size while keeping quality.', 'video', ICONS.video, 'icon-red'),
-  makeSoonTool('convert-video', 'Convert Video Formats', 'Convert videos between formats.', 'video', ICONS.video, 'icon-red'),
-  makeSoonTool('trim-audio', 'Trim Audio', 'Trim audio clips in seconds.', 'video', ICONS.video, 'icon-red'),
-  makeSoonTool('merge-audio', 'Merge Audio', 'Combine audio tracks into one file.', 'audio', ICONS.audio, 'icon-yellow'),
-  makeSoonTool('convert-audio', 'Convert Audio Formats', 'Convert audio between formats.', 'audio', ICONS.audio, 'icon-yellow'),
-  makeSoonTool('adjust-audio', 'Adjust Bitrate/Sample Rate', 'Adjust bitrate and sample rate.', 'audio', ICONS.audio, 'icon-yellow'),
-  makeSoonTool('record-video', 'Record Video', 'Record video using your camera.', 'audio', ICONS.audio, 'icon-yellow'),
-  makeSoonTool('screen-recording', 'Screen Recording', 'Capture your screen with audio.', 'audio', ICONS.audio, 'icon-yellow'),
-  makeSoonTool('resize-image', 'Resize Image', 'Resize images by dimensions or size.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('compress-image', 'Compress Image', 'Shrink images while keeping quality.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('convert-image-formats', 'Convert Image Formats', 'Convert images between popular formats.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('crop-rotate-flip', 'Crop/Rotate/Flip', 'Crop, rotate, or flip images.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('batch-image', 'Batch Image Processing', 'Process multiple images at once.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('denoise-enhance', 'Denoise/Enhance', 'Enhance images and reduce noise.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('palette-extraction', 'Color Palette Extraction', 'Extract color palettes from images.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('image-collage', 'Image Collage/Grid', 'Build collages or image grids.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('watermark-image', 'Image Watermark', 'Add watermarks to your images.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('image-borders', 'Borders/Rounded Corners', 'Add borders or rounded corners.', 'image', ICONS.image, 'icon-green'),
-  makeSoonTool('image-filters', 'Filters/Effects', 'Apply filters and effects.', 'image', ICONS.image, 'icon-green')
+  makeSoonTool('watermark-documents', 'Watermark Documents', 'Apply image or page watermarks to documents.', 'text', ICONS.lock, 'icon-purple'),
+  makeSoonTool('ai-summarize', 'AI Summarize', 'Summarize documents with AI.', 'ai-tools', ICONS.sparkles, 'icon-green'),
+  makeSoonTool('ai-remove-background', 'AI Remove Background', 'Remove image backgrounds with AI.', 'ai-tools', ICONS.crop, 'icon-green'),
+  makeSoonTool('trim-video', 'Trim Video', 'Trim videos to a selected range.', 'video', ICONS.scissors, 'icon-red'),
+  makeSoonTool('split-video', 'Cut/Split Video', 'Split videos into multiple clips.', 'video', ICONS.scissors, 'icon-red'),
+  makeSoonTool('merge-video', 'Merge Video Clips', 'Combine video clips into one file.', 'video', ICONS.layers, 'icon-red'),
+  makeSoonTool('resize-video', 'Resize Video', 'Change video resolution or aspect.', 'video', ICONS.crop, 'icon-red'),
+  makeSoonTool('compress-video', 'Compress Video', 'Reduce video size while keeping quality.', 'video', ICONS.compress, 'icon-red'),
+  makeSoonTool('convert-video', 'Convert Video Formats', 'Convert videos between formats.', 'video', ICONS.swap, 'icon-red'),
+  makeSoonTool('trim-audio', 'Trim Audio', 'Trim audio clips in seconds.', 'video', ICONS.scissors, 'icon-red'),
+  makeSoonTool('merge-audio', 'Merge Audio', 'Combine audio tracks into one file.', 'audio', ICONS.layers, 'icon-yellow'),
+  makeSoonTool('convert-audio', 'Convert Audio Formats', 'Convert audio between formats.', 'audio', ICONS.swap, 'icon-yellow'),
+  makeSoonTool('adjust-audio', 'Adjust Bitrate/Sample Rate', 'Adjust bitrate and sample rate.', 'audio', ICONS.sliders, 'icon-yellow'),
+  makeSoonTool('record-video', 'Record Video', 'Record video using your camera.', 'audio', ICONS.video, 'icon-yellow'),
+  makeSoonTool('screen-recording', 'Screen Recording', 'Capture your screen with audio.', 'audio', ICONS.system, 'icon-yellow'),
+  makeSoonTool('resize-image', 'Resize Image', 'Resize images by dimensions or size.', 'image', ICONS.crop, 'icon-green'),
+  makeSoonTool('compress-image', 'Compress Image', 'Shrink images while keeping quality.', 'image', ICONS.compress, 'icon-green'),
+  makeSoonTool('convert-image-formats', 'Convert Image Formats', 'Convert images between popular formats.', 'image', ICONS.swap, 'icon-green'),
+  makeSoonTool('crop-rotate-flip', 'Crop/Rotate/Flip', 'Crop, rotate, or flip images.', 'image', ICONS.crop, 'icon-green'),
+  makeSoonTool('batch-image', 'Batch Image Processing', 'Process multiple images at once.', 'image', ICONS.layers, 'icon-green'),
+  makeSoonTool('denoise-enhance', 'Denoise/Enhance', 'Enhance images and reduce noise.', 'image', ICONS.sparkles, 'icon-green'),
+  makeSoonTool('palette-extraction', 'Color Palette Extraction', 'Extract color palettes from images.', 'image', ICONS.palette, 'icon-green'),
+  makeSoonTool('image-collage', 'Image Collage/Grid', 'Build collages or image grids.', 'image', ICONS.grid, 'icon-green'),
+  makeSoonTool('watermark-image', 'Image Watermark', 'Add watermarks to your images.', 'image', ICONS.lock, 'icon-green'),
+  makeSoonTool('image-borders', 'Borders/Rounded Corners', 'Add borders or rounded corners.', 'image', ICONS.crop, 'icon-green'),
+  makeSoonTool('image-filters', 'Filters/Effects', 'Apply filters and effects.', 'image', ICONS.sliders, 'icon-green')
 ]
 
 export const TOOLS = [
@@ -233,6 +299,7 @@ export const TOOLS = [
     icon: ICONS.speed,
     colorClass: resolveColorClass('icon-purple')
   },
+  ...DOCUMENT_TOOLS,
   ...TEXT_TOOLS,
   ...AUDIO_TOOLS,
   ...COMING_SOON_TOOLS

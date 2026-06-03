@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import RuntimePill from './RuntimePill'
+import FeatureHeader from './FeatureHeader'
 
 const DOWNLOAD_SIZES = [5_000_000, 12_000_000, 20_000_000]
 const UPLOAD_SIZES = [1_000_000, 3_000_000, 6_000_000]
@@ -86,7 +86,6 @@ const measureUpload = async (bytes, signal) => {
 }
 
 function InternetSpeed({ tool }) {
-  const Icon = tool.icon
   const controllerRef = useRef(null)
   const [isRunning, setIsRunning] = useState(false)
   const [phase, setPhase] = useState('idle')
@@ -167,8 +166,8 @@ function InternetSpeed({ tool }) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl rounded-2xl border border-white/10 bg-white/5 p-10 text-left backdrop-blur">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+    <div className="mx-auto max-w-5xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -176,70 +175,62 @@ function InternetSpeed({ tool }) {
         Back to Tools
       </Link>
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${tool.colorClass}`}>
-            {Icon ? <Icon /> : null}
-          </div>
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-50">{tool.title}</h2>
-            <p className="text-sm text-slate-400">Client-side speed test powered by Cloudflare endpoints.</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <RuntimePill tool={tool} className="text-[0.6rem]" />
-          <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${error ? 'border-red-400/50 bg-red-900/40 text-red-200' : 'border-sky-400/50 bg-sky-900/40 text-sky-200'}`}>
+      <FeatureHeader
+        tool={tool}
+        subtitle="Client-side speed test powered by Cloudflare endpoints."
+        rightSlot={(
+          <div className={`rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.14em] ${error ? 'border-red-200 bg-red-100 text-red-700 dark:border-red-400/50 dark:bg-red-900/40 dark:text-red-200' : 'border-sky-200 bg-sky-100 text-sky-700 dark:border-sky-400/50 dark:bg-sky-900/40 dark:text-sky-200'}`}>
             {isRunning ? 'Running' : error ? 'Paused' : 'Ready'}
           </div>
-        </div>
-      </div>
+        )}
+      />
 
       {error ? (
-        <div className="mb-4 rounded-xl border border-red-400/50 bg-red-900/25 px-4 py-3 text-sm text-red-200">{error}</div>
+        <div className="mb-4 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{error}</div>
       ) : null}
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
-        <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.35)] animate-rise" style={{ animationDelay: '0ms' }}>
-          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">Download</div>
-          <div className="mt-2 text-3xl font-extrabold text-slate-50">{formatMbps(downloadMbps)}</div>
-          <div className="text-sm text-slate-300">Mbps</div>
-          <div className="mt-3 text-xs text-slate-400">Payload: {DOWNLOAD_SIZES.map(formatBytes).join(' + ')}</div>
+        <div className="rounded-2xl border p-5 animate-rise border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_18px_40px_rgba(15,23,42,0.35)]" style={{ animationDelay: '0ms' }}>
+          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Download</div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-slate-50">{formatMbps(downloadMbps)}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-300">Mbps</div>
+          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">Payload: {DOWNLOAD_SIZES.map(formatBytes).join(' + ')}</div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.35)] animate-rise" style={{ animationDelay: '80ms' }}>
-          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">Upload</div>
-          <div className="mt-2 text-3xl font-extrabold text-slate-50">{formatMbps(uploadMbps)}</div>
-          <div className="text-sm text-slate-300">Mbps</div>
-          <div className="mt-3 text-xs text-slate-400">Payload: {UPLOAD_SIZES.map(formatBytes).join(' + ')}</div>
+        <div className="rounded-2xl border p-5 animate-rise border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_18px_40px_rgba(15,23,42,0.35)]" style={{ animationDelay: '80ms' }}>
+          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Upload</div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-slate-50">{formatMbps(uploadMbps)}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-300">Mbps</div>
+          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">Payload: {UPLOAD_SIZES.map(formatBytes).join(' + ')}</div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.35)] animate-rise" style={{ animationDelay: '160ms' }}>
-          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">Status</div>
-          <div className="mt-2 text-2xl font-extrabold text-slate-50">
+        <div className="rounded-2xl border p-5 animate-rise border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_18px_40px_rgba(15,23,42,0.35)]" style={{ animationDelay: '160ms' }}>
+          <div className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Status</div>
+          <div className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-slate-50">
             {phase === 'download' ? 'Downloading' : phase === 'upload' ? 'Uploading' : phase === 'done' ? 'Complete' : 'Idle'}
           </div>
-          <div className="text-sm text-slate-300">{lastRun ? `Last run: ${lastRun.toLocaleTimeString()}` : 'Not run yet'}</div>
-          <div className="mt-3 text-xs text-slate-400">Endpoint: speed.cloudflare.com</div>
+          <div className="text-sm text-slate-600 dark:text-slate-300">{lastRun ? `Last run: ${lastRun.toLocaleTimeString()}` : 'Not run yet'}</div>
+          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">Endpoint: speed.cloudflare.com</div>
         </div>
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <button className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400" type="button" onClick={runTest} disabled={isRunning}>
+        <button className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400" type="button" onClick={runTest} disabled={isRunning}>
           {isRunning ? 'Running...' : 'Start Speed Test'}
         </button>
-        <button className="rounded-lg border border-slate-400/40 bg-slate-400/15 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-400/25 disabled:cursor-not-allowed disabled:text-slate-500" type="button" onClick={stopTest} disabled={!isRunning}>
+        <button className="rounded-lg border px-4 py-2 text-sm font-semibold transition border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-400/40 dark:bg-slate-400/15 dark:text-slate-200 dark:hover:bg-slate-400/25 disabled:cursor-not-allowed disabled:text-slate-400 dark:disabled:text-slate-500" type="button" onClick={stopTest} disabled={!isRunning}>
           Stop
         </button>
-        <span className="text-xs text-slate-400">Runs fully in the browser. No backend traffic is used.</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">Runs fully in the browser. No backend traffic is used.</span>
       </div>
 
       {isRunning ? (
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-700/40">
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700/40">
           <div className="h-full bg-gradient-to-r from-sky-400 via-cyan-400 to-fuchsia-500" style={{ width: `${Math.round(progress * 100)}%` }}></div>
         </div>
       ) : null}
 
-      <div className="mt-6 text-xs text-slate-400">
+      <div className="mt-6 text-xs text-slate-500 dark:text-slate-400">
         Download endpoint: {DOWNLOAD_ENDPOINT}. Upload endpoint: {UPLOAD_ENDPOINT}.
       </div>
     </div>

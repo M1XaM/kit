@@ -1,7 +1,23 @@
-.PHONY: all build local-build run dev clean release linux windows macos platform-build
+.PHONY: all build local-build run dev clean release linux windows macos platform-build with-terminal
+
+# Plain `make` must build everything. `with-terminal` is defined as a target
+# below (so Make doesn't choke on `make build with-terminal`), but it must
+# never become the default goal — pin the default explicitly.
+.DEFAULT_GOAL := all
 
 PLATFORM_TARGETS := linux windows macos
 REQUESTED_PLATFORMS := $(filter $(PLATFORM_TARGETS),$(MAKECMDGOALS))
+
+# `with-terminal` is a pseudo-flag, not a real target. Add it to any build
+# goal (e.g. `make build with-terminal`, `make linux with-terminal`) and the
+# binary is compiled to open a terminal with logs when launched via the URL
+# scheme. It's a phony no-op target so Make doesn't choke on the extra word.
+WITH_TERMINAL_FLAG :=
+DOCKER_TERMINAL_ARG :=
+ifneq ($(filter with-terminal,$(MAKECMDGOALS)),)
+WITH_TERMINAL_FLAG := --with-terminal
+DOCKER_TERMINAL_ARG := --build-arg WITH_TERMINAL=true
+endif
 
 # Extract the version from the arguments for "make release <version>"
 ifeq (release,$(firstword $(MAKECMDGOALS)))
@@ -20,7 +36,7 @@ build:
 	@echo "Starting platform-agnostic build process via Docker..."
 	@rm -rf bin/
 	@rm -rf src/frontend/dist/
-	@DOCKER_BUILDKIT=1 docker build --file Dockerfile --output type=local,dest=bin/ .
+	@DOCKER_BUILDKIT=1 docker build --file Dockerfile $(DOCKER_TERMINAL_ARG) --output type=local,dest=bin/ .
 	@echo "Build complete! Check the bin/ directory for your OS folders."
 
 # Compiles locally using your host's Go and Node.js
@@ -28,7 +44,7 @@ local-build:
 	@echo "Starting local build process..."
 	@rm -rf bin/
 	@rm -rf src/frontend/dist/
-	@cd src && ./build.sh
+	@cd src && ./build.sh $(WITH_TERMINAL_FLAG)
 
 linux windows macos: platform-build
 
@@ -40,13 +56,19 @@ platform-build:
 	@echo "Starting platform-agnostic build process via Docker for $(REQUESTED_PLATFORMS)..."
 	@rm -rf bin/
 	@rm -rf src/frontend/dist/
-	@DOCKER_BUILDKIT=1 docker build --file Dockerfile --build-arg TARGET_OS="$(REQUESTED_PLATFORMS)" --output type=local,dest=bin/ .
+	@DOCKER_BUILDKIT=1 docker build --file Dockerfile --build-arg TARGET_OS="$(REQUESTED_PLATFORMS)" $(DOCKER_TERMINAL_ARG) --output type=local,dest=bin/ .
 	@echo "Build complete! Check the bin/ directory for your OS folders."
 
-# Starts the Go backend directly for development
+# Starts the Go backend directly for development. Requires a prior frontend
+# build (`cd src/frontend && npm run build`); re-embeds a clean copy so the
+# server never serves a stale bundle.
 dev:
 	@echo "Starting Go backend in dev mode..."
-	@cd src && mkdir -p backend/frontend/dist && cp -r frontend/dist/* backend/frontend/dist/ 2>/dev/null || true && cd backend && go run .
+	@if [ ! -d src/frontend/dist ]; then \
+		echo "Error: src/frontend/dist is missing. Run 'cd src/frontend && npm run build' first (or use 'make local-build')."; \
+		exit 1; \
+	fi
+	@cd src && rm -rf backend/frontend/dist && mkdir -p backend/frontend/dist && cp -r frontend/dist/* backend/frontend/dist/ && cd backend && go run .
 
 # Tags the current commit with the specified version and pushes it
 release:
@@ -57,3 +79,9 @@ release:
 	@echo "Creating and pushing release tag $(RELEASE_VERSION)..."
 	git tag $(RELEASE_VERSION)
 	git push origin $(RELEASE_VERSION)
+
+# Pseudo-flag target: lets `make <goal> with-terminal` parse without error.
+# The real effect comes from the WITH_TERMINAL_FLAG/DOCKER_TERMINAL_ARG vars
+# set at the top when `with-terminal` is among the goals.
+with-terminal:
+	@:

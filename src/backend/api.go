@@ -9,8 +9,16 @@ import (
 
 func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string) {
 	mux.HandleFunc("/api/convert/png-to-jpg", policy.wrapAPIHandler(features.HandlePngToJpg))
+	mux.HandleFunc("/api/convert/image-to-pdf", policy.wrapAPIHandler(features.HandleImagesToPDF))
+	mux.HandleFunc("/api/convert/pdf-to-images", policy.wrapAPIHandler(features.HandlePdfToImages))
 	mux.HandleFunc("/api/pdf/compress", policy.wrapAPIHandler(features.HandleCompressPDF))
 	mux.HandleFunc("/api/pdf/split", policy.wrapAPIHandler(features.HandleSplitPDF))
+	mux.HandleFunc("/api/pdf/merge", policy.wrapAPIHandler(features.HandleMergePDF))
+	mux.HandleFunc("/api/pdf/extract-pages", policy.wrapAPIHandler(features.HandleExtractPages))
+	mux.HandleFunc("/api/pdf/delete-pages", policy.wrapAPIHandler(features.HandleDeletePages))
+	mux.HandleFunc("/api/pdf/reorder-pages", policy.wrapAPIHandler(features.HandleReorderPages))
+	mux.HandleFunc("/api/pdf/rotate", policy.wrapAPIHandler(features.HandleRotatePDF))
+	mux.HandleFunc("/api/pdf/protect", policy.wrapAPIHandler(features.HandleProtectPDF))
 	mux.HandleFunc("/api/archive/extract", policy.wrapAPIHandler(features.HandleArchiveExtract))
 	mux.HandleFunc("/api/archive/create", policy.wrapAPIHandler(features.HandleArchiveCreate))
 	mux.HandleFunc("/api/system/metrics", policy.wrapAPIHandler(handleSystemMetrics))

@@ -88,9 +88,9 @@ func registerCustomScheme(showTerm bool) {
 		return
 	}
 
-	termStr := "false"
+	terminalValue := "false"
 	if showTerm {
-		termStr = "true"
+		terminalValue = "true"
 	}
 
 	switch runtime.GOOS {
@@ -105,11 +105,11 @@ func registerCustomScheme(showTerm bool) {
 
 		content := fmt.Sprintf(`[Desktop Entry]
 Name=Kit
-Exec=%s -term=%s %%u
+Exec=%s %%u
 Type=Application
 Terminal=%s
 MimeType=x-scheme-handler/kit;
-`, exePath, termStr, termStr)
+`, exePath, terminalValue)
 		existingContent, err := os.ReadFile(desktopPath)
 		if err != nil || string(existingContent) != content {
 			os.WriteFile(desktopPath, []byte(content), 0644)
@@ -124,7 +124,7 @@ MimeType=x-scheme-handler/kit;
 		if err != nil || !strings.Contains(string(out), exePath) {
 			exec.Command("reg", "add", `HKCU\Software\Classes\kit`, "/ve", "/d", "URL:Kit Protocol", "/f").Run()
 			exec.Command("reg", "add", `HKCU\Software\Classes\kit`, "/v", "URL Protocol", "/d", "", "/f").Run()
-			exec.Command("reg", "add", `HKCU\Software\Classes\kit\shell\open\command`, "/ve", "/d", fmt.Sprintf(`"%s" -term=%s "%%1"`, exePath, termStr), "/f").Run()
+			exec.Command("reg", "add", `HKCU\Software\Classes\kit\shell\open\command`, "/ve", "/d", fmt.Sprintf(`"%s" "%%1"`, exePath), "/f").Run()
 		}
 	case "darwin":
 		home, err := os.UserHomeDir()
@@ -139,9 +139,9 @@ MimeType=x-scheme-handler/kit;
 		wrapperPath := filepath.Join(macOSDir, "Kit")
 		var wrapperContent string
 		if showTerm {
-			wrapperContent = fmt.Sprintf("#!/bin/bash\nopen -a Terminal \"%s\" --args -term=true \"$@\"", exePath)
+			wrapperContent = fmt.Sprintf("#!/bin/bash\nopen -a Terminal \"%s\" --args \"$@\"", exePath)
 		} else {
-			wrapperContent = fmt.Sprintf("#!/bin/bash\n\"%s\" -term=false \"$@\"", exePath)
+			wrapperContent = fmt.Sprintf("#!/bin/bash\n\"%s\" \"$@\"", exePath)
 		}
 
 		existingWrapper, err := os.ReadFile(wrapperPath)

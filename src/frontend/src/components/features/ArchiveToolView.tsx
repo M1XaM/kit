@@ -25,7 +25,7 @@ function ArchiveToolView({ tool }: ArchiveToolViewProps) {
   const [dragActive, setDragActive] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const dropZoneClass = `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center text-slate-400 transition ${dragActive ? 'border-blue-400/70 bg-blue-600/20 text-slate-200' : 'border-white/20 hover:border-white/30 hover:bg-white/5'}`
+  const dropZoneClass = `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition text-slate-500 dark:text-slate-400 ${dragActive ? 'border-blue-400 bg-blue-50 text-slate-900 dark:border-blue-400/70 dark:bg-blue-600/20 dark:text-slate-200' : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:hover:border-white/30 dark:hover:bg-white/5'}`
 
   const normalizeFiles = (files: File[]) => (isCreate ? files : files.slice(0, 1))
 
@@ -144,8 +144,8 @@ function ArchiveToolView({ tool }: ArchiveToolViewProps) {
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-2xl border border-white/10 bg-white/5 p-10 text-left backdrop-blur">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+    <div className="mx-auto max-w-xl rounded-2xl border p-10 text-left border-slate-300 bg-white shadow-md dark:border-white/10 dark:bg-white/5 dark:backdrop-blur dark:shadow-none">
+      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
@@ -158,7 +158,7 @@ function ArchiveToolView({ tool }: ArchiveToolViewProps) {
         subtitle="Processed securely by the local Go backend running on your machine."
       />
 
-      {errorMessage && <div className="mt-5 rounded-xl border border-red-400/50 bg-red-900/25 px-4 py-3 text-sm text-red-200">{errorMessage}</div>}
+      {errorMessage && <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-200 bg-red-50 text-red-700 dark:border-red-400/50 dark:bg-red-900/25 dark:text-red-200">{errorMessage}</div>}
 
       <form className="mt-8 flex flex-col gap-5" onSubmit={handleProcess}>
         <label
@@ -172,12 +172,12 @@ function ArchiveToolView({ tool }: ArchiveToolViewProps) {
             <polyline points="17 8 12 3 7 8"></polyline>
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
-          <div className="text-sm text-slate-200">
+          <div className="text-sm text-slate-700 dark:text-slate-200">
             {selectedFiles.length
               ? `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} ready`
               : `Drag and drop ${isCreate ? 'files' : 'an archive'} here`}
           </div>
-          <div className="mt-2 text-xs text-slate-400">or click to choose {isCreate ? 'files' : 'a file'}</div>
+          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">or click to choose {isCreate ? 'files' : 'a file'}</div>
           <input
             type="file"
             accept={isCreate ? '*' : ARCHIVE_ACCEPT}
@@ -192,7 +192,7 @@ function ArchiveToolView({ tool }: ArchiveToolViewProps) {
         {selectedFiles.length > 0 && (
           <div className="flex flex-wrap justify-center gap-2">
             {selectedFiles.map((file) => (
-              <span key={`${file.name}-${file.size}`} className="rounded-full border border-white/20 bg-slate-900/60 px-3 py-1 text-xs text-slate-200">
+              <span key={`${file.name}-${file.size}`} className="rounded-full border px-3 py-1 text-xs border-slate-300 bg-slate-100 text-slate-700 dark:border-white/20 dark:bg-slate-900/60 dark:text-slate-200">
                 {file.name}
               </span>
             ))}
@@ -202,25 +202,25 @@ function ArchiveToolView({ tool }: ArchiveToolViewProps) {
         {isCreate && (
           <div className="grid gap-4">
             <div className="flex flex-col gap-2 text-left">
-              <label htmlFor="archive-format" className="text-xs uppercase tracking-[0.12em] text-slate-400">Archive format</label>
+              <label htmlFor="archive-format" className="text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Archive format</label>
               <select
                 id="archive-format"
                 value={format}
                 onChange={(event) => setFormat(event.target.value)}
                 disabled={isProcessing}
-                className="w-full rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-sm text-white"
+                className="w-full rounded-lg border px-3 py-2 text-sm border-slate-300 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white"
               >
                 {ARCHIVE_FORMATS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
-              <div className="text-xs text-slate-400">RAR and 7Z require 7-Zip installed on your system.</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">RAR and 7Z require 7-Zip installed on your system.</div>
             </div>
           </div>
         )}
 
         <button
-          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+          className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
           type="submit"
           disabled={isProcessing || !selectedFiles.length}
         >

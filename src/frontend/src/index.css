@@ -4,18 +4,20 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
   body {
-    @apply m-0 min-h-screen overflow-x-hidden p-0 font-sans;
+    @apply m-0 min-h-screen overflow-x-hidden p-0 font-sans bg-slate-100 text-slate-900;
+    color-scheme: light;
   }
 
   body.theme-dark {
     @apply bg-black text-white;
     color-scheme: dark;
-  }
-
-  body.theme-light {
-    @apply bg-slate-50 text-slate-900;
-    color-scheme: light;
   }
 
   #root {
@@ -30,30 +32,4 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
-  body.theme-light .bg-white\/5 { background-color: rgba(15, 23, 42, 0.04); }
-  body.theme-light .bg-white\/10 { background-color: rgba(15, 23, 42, 0.08); }
-  body.theme-light .bg-white\/20 { background-color: rgba(15, 23, 42, 0.12); }
-  body.theme-light .bg-black\/80 { background-color: rgba(255, 255, 255, 0.82); }
-  body.theme-light .bg-black\/40 { background-color: rgba(15, 23, 42, 0.05); }
-  body.theme-light .bg-black\/30 { background-color: rgba(15, 23, 42, 0.04); }
-  body.theme-light .bg-slate-950\/70 { background-color: rgba(255, 255, 255, 0.85); }
-  body.theme-light .bg-slate-950\/60 { background-color: rgba(255, 255, 255, 0.82); }
-  body.theme-light .bg-slate-900\/70 { background-color: rgba(255, 255, 255, 0.75); }
-  body.theme-light .bg-slate-900\/60 { background-color: rgba(255, 255, 255, 0.7); }
-  body.theme-light .bg-slate-900\/50 { background-color: rgba(255, 255, 255, 0.65); }
-  body.theme-light .bg-slate-700\/40 { background-color: rgba(15, 23, 42, 0.08); }
-  body.theme-light .bg-slate-400\/15 { background-color: rgba(15, 23, 42, 0.08); }
-  body.theme-light .bg-slate-400\/25 { background-color: rgba(15, 23, 42, 0.12); }
-  body.theme-light .border-white\/10 { border-color: rgba(15, 23, 42, 0.12); }
-  body.theme-light .border-white\/20 { border-color: rgba(15, 23, 42, 0.18); }
-  body.theme-light .border-slate-800 { border-color: rgba(15, 23, 42, 0.2); }
-  body.theme-light .text-white { color: #0f172a; }
-  body.theme-light .text-slate-50 { color: #0f172a; }
-  body.theme-light .text-slate-100 { color: #1e293b; }
-  body.theme-light .text-slate-200 { color: #334155; }
-  body.theme-light .text-slate-300 { color: #475569; }
-  body.theme-light .text-slate-400 { color: #64748b; }
-  body.theme-light .text-slate-500 { color: #94a3b8; }
-  body.theme-light .text-slate-600 { color: #94a3b8; }
 }
