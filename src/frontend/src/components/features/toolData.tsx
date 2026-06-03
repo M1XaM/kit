@@ -96,6 +96,26 @@ const AUDIO_TOOLS = [
     category: 'audio',
     icon: ICONS.audio,
     colorClass: resolveColorClass('icon-yellow')
+  },
+  {
+    id: 'merge-audio',
+    title: 'Merge Audio',
+    description: 'Combine multiple audio files into one — preview, reorder, then merge.',
+    category: 'audio',
+    icon: ICONS.layers,
+    colorClass: resolveColorClass('icon-yellow'),
+    toolType: 'audio-merge',
+    runtime: 'client'
+  },
+  {
+    id: 'record-video',
+    title: 'Record Video',
+    description: 'Record your camera with optional microphone and system audio.',
+    category: 'audio',
+    icon: ICONS.video,
+    colorClass: resolveColorClass('icon-yellow'),
+    toolType: 'video-record',
+    runtime: 'client'
   }
 ]
 
@@ -185,22 +205,95 @@ const COMING_SOON_TOOLS = [
   makeSoonTool('compress-video', 'Compress Video', 'Reduce video size while keeping quality.', 'video', ICONS.compress, 'icon-red'),
   makeSoonTool('convert-video', 'Convert Video Formats', 'Convert videos between formats.', 'video', ICONS.swap, 'icon-red'),
   makeSoonTool('trim-audio', 'Trim Audio', 'Trim audio clips in seconds.', 'video', ICONS.scissors, 'icon-red'),
-  makeSoonTool('merge-audio', 'Merge Audio', 'Combine audio tracks into one file.', 'audio', ICONS.layers, 'icon-yellow'),
   makeSoonTool('convert-audio', 'Convert Audio Formats', 'Convert audio between formats.', 'audio', ICONS.swap, 'icon-yellow'),
   makeSoonTool('adjust-audio', 'Adjust Bitrate/Sample Rate', 'Adjust bitrate and sample rate.', 'audio', ICONS.sliders, 'icon-yellow'),
-  makeSoonTool('record-video', 'Record Video', 'Record video using your camera.', 'audio', ICONS.video, 'icon-yellow'),
   makeSoonTool('screen-recording', 'Screen Recording', 'Capture your screen with audio.', 'audio', ICONS.system, 'icon-yellow'),
-  makeSoonTool('resize-image', 'Resize Image', 'Resize images by dimensions or size.', 'image', ICONS.crop, 'icon-green'),
-  makeSoonTool('compress-image', 'Compress Image', 'Shrink images while keeping quality.', 'image', ICONS.compress, 'icon-green'),
   makeSoonTool('convert-image-formats', 'Convert Image Formats', 'Convert images between popular formats.', 'image', ICONS.swap, 'icon-green'),
-  makeSoonTool('crop-rotate-flip', 'Crop/Rotate/Flip', 'Crop, rotate, or flip images.', 'image', ICONS.crop, 'icon-green'),
   makeSoonTool('batch-image', 'Batch Image Processing', 'Process multiple images at once.', 'image', ICONS.layers, 'icon-green'),
   makeSoonTool('denoise-enhance', 'Denoise/Enhance', 'Enhance images and reduce noise.', 'image', ICONS.sparkles, 'icon-green'),
-  makeSoonTool('palette-extraction', 'Color Palette Extraction', 'Extract color palettes from images.', 'image', ICONS.palette, 'icon-green'),
-  makeSoonTool('image-collage', 'Image Collage/Grid', 'Build collages or image grids.', 'image', ICONS.grid, 'icon-green'),
-  makeSoonTool('watermark-image', 'Image Watermark', 'Add watermarks to your images.', 'image', ICONS.lock, 'icon-green'),
-  makeSoonTool('image-borders', 'Borders/Rounded Corners', 'Add borders or rounded corners.', 'image', ICONS.crop, 'icon-green'),
-  makeSoonTool('image-filters', 'Filters/Effects', 'Apply filters and effects.', 'image', ICONS.sliders, 'icon-green')
+  makeSoonTool('watermark-image', 'Image Watermark', 'Add watermarks to your images.', 'image', ICONS.lock, 'icon-green')
+]
+
+// Image tools. Heavy, whole-image pixel work (resize, compress, borders,
+// filters, collage) runs on the Go backend to bypass browser memory limits;
+// inherently interactive tools (crop selection, palette swatches) run entirely
+// client-side on a <canvas> for instant feedback and zero uploads.
+const IMAGE_TOOLS = [
+  {
+    id: 'resize-image',
+    title: 'Resize Image',
+    description: 'Resize images by dimensions or percentage with high-quality resampling.',
+    category: 'image',
+    icon: ICONS.crop,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/image/resize',
+    toolType: 'image-server',
+    runtime: 'server'
+  },
+  {
+    id: 'compress-image',
+    title: 'Compress Image',
+    description: 'Shrink image file size with adjustable quality, optionally downscaling first.',
+    category: 'image',
+    icon: ICONS.compress,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/image/compress',
+    toolType: 'image-server',
+    runtime: 'server'
+  },
+  {
+    id: 'crop-rotate-flip',
+    title: 'Crop/Rotate/Flip',
+    description: 'Crop a selection, rotate, and flip images right in your browser.',
+    category: 'image',
+    icon: ICONS.crop,
+    colorClass: resolveColorClass('icon-green'),
+    toolType: 'image-crop',
+    runtime: 'client'
+  },
+  {
+    id: 'palette-extraction',
+    title: 'Color Palette Extraction',
+    description: 'Pull a dominant color palette from any image and copy the hex codes.',
+    category: 'image',
+    icon: ICONS.palette,
+    colorClass: resolveColorClass('icon-green'),
+    toolType: 'image-palette',
+    runtime: 'client'
+  },
+  {
+    id: 'image-collage',
+    title: 'Image Collage/Grid',
+    description: 'Arrange multiple images into a clean grid collage.',
+    category: 'image',
+    icon: ICONS.grid,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/image/collage',
+    toolType: 'image-collage',
+    runtime: 'server'
+  },
+  {
+    id: 'image-borders',
+    title: 'Borders/Rounded Corners',
+    description: 'Add a solid border and rounded corners with transparency.',
+    category: 'image',
+    icon: ICONS.crop,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/image/border',
+    toolType: 'image-server',
+    runtime: 'server'
+  },
+  {
+    id: 'image-filters',
+    title: 'Filters/Effects',
+    description: 'Apply grayscale, sepia, blur, sharpen, brightness, contrast and more.',
+    category: 'image',
+    icon: ICONS.sliders,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/image/filter',
+    toolType: 'image-server',
+    runtime: 'server'
+  }
 ]
 
 export const TOOLS = [
@@ -302,6 +395,7 @@ export const TOOLS = [
   ...DOCUMENT_TOOLS,
   ...TEXT_TOOLS,
   ...AUDIO_TOOLS,
+  ...IMAGE_TOOLS,
   ...COMING_SOON_TOOLS
 ]
 

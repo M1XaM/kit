@@ -26,6 +26,23 @@ We are constantly expanding our toolkit. Currently, you can easily access the fo
 * **PDF to Word:** Easily convert your PDF files into easy-to-edit DOC/DOCX documents.
 * **PDF to Excel:** Pull data straight from your PDFs into Excel spreadsheets in a few short seconds.
 
+### 🖼️ Image Toolkit
+
+Heavy, whole-image work runs on the local Go engine so even large photos stay off the browser's memory budget; inherently interactive tools run entirely client-side for instant feedback with zero uploads.
+
+* **Resize Image** *(server)*: Resize by exact dimensions, a fit-within box, or a percentage with high-quality Catmull-Rom resampling.
+* **Compress Image** *(server)*: Shrink file size with an adjustable JPEG quality slider (or lossless PNG), optionally downscaling first.
+* **Borders / Rounded Corners** *(server)*: Add a solid colored border and anti-aliased rounded corners, output as transparent PNG.
+* **Filters / Effects** *(server)*: Grayscale, sepia, invert, brightness, contrast, saturation, blur and sharpen.
+* **Image Collage / Grid** *(server)*: Arrange multiple images into a clean, evenly-spaced grid with a custom background.
+* **Crop / Rotate / Flip** *(client)*: Draw a crop selection, rotate, and flip right on a `<canvas>` — nothing leaves your machine.
+* **Color Palette Extraction** *(client)*: Pull a dominant color palette via median-cut quantization and copy the hex codes.
+
+### 🔊 Audio Toolkit
+
+* **Merge Audio** *(client)*: Add multiple audio files, preview and reorder them, then combine into one track — decoded, resampled and concatenated in-browser with the Web Audio API and exported as WAV or MP3. Fully offline, no uploads.
+* **Record Video** *(client)*: Record your camera with a live preview, plus optional microphone and system audio (mixed together via the Web Audio API). Pause/resume, then preview and download each clip — nothing leaves your device.
+
 ---
 
 ## 📥 How to Run

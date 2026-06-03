@@ -11,6 +11,12 @@ import TextToolView from './TextToolView'
 import RecordAudioView from './RecordAudioView'
 import PdfToolView, { PDF_TOOL_IDS } from './PdfToolView'
 import FileConverterView from './FileConverterView'
+import ImageToolView from './ImageToolView'
+import ImageCollageView from './ImageCollageView'
+import CropRotateFlipView from './CropRotateFlipView'
+import ColorPaletteView from './ColorPaletteView'
+import MergeAudioView from './MergeAudioView'
+import RecordVideoView from './RecordVideoView'
 import FeatureHeader from './FeatureHeader'
 
 function ToolView() {
@@ -48,7 +54,16 @@ function ToolView() {
     'url-encode-decode': TextToolView,
     'text-encoding-convert': TextToolView,
     'record-audio': RecordAudioView,
+    'merge-audio': MergeAudioView,
+    'record-video': RecordVideoView,
     'file-converter': FileConverterView,
+    'resize-image': ImageToolView,
+    'compress-image': ImageToolView,
+    'image-borders': ImageToolView,
+    'image-filters': ImageToolView,
+    'image-collage': ImageCollageView,
+    'crop-rotate-flip': CropRotateFlipView,
+    'palette-extraction': ColorPaletteView,
     ...Object.fromEntries(PDF_TOOL_IDS.map((pdfId) => [pdfId, PdfToolView]))
   }
   const CustomView = customViews[id]
