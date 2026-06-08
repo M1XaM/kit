@@ -28,7 +28,9 @@ _testmain.go
 !/src/frontend/
 !/src/gh-page/
 !/src/uninstall/
+!/src/bgremove/
 !/src/build.sh
+!/src/build_sidecar.sh
 !/src/go.mod
 !/src/go.sum
 !/src/main.go.patch

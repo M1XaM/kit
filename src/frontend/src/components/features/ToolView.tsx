@@ -19,6 +19,7 @@ import MergeAudioView from './MergeAudioView'
 import RecordVideoView from './RecordVideoView'
 import VideoToolView from './VideoToolView'
 import MergeVideoView from './MergeVideoView'
+import RemoveBackgroundView from './RemoveBackgroundView'
 import FeatureHeader from './FeatureHeader'
 
 function ToolView() {
@@ -74,6 +75,7 @@ function ToolView() {
     'image-collage': ImageCollageView,
     'crop-rotate-flip': CropRotateFlipView,
     'palette-extraction': ColorPaletteView,
+    'ai-remove-background': RemoveBackgroundView,
     ...Object.fromEntries(PDF_TOOL_IDS.map((pdfId) => [pdfId, PdfToolView]))
   }
   const CustomView = customViews[id]

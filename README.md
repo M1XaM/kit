@@ -43,13 +43,23 @@ Heavy, whole-image work runs on the local Go engine so even large photos stay of
 * **Merge Audio** *(client)*: Add multiple audio files, preview and reorder them, then combine into one track — decoded, resampled and concatenated in-browser with the Web Audio API and exported as WAV or MP3. Fully offline, no uploads.
 * **Record Video** *(client)*: Record your camera with a live preview, plus optional microphone and system audio (mixed together via the Web Audio API). Pause/resume, then preview and download each clip — nothing leaves your device.
 
+### 🤖 AI Toolkit
+
+Runs a neural-net model **locally** — no cloud, no uploads. Inference happens in a bundled engine (`kit-bgremove`) that ships inside the `lib/` folder next to the app, so there's nothing to install.
+
+* **AI Remove Background** *(server)*: Cut the subject out of any image and download a transparent PNG. The feature page has a collapsible **live system monitor** (RAM, CPU, GPU with real-time graphs) and a model dropdown offering three tiers by resource cost — **U²-Net Lite** (~5 MB, runs anywhere), **ISNet General** (~176 MB), and **BiRefNet** (~900 MB, highest quality). The tier best suited to your machine is flagged **Recommended**, and a tier your machine can't handle is marked unavailable. Model weights are **downloaded on demand** from the page (so the base install stays small) and can be **deleted any time** to reclaim storage. Inference runs on your **NVIDIA GPU (CUDA)** when the GPU build is used and a compatible GPU is present, otherwise on the **CPU** — the result preview shows which one actually ran.
+
+> **Availability & GPU builds:** every official release ships the **CPU** engine for **Linux, Windows and macOS (Apple Silicon)**, so background removal works out of the box on all three — no extra download beyond the model weights. Inference runs on the CPU by default; building with the GPU option (`make build with-gpu`) instead bundles the full CUDA + cuDNN runtime so any NVIDIA machine runs on the GPU with zero setup — at the cost of a much larger download (~2.9 GB per OS, which exceeds GitHub's 2 GB per-asset limit, so GPU bundles aren't attached to releases and are a build-from-source option). Without it (or on machines with no NVIDIA GPU) Kit automatically falls back to the CPU. If you build from source on a machine without a C/Go toolchain the sidecar is skipped and the feature reports itself as unavailable on the page.
+
 ---
 
 ## 📥 How to Run
 
-1. **Launch:** Simply open the `bin/` folder and execute the `kit` binary corresponding to your operating system (`linux`, `windows`, or `macos`).
+1. **Launch:** Open the `bin/` folder for your operating system (`linux`, `windows`, or `macos`) and execute the **`install-kit`** application. (Its bundled engine and libraries live in the adjacent `lib/` folder — keep them together.)
 2. **Access:** The app will automatically open a sleek dashboard in your default web browser.
 3. **Bookmark (Pro Tip):** Save `kit://start` as a bookmark to start the application natively whenever you need it!
+
+Each OS folder contains `install-kit`, `uninstall-kit`, and a `lib/` folder with everything else.
 
 ---
 
@@ -58,5 +68,5 @@ Heavy, whole-image work runs on the local Go engine so even large photos stay of
 Didn't like it? Kit leaves no hidden background services. To instantly wipe the custom `kit://` URL schemas from your system registries without any manual hunting:
 
 1. Navigate to your operating system's folder inside `bin/`.
-2. Run the `delete-kit` (or `delete-kit.exe`) application.
+2. Run the **`uninstall-kit`** (or `uninstall-kit.exe`) application.
 3. Your system is wiped clean of Kit's routing! You can safely delete all remaining files.

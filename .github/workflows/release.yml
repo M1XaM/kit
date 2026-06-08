@@ -10,8 +10,47 @@ permissions:
   contents: write # Needed to create releases and upload assets
 
 jobs:
-  build-and-release:
+  # Linux + Windows are built together through the Docker pipeline. The sidecar
+  # stage already installs the mingw cross-toolchain and bundles the CPU ONNX
+  # Runtime for both, so each release ships a working AI engine out of the box.
+  build-desktop:
+    name: Build Linux + Windows (CPU)
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build linux + windows via Docker
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            --file Dockerfile \
+            --build-arg TARGET_OS="linux windows" \
+            --output type=local,dest=bin/ .
+
+      - name: Package Linux
+        run: |
+          cd bin/linux
+          tar -czvf ../kit-linux-amd64.tar.gz *
+
+      - name: Package Windows
+        run: |
+          cd bin/windows
+          zip -r ../kit-windows-amd64.zip *
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-desktop
+          path: |
+            bin/kit-linux-amd64.tar.gz
+            bin/kit-windows-amd64.zip
+          retention-days: 1
+
+  # macOS (Apple Silicon): the sidecar is a CGO binary that needs a real Mac
+  # toolchain, so Docker can't cross-build it — we build natively on the runner.
+  build-macos:
+    name: Build macOS (Apple Silicon, CPU)
+    runs-on: macos-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -31,32 +70,41 @@ jobs:
           cd src/frontend
           npm install
 
-      - name: Build Binaries
+      - name: Build macOS binaries + sidecar
         run: |
-          chmod +x src/build.sh
-          ./src/build.sh
-
-      - name: Package Linux
-        run: |
-          cd bin/linux
-          tar -czvf ../kit-linux-amd64.tar.gz *
-
-      - name: Package Windows
-        run: |
-          cd bin/windows
-          zip -r ../kit-windows-amd64.zip *
+          chmod +x src/build.sh src/build_sidecar.sh
+          ./src/build.sh macos
 
       - name: Package macOS
         run: |
           cd bin/macos
           tar -czvf ../kit-macos-arm64.tar.gz *
 
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-macos
+          path: bin/kit-macos-arm64.tar.gz
+          retention-days: 1
+
+  # Gather every platform's package and publish a single GitHub Release.
+  release:
+    name: Publish Release
+    needs: [build-desktop, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all packages
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
       - name: Publish Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           generate_release_notes: true
           files: |
-            bin/kit-linux-amd64.tar.gz
-            bin/kit-windows-amd64.zip
-            bin/kit-macos-arm64.tar.gz
+            dist/kit-linux-amd64.tar.gz
+            dist/kit-windows-amd64.zip
+            dist/kit-macos-arm64.tar.gz
