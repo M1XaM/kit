@@ -106,6 +106,31 @@ func main() {
 		fmt.Println("Unsupported OS.")
 	}
 
+	// Remove the cache directory holding downloaded AI model weights (which can
+	// be several GB). This mirrors modelsDir() in backend/features/ai_bgremove.go:
+	// the weights live under <user cache>/kit/models, so wiping <user cache>/kit
+	// reclaims that space and leaves no Kit data behind.
+	removeModelCache()
+
 	fmt.Println()
 	fmt.Println("Kit uninstallation complete! You can now safely delete the executable binaries.")
+}
+
+// removeModelCache deletes Kit's cache directory, including any downloaded
+// background-removal model weights. It is best-effort: a missing directory is
+// fine, and any other error is reported but does not fail the uninstall.
+func removeModelCache() {
+	base, err := os.UserCacheDir()
+	if err != nil {
+		base = os.TempDir()
+	}
+	kitCache := filepath.Join(base, "kit")
+	if _, err := os.Stat(kitCache); os.IsNotExist(err) {
+		return
+	}
+	if err := os.RemoveAll(kitCache); err != nil {
+		fmt.Printf("Could not remove downloaded model cache at %s: %v\n", kitCache, err)
+		return
+	}
+	fmt.Println("Removed downloaded AI model weights and cache.")
 }

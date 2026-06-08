@@ -290,13 +290,29 @@ const COMING_SOON_TOOLS = [
   makeSoonTool('extract-text-pdf', 'Extract Text from PDF', 'Pull plain text from PDF files.', 'text', ICONS.text, 'icon-purple'),
   makeSoonTool('watermark-documents', 'Watermark Documents', 'Apply image or page watermarks to documents.', 'text', ICONS.lock, 'icon-purple'),
   makeSoonTool('ai-summarize', 'AI Summarize', 'Summarize documents with AI.', 'ai-tools', ICONS.sparkles, 'icon-green'),
-  makeSoonTool('ai-remove-background', 'AI Remove Background', 'Remove image backgrounds with AI.', 'ai-tools', ICONS.crop, 'icon-green'),
   makeSoonTool('convert-audio', 'Convert Audio Formats', 'Convert audio between formats.', 'audio', ICONS.swap, 'icon-yellow'),
   makeSoonTool('screen-recording', 'Screen Recording', 'Capture your screen with audio.', 'audio', ICONS.system, 'icon-yellow'),
   makeSoonTool('convert-image-formats', 'Convert Image Formats', 'Convert images between popular formats.', 'image', ICONS.swap, 'icon-green'),
   makeSoonTool('batch-image', 'Batch Image Processing', 'Process multiple images at once.', 'image', ICONS.layers, 'icon-green'),
   makeSoonTool('denoise-enhance', 'Denoise/Enhance', 'Enhance images and reduce noise.', 'image', ICONS.sparkles, 'icon-green'),
   makeSoonTool('watermark-image', 'Image Watermark', 'Add watermarks to your images.', 'image', ICONS.lock, 'icon-green')
+]
+
+// AI tools run a neural-net model locally via a bundled sidecar engine. Heavy
+// inference happens on the Go side; weights are downloaded on demand from the
+// feature page and can be deleted to reclaim storage.
+const AI_TOOLS = [
+  {
+    id: 'ai-remove-background',
+    title: 'AI Remove Background',
+    description: 'Cut the subject out of any image with a local AI model — fully offline, nothing uploaded.',
+    category: 'ai-tools',
+    icon: ICONS.sparkles,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/ai/remove-background',
+    toolType: 'ai-remove-bg',
+    runtime: 'server'
+  }
 ]
 
 // Image tools. Heavy, whole-image pixel work (resize, compress, borders,
@@ -482,6 +498,7 @@ export const TOOLS = [
   ...AUDIO_TOOLS,
   ...VIDEO_TOOLS,
   ...IMAGE_TOOLS,
+  ...AI_TOOLS,
   ...COMING_SOON_TOOLS
 ]
 

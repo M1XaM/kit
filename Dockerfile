@@ -49,8 +49,8 @@ RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " linux "; then
 			mkdir -p /out/linux; \
 			LDFLAGS=""; \
 			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="-ldflags=-X=main.withTerminal=true"; fi; \
-			GOOS=linux GOARCH=amd64 go build $LDFLAGS -o /out/linux/kit ./backend; \
-			GOOS=linux GOARCH=amd64 go build -o /out/linux/delete-kit ./uninstall/main.go; \
+			GOOS=linux GOARCH=amd64 go build $LDFLAGS -o /out/linux/install-kit ./backend; \
+			GOOS=linux GOARCH=amd64 go build -o /out/linux/uninstall-kit ./uninstall/main.go; \
 		fi
 
 # Windows
@@ -58,8 +58,8 @@ RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " windows "; th
 			mkdir -p /out/windows; \
 			LDFLAGS=""; \
 			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="-ldflags=-X=main.withTerminal=true"; fi; \
-			GOOS=windows GOARCH=amd64 go build $LDFLAGS -o /out/windows/kit.exe ./backend; \
-			GOOS=windows GOARCH=amd64 go build -o /out/windows/delete-kit.exe ./uninstall/main.go; \
+			GOOS=windows GOARCH=amd64 go build $LDFLAGS -o /out/windows/install-kit.exe ./backend; \
+			GOOS=windows GOARCH=amd64 go build -o /out/windows/uninstall-kit.exe ./uninstall/main.go; \
 		fi
 
 # macOS (Apple Silicon)
@@ -67,15 +67,50 @@ RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " macos "; then
 			mkdir -p /out/macos; \
 			LDFLAGS=""; \
 			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="-ldflags=-X=main.withTerminal=true"; fi; \
-			GOOS=darwin GOARCH=arm64 go build $LDFLAGS -o /out/macos/kit ./backend; \
-			GOOS=darwin GOARCH=arm64 go build -o /out/macos/delete-kit ./uninstall/main.go; \
+			GOOS=darwin GOARCH=arm64 go build $LDFLAGS -o /out/macos/install-kit ./backend; \
+			GOOS=darwin GOARCH=arm64 go build -o /out/macos/uninstall-kit ./uninstall/main.go; \
 		fi
 
 
 # ==========================================
-# Stage 3: Export artifacts to the host
+# Stage 3: Build the AI sidecar (kit-bgremove)
 # ==========================================
-# We use a scratch image simply to hold the binaries. 
+# The sidecar does ONNX inference and is a CGO binary that dlopen's ONNX Runtime
+# at runtime, so it can't share the pure-static musl backend stage — it must link
+# glibc to run on typical Linux desktops. We use a glibc Go image and a mingw
+# cross-toolchain for Windows. macOS needs osxcross/a Mac, so it's skipped here;
+# the AI feature simply reports itself unavailable on macOS until that ships.
+FROM golang:bookworm AS sidecar
+ARG TARGET_OS=all
+# WITH_GPU=true bundles the full CUDA 12 + cuDNN 9 runtime so NVIDIA machines run
+# on the GPU with zero setup (large: ~2.9GB per OS). Default false ships the tiny
+# CPU runtime; the sidecar auto-falls back to CPU regardless.
+ARG WITH_GPU=false
+WORKDIR /app
+ENV GO111MODULE=on
+RUN apt-get update && apt-get install -y --no-install-recommends \
+		gcc gcc-mingw-w64-x86-64 curl unzip ca-certificates python3-pip && rm -rf /var/lib/apt/lists/*
+COPY src/go.mod src/go.sum ./
+RUN go mod download
+COPY src/ ./
+# Only attempt the OSes we can cross-build CGO for here (linux, windows). The
+# helper skips any target whose toolchain is missing.
+RUN SIDECAR_TARGETS="$(echo "$TARGET_OS" | tr ' ' '\n' | grep -E 'linux|windows|all' | tr '\n' ' ')"; \
+		WITH_GPU_FLAG=0; [ "$WITH_GPU" = "true" ] && WITH_GPU_FLAG=1; \
+		if [ -z "$SIDECAR_TARGETS" ]; then SIDECAR_TARGETS=""; else \
+			[ "$SIDECAR_TARGETS" = "all " ] && SIDECAR_TARGETS="linux windows"; \
+			chmod +x build_sidecar.sh && WITH_GPU=$WITH_GPU_FLAG ./build_sidecar.sh /sidecar $SIDECAR_TARGETS; \
+		fi; \
+		mkdir -p /sidecar
+
+
+# ==========================================
+# Stage 4: Export artifacts to the host
+# ==========================================
+# We use a scratch image simply to hold the binaries.
 # BuildKit's `--output` flag will dump everything in /out to the host.
+# The backend (kit) and sidecar (kit-bgremove + lib/) outputs share the same
+# per-OS folder layout, so copying both into "/" merges them per OS.
 FROM scratch AS export-stage
 COPY --from=backend /out /
+COPY --from=sidecar /sidecar /

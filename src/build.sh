@@ -7,6 +7,7 @@ npm run build
 cd ..
 
 WITH_TERMINAL="false"
+WITH_GPU="0"
 TARGET_OS="all"
 
 for arg in "$@"; do
@@ -14,12 +15,15 @@ for arg in "$@"; do
 		--with-terminal)
 			WITH_TERMINAL="true"
 			;;
+		--with-gpu)
+			WITH_GPU="1"
+			;;
 		all|linux|windows|macos)
 			TARGET_OS="$arg"
 			;;
 		*)
 			echo "Unknown option: $arg"
-			echo "Usage: ./build.sh [all|linux|windows|macos] [--with-terminal]"
+			echo "Usage: ./build.sh [all|linux|windows|macos] [--with-terminal] [--with-gpu]"
 			exit 1
 			;;
 	esac
@@ -38,20 +42,20 @@ cp -r frontend/dist/* backend/frontend/dist/ || true
 
 build_linux() {
 	mkdir -p ../bin/linux
-	GOOS=linux GOARCH=amd64 go build "${GO_BUILD_FLAGS[@]}" -o ../bin/linux/kit ./backend
-	GOOS=linux GOARCH=amd64 go build -o ../bin/linux/delete-kit ./uninstall/main.go
+	GOOS=linux GOARCH=amd64 go build "${GO_BUILD_FLAGS[@]}" -o ../bin/linux/install-kit ./backend
+	GOOS=linux GOARCH=amd64 go build -o ../bin/linux/uninstall-kit ./uninstall/main.go
 }
 
 build_windows() {
 	mkdir -p ../bin/windows
-	GOOS=windows GOARCH=amd64 go build "${GO_BUILD_FLAGS[@]}" -o ../bin/windows/kit.exe ./backend
-	GOOS=windows GOARCH=amd64 go build -o ../bin/windows/delete-kit.exe ./uninstall/main.go
+	GOOS=windows GOARCH=amd64 go build "${GO_BUILD_FLAGS[@]}" -o ../bin/windows/install-kit.exe ./backend
+	GOOS=windows GOARCH=amd64 go build -o ../bin/windows/uninstall-kit.exe ./uninstall/main.go
 }
 
 build_macos() {
 	mkdir -p ../bin/macos
-	GOOS=darwin GOARCH=arm64 go build "${GO_BUILD_FLAGS[@]}" -o ../bin/macos/kit ./backend
-	GOOS=darwin GOARCH=arm64 go build -o ../bin/macos/delete-kit ./uninstall/main.go
+	GOOS=darwin GOARCH=arm64 go build "${GO_BUILD_FLAGS[@]}" -o ../bin/macos/install-kit ./backend
+	GOOS=darwin GOARCH=arm64 go build -o ../bin/macos/uninstall-kit ./uninstall/main.go
 }
 
 case "$TARGET_OS" in
@@ -81,5 +85,13 @@ case "$TARGET_OS" in
 		exit 1
 		;;
 esac
+
+# Build the AI background-removal sidecar (kit-bgremove) + bundle the ONNX
+# Runtime library alongside each kit binary. This is a CGO build and needs a C
+# toolchain per target; the helper skips any target whose toolchain is missing
+# (locally that usually means only the host OS gets a sidecar — other OSes then
+# report the AI feature as unavailable, which Kit handles gracefully).
+echo "Building AI sidecar (kit-bgremove)..."
+WITH_GPU="$WITH_GPU" ./build_sidecar.sh ../bin "$TARGET_OS" || echo "Sidecar build skipped/failed; AI Remove Background will be unavailable."
 
 echo "Build complete! Check the ../bin/ directory for your OS folders."

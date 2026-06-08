@@ -34,6 +34,10 @@ func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string) {
 	mux.HandleFunc("/api/video/convert", policy.wrapAPIHandler(features.HandleConvertVideo))
 	mux.HandleFunc("/api/audio/trim", policy.wrapAPIHandler(features.HandleTrimAudio))
 	mux.HandleFunc("/api/audio/adjust", policy.wrapAPIHandler(features.HandleAdjustAudio))
+	mux.HandleFunc("/api/ai/models", policy.wrapAPIHandler(features.HandleListBgModels))
+	mux.HandleFunc("/api/ai/models/download", policy.wrapAPIHandler(features.HandleDownloadBgModel))
+	mux.HandleFunc("/api/ai/models/delete", policy.wrapAPIHandler(features.HandleDeleteBgModel))
+	mux.HandleFunc("/api/ai/remove-background", policy.wrapAPIHandler(features.HandleRemoveBackground))
 	mux.HandleFunc("/api/system/metrics", policy.wrapAPIHandler(handleSystemMetrics))
 	// /api/open — opens a browser tab on the running server.
 	// Called by kit://start when an instance is already listening on the base port.
