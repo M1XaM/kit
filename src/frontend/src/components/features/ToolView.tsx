@@ -251,6 +251,8 @@ function ToolView() {
         </button>
       </form>
     </div>
+    <RecommendedTools currentId={id} />
+    </>
   )
 }
 
