@@ -174,5 +174,10 @@ func (p *securityPolicy) setSecurityHeaders(w http.ResponseWriter) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
 	w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
-	w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; connect-src 'self' ws: wss: https://speed.cloudflare.com; img-src 'self' data: blob: https://speed.cloudflare.com; script-src 'self'; style-src 'self' 'unsafe-inline'")
+	// media-src must allow blob: so recorded clips and uploaded-file previews
+	// play in the in-browser <video>/<audio> players (their URLs come from
+	// URL.createObjectURL); mediastream: covers the live camera/mic previews
+	// set via srcObject. Without this, default-src 'self' blocks them and only
+	// the download links work.
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; connect-src 'self' ws: wss: https://speed.cloudflare.com; img-src 'self' data: blob: https://speed.cloudflare.com; media-src 'self' blob: mediastream:; script-src 'self'; style-src 'self' 'unsafe-inline'")
 }

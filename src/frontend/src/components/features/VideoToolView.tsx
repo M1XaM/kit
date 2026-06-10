@@ -20,6 +20,18 @@ const CONVERT_FORMATS = [
   { value: 'gif', label: 'Animated GIF' }
 ]
 
+const AUDIO_FORMATS = [
+  { value: 'mp3', label: 'MP3' },
+  { value: 'wav', label: 'WAV (lossless)' },
+  { value: 'flac', label: 'FLAC (lossless)' },
+  { value: 'ogg', label: 'OGG Vorbis' },
+  { value: 'opus', label: 'Opus' },
+  { value: 'm4a', label: 'M4A (AAC)' },
+  { value: 'aac', label: 'AAC' }
+]
+
+const LOSSY_AUDIO_FORMATS = new Set(['mp3', 'ogg', 'opus', 'm4a', 'aac'])
+
 // Per-tool copy and whether the tool consumes audio rather than video.
 const TOOL_META: Record<string, { subtitle: string; audio?: boolean }> = {
   'trim-video': { subtitle: 'Cut a clip to an exact start and end — fast, lossless stream copy.' },
@@ -28,7 +40,8 @@ const TOOL_META: Record<string, { subtitle: string; audio?: boolean }> = {
   'compress-video': { subtitle: 'Shrink a video with adjustable quality, optionally downscaling first.' },
   'convert-video': { subtitle: 'Transcode a video to another format right on your machine.' },
   'trim-audio': { subtitle: 'Cut an audio clip to an exact start and end.', audio: true },
-  'adjust-audio': { subtitle: 'Re-encode audio with a new bitrate and/or sample rate.', audio: true }
+  'adjust-audio': { subtitle: 'Re-encode audio with a new bitrate and/or sample rate.', audio: true },
+  'convert-audio': { subtitle: 'Transcode audio to another format right on your machine.', audio: true }
 }
 
 const BITRATES = ['64', '96', '128', '160', '192', '256', '320']
@@ -76,6 +89,9 @@ function VideoToolView({ tool }: VideoToolViewProps) {
   // Adjust audio controls
   const [bitrate, setBitrate] = useState('192')
   const [sampleRate, setSampleRate] = useState('44100')
+
+  // Convert audio controls
+  const [audioFormat, setAudioFormat] = useState('mp3')
 
   useEffect(() => {
     if (!file) {
@@ -148,6 +164,11 @@ function VideoToolView({ tool }: VideoToolViewProps) {
         if (!bitrate && !sampleRate) return 'Choose a bitrate and/or sample rate.'
         if (bitrate) data.append('bitrate', bitrate)
         if (sampleRate) data.append('sampleRate', sampleRate)
+        break
+      }
+      case 'convert-audio': {
+        data.append('format', audioFormat)
+        if (LOSSY_AUDIO_FORMATS.has(audioFormat) && bitrate) data.append('bitrate', bitrate)
         break
       }
     }
@@ -326,6 +347,30 @@ function VideoToolView({ tool }: VideoToolViewProps) {
                 <option key={f.value} value={f.value}>{f.label}</option>
               ))}
             </select>
+          </div>
+        )}
+
+        {tool.id === 'convert-audio' && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Output format</label>
+              <select className={inputClass} value={audioFormat} onChange={(e) => setAudioFormat(e.target.value)} disabled={isProcessing}>
+                {AUDIO_FORMATS.map((f) => (
+                  <option key={f.value} value={f.value}>{f.label}</option>
+                ))}
+              </select>
+            </div>
+            {LOSSY_AUDIO_FORMATS.has(audioFormat) && (
+              <div>
+                <label className={labelClass}>Bitrate (kbps)</label>
+                <select className={inputClass} value={bitrate} onChange={(e) => setBitrate(e.target.value)} disabled={isProcessing}>
+                  {BITRATES.map((b) => (
+                    <option key={b} value={b}>{b} kbps</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <p className="col-span-2 text-xs text-slate-500">Video files work too — the audio track is extracted and converted.</p>
           </div>
         )}
 

@@ -1,11 +1,14 @@
 #!/bin/bash
-# Builds the AI background-removal sidecar (kit-bgremove) and bundles its shared
-# libraries into <out>/<os>/lib, alongside which the release ships install-kit
-# and uninstall-kit. Final per-OS layout:
+# Builds the AI sidecars (kit-bgremove, kit-text2text) and bundles their shared
+# ONNX Runtime libraries into <out>/<os>/lib, alongside which the release ships
+# install-kit and uninstall-kit. Both sidecars dlopen the same ORT, so the libs
+# are bundled once. kit-text2text is the generic T5 engine shared by the AI
+# Summarize and AI Paraphrase features. Final per-OS layout:
 #
 #   <os>/install-kit
 #   <os>/uninstall-kit
 #   <os>/lib/kit-bgremove        + libonnxruntime.so (+ CUDA/cuDNN when GPU)
+#   <os>/lib/kit-text2text
 #
 # Two bundle modes:
 #   CPU (default)  : ONNX Runtime CPU only. Tiny (~25MB). Runs on the CPU.
@@ -83,6 +86,16 @@ build_one() {
 	echo "  [sidecar] building kit-bgremove for ${os}..."
 	if ! CGO_ENABLED=1 GOOS="$goos" GOARCH="$arch" CC="$cc" go build -trimpath -o "${dest}/${bin}" ./bgremove; then
 		echo "  [sidecar] WARN: build failed for $os — skipping."; return 0
+	fi
+
+	# The text-to-text sidecar (kit-text2text) — the generic T5 engine behind AI
+	# Summarize and AI Paraphrase — shares this OS's ONNX Runtime libraries, so it
+	# builds into the same lib/ dir. Both are CGO + dlopen ORT.
+	t2tbin="${bin/kit-bgremove/kit-text2text}"
+	echo "  [sidecar] building kit-text2text for ${os}..."
+	if ! CGO_ENABLED=1 GOOS="$goos" GOARCH="$arch" CC="$cc" go build -trimpath -o "${dest}/${t2tbin}" ./text2text; then
+		echo "  [sidecar] WARN: kit-text2text build failed for $os — AI Summarize/Paraphrase unavailable on $os."
+		rm -f "${dest}/${t2tbin}"
 	fi
 
 	# Choose CPU vs GPU ONNX Runtime. GPU only for linux/windows (NVIDIA).

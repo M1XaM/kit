@@ -10,18 +10,48 @@ const COLOR_CLASSES = {
 
 const resolveColorClass = (value) => COLOR_CLASSES[value] || value || ''
 
-const makeSoonTool = (id, title, description, category, icon, colorClass, runtime = 'server') => ({
-  id,
-  title,
-  description,
-  category,
-  icon,
-  colorClass: resolveColorClass(colorClass),
-  comingSoon: true,
-  runtime
-})
-
 const TEXT_TOOLS = [
+  {
+    id: 'notes',
+    title: 'Notes',
+    description: 'A persistent notepad with Markdown and LaTeX — every keystroke saved locally as plain text.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple'),
+    toolType: 'notes',
+    runtime: 'server'
+  },
+  {
+    id: 'ocr',
+    title: 'OCR',
+    description: 'Extract text from images and scans — recognition runs entirely in your browser.',
+    category: 'text',
+    icon: ICONS.sparkles,
+    colorClass: resolveColorClass('icon-purple'),
+    toolType: 'ocr',
+    runtime: 'client'
+  },
+  {
+    id: 'extract-text-pdf',
+    title: 'Extract Text from PDF',
+    description: 'Pull plain text from PDF files without uploading anything.',
+    category: 'text',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-purple'),
+    toolType: 'pdf-extract-text',
+    runtime: 'client'
+  },
+  {
+    id: 'watermark-documents',
+    title: 'Watermark Documents',
+    description: 'Stamp text or an image across PDF pages.',
+    category: 'text',
+    icon: ICONS.lock,
+    colorClass: resolveColorClass('icon-purple'),
+    apiEndpoint: '/api/pdf/watermark',
+    toolType: 'pdf-watermark',
+    runtime: 'server'
+  },
   {
     id: 'metadata-edit',
     title: 'Metadata Editor',
@@ -126,6 +156,27 @@ const AUDIO_TOOLS = [
     icon: ICONS.video,
     colorClass: resolveColorClass('icon-yellow'),
     toolType: 'video-record',
+    runtime: 'client'
+  },
+  {
+    id: 'convert-audio',
+    title: 'Convert Audio Formats',
+    description: 'Convert audio between MP3, WAV, FLAC, OGG, Opus and AAC.',
+    category: 'audio',
+    icon: ICONS.swap,
+    colorClass: resolveColorClass('icon-yellow'),
+    apiEndpoint: '/api/audio/convert',
+    toolType: 'video',
+    runtime: 'server'
+  },
+  {
+    id: 'screen-recording',
+    title: 'Screen Recording',
+    description: 'Capture your screen with optional system audio and microphone.',
+    category: 'audio',
+    icon: ICONS.system,
+    colorClass: resolveColorClass('icon-yellow'),
+    toolType: 'screen-record',
     runtime: 'client'
   }
 ]
@@ -285,23 +336,32 @@ const DOCUMENT_TOOLS = [
   }
 ]
 
-const COMING_SOON_TOOLS = [
-  makeSoonTool('ocr', 'OCR', 'Extract text from images and scans.', 'text', ICONS.sparkles, 'icon-purple'),
-  makeSoonTool('extract-text-pdf', 'Extract Text from PDF', 'Pull plain text from PDF files.', 'text', ICONS.text, 'icon-purple'),
-  makeSoonTool('watermark-documents', 'Watermark Documents', 'Apply image or page watermarks to documents.', 'text', ICONS.lock, 'icon-purple'),
-  makeSoonTool('ai-summarize', 'AI Summarize', 'Summarize documents with AI.', 'ai-tools', ICONS.sparkles, 'icon-green'),
-  makeSoonTool('convert-audio', 'Convert Audio Formats', 'Convert audio between formats.', 'audio', ICONS.swap, 'icon-yellow'),
-  makeSoonTool('screen-recording', 'Screen Recording', 'Capture your screen with audio.', 'audio', ICONS.system, 'icon-yellow'),
-  makeSoonTool('convert-image-formats', 'Convert Image Formats', 'Convert images between popular formats.', 'image', ICONS.swap, 'icon-green'),
-  makeSoonTool('batch-image', 'Batch Image Processing', 'Process multiple images at once.', 'image', ICONS.layers, 'icon-green'),
-  makeSoonTool('denoise-enhance', 'Denoise/Enhance', 'Enhance images and reduce noise.', 'image', ICONS.sparkles, 'icon-green'),
-  makeSoonTool('watermark-image', 'Image Watermark', 'Add watermarks to your images.', 'image', ICONS.lock, 'icon-green')
-]
-
 // AI tools run a neural-net model locally via a bundled sidecar engine. Heavy
 // inference happens on the Go side; weights are downloaded on demand from the
 // feature page and can be deleted to reclaim storage.
 const AI_TOOLS = [
+  {
+    id: 'ai-paraphrase',
+    title: 'AI Paraphrase',
+    description: 'Rewrite text with a local AI model — highlight only the words you want changed. Fully offline.',
+    category: 'ai-tools',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/ai/paraphrase',
+    toolType: 'ai-paraphrase',
+    runtime: 'server'
+  },
+  {
+    id: 'ai-summarize',
+    title: 'AI Summarize',
+    description: 'Condense long text into a short summary with a local AI model — fully offline, nothing uploaded.',
+    category: 'ai-tools',
+    icon: ICONS.text,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/ai/summarize',
+    toolType: 'ai-summarize',
+    runtime: 'server'
+  },
   {
     id: 'ai-remove-background',
     title: 'AI Remove Background',
@@ -393,6 +453,50 @@ const IMAGE_TOOLS = [
     colorClass: resolveColorClass('icon-green'),
     apiEndpoint: '/api/image/filter',
     toolType: 'image-server',
+    runtime: 'server'
+  },
+  {
+    id: 'convert-image-formats',
+    title: 'Convert Image Formats',
+    description: 'Convert images between PNG, JPEG, GIF, BMP, TIFF and WebP.',
+    category: 'image',
+    icon: ICONS.swap,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/image/convert',
+    toolType: 'image-server',
+    runtime: 'server'
+  },
+  {
+    id: 'batch-image',
+    title: 'Batch Image Processing',
+    description: 'Convert, resize or compress many images at once and download a ZIP.',
+    category: 'image',
+    icon: ICONS.layers,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/image/batch',
+    toolType: 'image-batch',
+    runtime: 'server'
+  },
+  {
+    id: 'denoise-enhance',
+    title: 'Denoise/Enhance',
+    description: 'Clean up noise, stretch contrast and sharpen images.',
+    category: 'image',
+    icon: ICONS.sparkles,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/image/enhance',
+    toolType: 'image-server',
+    runtime: 'server'
+  },
+  {
+    id: 'watermark-image',
+    title: 'Image Watermark',
+    description: 'Stamp text or a logo onto your images.',
+    category: 'image',
+    icon: ICONS.lock,
+    colorClass: resolveColorClass('icon-green'),
+    apiEndpoint: '/api/image/watermark',
+    toolType: 'image-watermark',
     runtime: 'server'
   }
 ]
@@ -498,8 +602,7 @@ export const TOOLS = [
   ...AUDIO_TOOLS,
   ...VIDEO_TOOLS,
   ...IMAGE_TOOLS,
-  ...AI_TOOLS,
-  ...COMING_SOON_TOOLS
+  ...AI_TOOLS
 ]
 
 export const CATEGORY_SECTIONS = [
@@ -522,6 +625,7 @@ export const CATEGORY_SECTIONS = [
     id: 'text',
     title: 'Text',
     toolIds: [
+      'notes',
       'ocr',
       'extract-text-pdf',
       'watermark-documents',
@@ -540,6 +644,7 @@ export const CATEGORY_SECTIONS = [
     title: 'AI Tools',
     toolIds: [
       'ai-summarize',
+      'ai-paraphrase',
       'ai-remove-background'
     ]
   },

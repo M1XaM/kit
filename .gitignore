@@ -29,6 +29,7 @@ _testmain.go
 !/src/gh-page/
 !/src/uninstall/
 !/src/bgremove/
+!/src/text2text/
 !/src/build.sh
 !/src/build_sidecar.sh
 !/src/go.mod
