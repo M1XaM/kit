@@ -8,9 +8,26 @@ type CropRotateFlipViewProps = {
 }
 
 type Rect = { x: number; y: number; w: number; h: number }
+type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
+type DragMode = 'new' | 'move' | 'resize'
+type DragState = { mode: DragMode; handle: Handle | null; origin: { x: number; y: number }; startRect: Rect }
 
 const MAX_DISPLAY_WIDTH = 520
 const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, '')
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
+
+// Resize handles, positioned as fractions of the selection box. `cursor` is the
+// matching CSS resize cursor.
+const HANDLES: { id: Handle; fx: number; fy: number; cursor: string }[] = [
+  { id: 'nw', fx: 0, fy: 0, cursor: 'nwse-resize' },
+  { id: 'n', fx: 0.5, fy: 0, cursor: 'ns-resize' },
+  { id: 'ne', fx: 1, fy: 0, cursor: 'nesw-resize' },
+  { id: 'e', fx: 1, fy: 0.5, cursor: 'ew-resize' },
+  { id: 'se', fx: 1, fy: 1, cursor: 'nwse-resize' },
+  { id: 's', fx: 0.5, fy: 1, cursor: 'ns-resize' },
+  { id: 'sw', fx: 0, fy: 1, cursor: 'nesw-resize' },
+  { id: 'w', fx: 0, fy: 0.5, cursor: 'ew-resize' }
+]
 
 // transformedSize returns the dimensions of the image after applying rotation
 // (90/270 swap width and height).
@@ -49,8 +66,9 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
   const [flipH, setFlipH] = useState(false)
   const [flipV, setFlipV] = useState(false)
   const [scale, setScale] = useState(1)
+  const [canvasDims, setCanvasDims] = useState({ w: 0, h: 0 })
   const [selection, setSelection] = useState<Rect | null>(null)
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null)
+  const dragRef = useRef<DragState | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
 
   // Redraw the preview canvas whenever the image or any transform changes.
@@ -63,6 +81,7 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
     setScale(nextScale)
     canvas.width = Math.round(tw * nextScale)
     canvas.height = Math.round(th * nextScale)
+    setCanvasDims({ w: canvas.width, h: canvas.height })
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -96,36 +115,108 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
     img.src = url
   }
 
-  // Selection is tracked in canvas (display) pixels.
-  const pointerPos = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const rect = (event.target as HTMLCanvasElement).getBoundingClientRect()
-    const x = Math.max(0, Math.min(event.clientX - rect.left, rect.width))
-    const y = Math.max(0, Math.min(event.clientY - rect.top, rect.height))
-    return { x, y }
+  // Selection is tracked in canvas (display) pixels. canvasPoint maps a screen
+  // coordinate into that space, clamped to the canvas bounds.
+  const canvasPoint = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current
+    if (!canvas) return { x: 0, y: 0 }
+    const rect = canvas.getBoundingClientRect()
+    return {
+      x: clamp(((clientX - rect.left) / rect.width) * canvas.width, 0, canvas.width),
+      y: clamp(((clientY - rect.top) / rect.height) * canvas.height, 0, canvas.height)
+    }
   }
 
-  const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+  // clampRect keeps a selection inside the canvas.
+  const clampRect = (rect: Rect): Rect => {
+    const canvas = canvasRef.current
+    const maxW = canvas?.width ?? rect.x + rect.w
+    const maxH = canvas?.height ?? rect.y + rect.h
+    const x = clamp(rect.x, 0, maxW)
+    const y = clamp(rect.y, 0, maxH)
+    return { x, y, w: clamp(rect.w, 0, maxW - x), h: clamp(rect.h, 0, maxH - y) }
+  }
+
+  // beginDrag starts a new selection, a move, or an edge/corner resize. The
+  // gesture is then driven by window listeners (see the effect below) so the
+  // pointer can leave the canvas mid-drag.
+  const beginDrag = (mode: DragMode, handle: Handle | null, clientX: number, clientY: number) => {
     if (!loaded) return
-    event.currentTarget.setPointerCapture(event.pointerId)
-    const pos = pointerPos(event)
-    setDragStart(pos)
-    setSelection({ x: pos.x, y: pos.y, w: 0, h: 0 })
+    const origin = canvasPoint(clientX, clientY)
+    const startRect = selection ?? { x: origin.x, y: origin.y, w: 0, h: 0 }
+    dragRef.current = { mode, handle, origin, startRect }
+    if (mode === 'new') setSelection({ x: origin.x, y: origin.y, w: 0, h: 0 })
   }
 
-  const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!dragStart) return
-    const pos = pointerPos(event)
-    setSelection({
-      x: Math.min(dragStart.x, pos.x),
-      y: Math.min(dragStart.y, pos.y),
-      w: Math.abs(pos.x - dragStart.x),
-      h: Math.abs(pos.y - dragStart.y)
-    })
-  }
+  useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      const drag = dragRef.current
+      if (!drag) return
+      const pos = canvasPoint(event.clientX, event.clientY)
+      const dx = pos.x - drag.origin.x
+      const dy = pos.y - drag.origin.y
+      if (drag.mode === 'new') {
+        setSelection({
+          x: Math.min(drag.origin.x, pos.x),
+          y: Math.min(drag.origin.y, pos.y),
+          w: Math.abs(pos.x - drag.origin.x),
+          h: Math.abs(pos.y - drag.origin.y)
+        })
+      } else if (drag.mode === 'move') {
+        const canvas = canvasRef.current
+        const maxW = canvas?.width ?? 0
+        const maxH = canvas?.height ?? 0
+        setSelection({
+          x: clamp(drag.startRect.x + dx, 0, maxW - drag.startRect.w),
+          y: clamp(drag.startRect.y + dy, 0, maxH - drag.startRect.h),
+          w: drag.startRect.w,
+          h: drag.startRect.h
+        })
+      } else if (drag.handle) {
+        const r = drag.startRect
+        let left = r.x
+        let right = r.x + r.w
+        let top = r.y
+        let bottom = r.y + r.h
+        if (drag.handle.includes('w')) left = r.x + dx
+        if (drag.handle.includes('e')) right = r.x + r.w + dx
+        if (drag.handle.includes('n')) top = r.y + dy
+        if (drag.handle.includes('s')) bottom = r.y + r.h + dy
+        setSelection(
+          clampRect({ x: Math.min(left, right), y: Math.min(top, bottom), w: Math.abs(right - left), h: Math.abs(bottom - top) })
+        )
+      }
+    }
+    const onUp = () => {
+      if (!dragRef.current) return
+      dragRef.current = null
+      setSelection((sel) => (sel && (sel.w < 5 || sel.h < 5) ? null : sel))
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [])
 
-  const onPointerUp = () => {
-    setDragStart(null)
-    setSelection((sel) => (sel && (sel.w < 5 || sel.h < 5) ? null : sel))
+  // Full-resolution dimensions of the (transformed) image, used to express the
+  // selection as image pixels for the numeric fields.
+  const fullSize = imgRef.current && loaded ? transformedSize(imgRef.current, rotation) : { w: 0, h: 0 }
+  const fullSelection: Rect = selection
+    ? {
+        x: Math.round(selection.x / scale),
+        y: Math.round(selection.y / scale),
+        w: Math.round(selection.w / scale),
+        h: Math.round(selection.h / scale)
+      }
+    : { x: 0, y: 0, w: fullSize.w, h: fullSize.h }
+
+  // Update one px field and convert the full-resolution rect back to display px.
+  const setFullField = (field: keyof Rect, value: number) => {
+    if (!Number.isFinite(value)) return
+    const next = { ...fullSelection, [field]: Math.max(0, Math.round(value)) }
+    setSelection(clampRect({ x: next.x * scale, y: next.y * scale, w: next.w * scale, h: next.h * scale }))
   }
 
   const rotate = (delta: number) => {
@@ -223,21 +314,63 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
           <div className="relative inline-block self-center" style={{ lineHeight: 0 }}>
             <canvas
               ref={canvasRef}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
+              onPointerDown={(event) => beginDrag('new', null, event.clientX, event.clientY)}
               className="max-w-full cursor-crosshair touch-none rounded-lg border border-white/15"
             />
-            {selection && selection.w > 0 && selection.h > 0 && (
+            {selection && selection.w > 0 && selection.h > 0 && canvasDims.w > 0 && (
               <div
-                className="pointer-events-none absolute border-2 border-blue-500 bg-blue-400/20"
-                style={{ left: selection.x, top: selection.y, width: selection.w, height: selection.h }}
-              />
+                className="absolute cursor-move border-2 border-blue-500 bg-blue-400/20 touch-none"
+                style={{
+                  left: `${(selection.x / canvasDims.w) * 100}%`,
+                  top: `${(selection.y / canvasDims.h) * 100}%`,
+                  width: `${(selection.w / canvasDims.w) * 100}%`,
+                  height: `${(selection.h / canvasDims.h) * 100}%`
+                }}
+                onPointerDown={(event) => {
+                  event.stopPropagation()
+                  beginDrag('move', null, event.clientX, event.clientY)
+                }}
+              >
+                {HANDLES.map((handle) => (
+                  <span
+                    key={handle.id}
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                      beginDrag('resize', handle.id, event.clientX, event.clientY)
+                    }}
+                    style={{ left: `${handle.fx * 100}%`, top: `${handle.fy * 100}%`, cursor: handle.cursor }}
+                    className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-white bg-blue-500 shadow"
+                  />
+                ))}
+              </div>
             )}
           </div>
 
           <p className="text-center text-xs text-slate-400">
-            Drag on the image to select a crop region. {selection ? 'Selection active.' : 'No selection — the full image is exported.'}
+            Drag on the image to draw a crop region, then drag its edges or corners to fine-tune. {selection ? 'Selection active.' : 'No selection — the full image is exported.'}
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {([
+              { field: 'x' as const, label: 'X (px)' },
+              { field: 'y' as const, label: 'Y (px)' },
+              { field: 'w' as const, label: 'Width (px)' },
+              { field: 'h' as const, label: 'Height (px)' }
+            ]).map(({ field, label }) => (
+              <div key={field}>
+                <label className="mb-1 block text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">{label}</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={fullSelection[field]}
+                  onChange={(e) => setFullField(field, Number(e.target.value))}
+                  className="w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-[0.7rem] text-slate-500">
+            Image is {fullSize.w} × {fullSize.h}px. Type exact pixel values as an alternative to dragging.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-2">

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import FeatureHeader from './FeatureHeader'
+import MediaTrimTimeline from './MediaTrimTimeline'
 import type { Tool } from './toolData'
 
 type VideoToolViewProps = {
@@ -58,6 +59,7 @@ const SAMPLE_RATES = [
 function VideoToolView({ tool }: VideoToolViewProps) {
   const meta = TOOL_META[tool.id] || { subtitle: tool.description }
   const isAudio = !!meta.audio
+  const isTrim = tool.id === 'trim-video' || tool.id === 'trim-audio'
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -66,9 +68,9 @@ function VideoToolView({ tool }: VideoToolViewProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
-  // Trim controls
-  const [start, setStart] = useState('0:00')
-  const [end, setEnd] = useState('0:10')
+  // Trim controls — start/end in seconds, driven by the interactive timeline.
+  const [trimStart, setTrimStart] = useState(0)
+  const [trimEnd, setTrimEnd] = useState(0)
 
   // Split controls
   const [splitMode, setSplitMode] = useState('parts')
@@ -127,9 +129,9 @@ function VideoToolView({ tool }: VideoToolViewProps) {
     switch (tool.id) {
       case 'trim-video':
       case 'trim-audio': {
-        if (!end.trim()) return 'Enter an end time.'
-        data.append('start', start.trim() || '0')
-        data.append('end', end.trim())
+        if (trimEnd <= trimStart) return 'Drag the handles to select a clip — the end must come after the start.'
+        data.append('start', trimStart.toFixed(3))
+        data.append('end', trimEnd.toFixed(3))
         break
       }
       case 'split-video': {
@@ -242,7 +244,7 @@ function VideoToolView({ tool }: VideoToolViewProps) {
           onDragLeave={(e) => { e.preventDefault(); setDragActive(false) }}
           onDrop={(e) => { e.preventDefault(); setDragActive(false); pickFile(e.dataTransfer.files) }}
         >
-          {previewUrl ? (
+          {previewUrl && !isTrim ? (
             isAudio ? (
               <audio src={previewUrl} controls className="mb-3 w-full" onClick={(e) => e.preventDefault()} />
             ) : (
@@ -266,17 +268,17 @@ function VideoToolView({ tool }: VideoToolViewProps) {
           />
         </label>
 
-        {(tool.id === 'trim-video' || tool.id === 'trim-audio') && (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Start (mm:ss)</label>
-              <input className={inputClass} type="text" placeholder="0:00" value={start} onChange={(e) => setStart(e.target.value)} disabled={isProcessing} />
-            </div>
-            <div>
-              <label className={labelClass}>End (mm:ss)</label>
-              <input className={inputClass} type="text" placeholder="0:10" value={end} onChange={(e) => setEnd(e.target.value)} disabled={isProcessing} />
-            </div>
-          </div>
+        {isTrim && previewUrl && (
+          <MediaTrimTimeline
+            key={previewUrl}
+            src={previewUrl}
+            isAudio={isAudio}
+            disabled={isProcessing}
+            onChange={(s, e) => {
+              setTrimStart(s)
+              setTrimEnd(e)
+            }}
+          />
         )}
 
         {tool.id === 'split-video' && (
