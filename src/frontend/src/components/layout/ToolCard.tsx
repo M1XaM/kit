@@ -16,7 +16,7 @@ function ToolCard({ tool, onNavigate }: ToolCardProps) {
 
   return (
     <div
-      className="relative flex h-full min-h-[240px] cursor-pointer flex-col rounded-2xl border p-5 transition hover:-translate-y-0.5 hover:shadow-lg border-white/10 bg-white/5 backdrop-blur shadow-none hover:border-white/20 hover:bg-white/10"
+      className="relative flex h-full min-h-[240px] cursor-pointer flex-col rounded-2xl border p-5 transition-colors hover:shadow-lg border-white/10 bg-white/5 backdrop-blur shadow-none hover:border-white/20 hover:bg-white/10"
       onClick={() => onNavigate(tool.id)}
     >
       <div className="absolute right-3 top-3 flex items-center gap-2">

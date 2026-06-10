@@ -151,7 +151,16 @@ func modelDownloaded(m bgModel) bool {
 // sidecar's library search path at exec time. ok=false means the AI engine
 // isn't available in this build — the feature degrades gracefully, like ffmpeg.
 func bgEnginePath() (engine, libDir string, ok bool) {
-	name := "kit-bgremove"
+	return findSidecar("kit-bgremove")
+}
+
+// findSidecar resolves a bundled sidecar binary (kit-bgremove, kit-summarize, …)
+// and the directory holding its shared libraries. Releases ship sidecars under a
+// lib/ folder next to the main executable; we look there first, then next to the
+// executable (dev builds), then PATH. ok=false means this build doesn't include
+// that engine, so the feature degrades gracefully (like ffmpeg).
+func findSidecar(base string) (engine, libDir string, ok bool) {
+	name := base
 	if runtime.GOOS == "windows" {
 		name += ".exe"
 	}

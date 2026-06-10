@@ -52,6 +52,14 @@ function ImageToolView({ tool }: ImageToolViewProps) {
   const [filter, setFilter] = useState('grayscale')
   const [filterAmount, setFilterAmount] = useState('20')
 
+  // Convert controls
+  const [convertFormat, setConvertFormat] = useState('png')
+
+  // Enhance controls
+  const [denoise, setDenoise] = useState('30')
+  const [autoContrast, setAutoContrast] = useState(true)
+  const [sharpenAmount, setSharpenAmount] = useState('40')
+
   useEffect(() => {
     if (!file) {
       setPreviewUrl('')
@@ -125,6 +133,22 @@ function ImageToolView({ tool }: ImageToolViewProps) {
         data.append('quality', quality)
         break
       }
+      case 'convert-image-formats': {
+        data.append('format', convertFormat)
+        data.append('quality', quality)
+        break
+      }
+      case 'denoise-enhance': {
+        if (Number(denoise) <= 0 && Number(sharpenAmount) <= 0 && !autoContrast) {
+          return 'Enable at least one of denoise, auto contrast or sharpen.'
+        }
+        data.append('denoise', denoise)
+        data.append('autoContrast', autoContrast ? '1' : '0')
+        data.append('sharpen', sharpenAmount)
+        data.append('format', format)
+        data.append('quality', quality)
+        break
+      }
     }
     return data
   }
@@ -174,7 +198,8 @@ function ImageToolView({ tool }: ImageToolViewProps) {
 
   const showQuality =
     (tool.id === 'compress-image') ||
-    ((tool.id === 'resize-image' || tool.id === 'image-filters') && (format === 'jpeg' || format === 'jpg'))
+    ((tool.id === 'resize-image' || tool.id === 'image-filters' || tool.id === 'denoise-enhance') && (format === 'jpeg' || format === 'jpg')) ||
+    (tool.id === 'convert-image-formats' && convertFormat === 'jpeg')
 
   return (
     <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
@@ -319,7 +344,55 @@ function ImageToolView({ tool }: ImageToolViewProps) {
           </div>
         )}
 
-        {(tool.id === 'resize-image' || tool.id === 'image-filters') && (
+        {tool.id === 'convert-image-formats' && (
+          <div>
+            <label className={labelClass}>Convert to</label>
+            <select className={inputClass} value={convertFormat} onChange={(e) => setConvertFormat(e.target.value)} disabled={isProcessing}>
+              <option value="png">PNG</option>
+              <option value="jpeg">JPEG</option>
+              <option value="gif">GIF</option>
+              <option value="bmp">BMP</option>
+              <option value="tiff">TIFF</option>
+            </select>
+            <p className="mt-2 text-xs text-slate-500">WebP is supported as input and converted to your chosen format.</p>
+          </div>
+        )}
+
+        {tool.id === 'denoise-enhance' && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className={labelClass}>Denoise strength: {denoise}</label>
+              <input
+                type="range"
+                className="w-full accent-blue-600"
+                min="0"
+                max="100"
+                value={denoise}
+                onChange={(e) => setDenoise(e.target.value)}
+                disabled={isProcessing}
+              />
+              <p className="mt-1 text-xs text-slate-500">Edge-preserving smoothing — flat noisy areas are cleaned while details stay sharp. 0 turns it off.</p>
+            </div>
+            <div>
+              <label className={labelClass}>Sharpen: {sharpenAmount}</label>
+              <input
+                type="range"
+                className="w-full accent-blue-600"
+                min="0"
+                max="100"
+                value={sharpenAmount}
+                onChange={(e) => setSharpenAmount(e.target.value)}
+                disabled={isProcessing}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-slate-200">
+              <input type="checkbox" className="accent-blue-600" checked={autoContrast} onChange={(e) => setAutoContrast(e.target.checked)} disabled={isProcessing} />
+              Auto contrast (stretch the histogram)
+            </label>
+          </div>
+        )}
+
+        {(tool.id === 'resize-image' || tool.id === 'image-filters' || tool.id === 'denoise-enhance') && (
           <div>
             <label className={labelClass}>Output format</label>
             <select className={inputClass} value={format} onChange={(e) => setFormat(e.target.value)} disabled={isProcessing}>

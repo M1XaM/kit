@@ -20,6 +20,16 @@ import RecordVideoView from './RecordVideoView'
 import VideoToolView from './VideoToolView'
 import MergeVideoView from './MergeVideoView'
 import RemoveBackgroundView from './RemoveBackgroundView'
+import SummarizeView from './SummarizeView'
+import ParaphraseView from './ParaphraseView'
+import NotesView from './NotesView'
+import OcrView from './OcrView'
+import PdfExtractTextView from './PdfExtractTextView'
+import PdfWatermarkView from './PdfWatermarkView'
+import ScreenRecordView from './ScreenRecordView'
+import ImageWatermarkView from './ImageWatermarkView'
+import BatchImageView from './BatchImageView'
+import RecommendedTools from './RecommendedTools'
 import FeatureHeader from './FeatureHeader'
 
 function ToolView() {
@@ -48,6 +58,10 @@ function ToolView() {
     'archive-extract': ArchiveToolView,
     'archive-create': ArchiveToolView,
     'checksum-verify': ChecksumView,
+    'notes': NotesView,
+    'ocr': OcrView,
+    'extract-text-pdf': PdfExtractTextView,
+    'watermark-documents': PdfWatermarkView,
     'metadata-edit': TextToolView,
     'text-compare': TextToolView,
     'markdown-diff': TextToolView,
@@ -59,7 +73,9 @@ function ToolView() {
     'record-audio': RecordAudioView,
     'merge-audio': MergeAudioView,
     'adjust-audio': VideoToolView,
+    'convert-audio': VideoToolView,
     'record-video': RecordVideoView,
+    'screen-recording': ScreenRecordView,
     'trim-video': VideoToolView,
     'merge-video': MergeVideoView,
     'split-video': VideoToolView,
@@ -72,15 +88,26 @@ function ToolView() {
     'compress-image': ImageToolView,
     'image-borders': ImageToolView,
     'image-filters': ImageToolView,
+    'convert-image-formats': ImageToolView,
+    'denoise-enhance': ImageToolView,
+    'watermark-image': ImageWatermarkView,
+    'batch-image': BatchImageView,
     'image-collage': ImageCollageView,
     'crop-rotate-flip': CropRotateFlipView,
     'palette-extraction': ColorPaletteView,
     'ai-remove-background': RemoveBackgroundView,
+    'ai-summarize': SummarizeView,
+    'ai-paraphrase': ParaphraseView,
     ...Object.fromEntries(PDF_TOOL_IDS.map((pdfId) => [pdfId, PdfToolView]))
   }
   const CustomView = customViews[id]
   if (CustomView) {
-    return <CustomView tool={tool} />
+    return (
+      <>
+        <CustomView tool={tool} />
+        <RecommendedTools currentId={id} />
+      </>
+    )
   }
 
   if (!tool.apiEndpoint) {
@@ -155,6 +182,7 @@ function ToolView() {
   }
 
   return (
+    <>
     <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
       <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

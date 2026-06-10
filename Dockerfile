@@ -73,9 +73,9 @@ RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " macos "; then
 
 
 # ==========================================
-# Stage 3: Build the AI sidecar (kit-bgremove)
+# Stage 3: Build the AI sidecars (kit-bgremove, kit-text2text)
 # ==========================================
-# The sidecar does ONNX inference and is a CGO binary that dlopen's ONNX Runtime
+# The sidecars do ONNX inference and are CGO binaries that dlopen ONNX Runtime
 # at runtime, so it can't share the pure-static musl backend stage — it must link
 # glibc to run on typical Linux desktops. We use a glibc Go image and a mingw
 # cross-toolchain for Windows. macOS needs osxcross/a Mac, so it's skipped here;

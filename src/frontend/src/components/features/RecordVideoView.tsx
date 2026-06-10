@@ -67,6 +67,7 @@ function RecordVideoView({ tool }) {
   const elapsedRef = useRef(0)
   const recordingsRef = useRef([])
   const previewRef = useRef(null)
+  const statusRef = useRef('idle')
 
   const [status, setStatus] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
@@ -75,6 +76,14 @@ function RecordVideoView({ tool }) {
   const [recordings, setRecordings] = useState([])
   const [includeMic, setIncludeMic] = useState(true)
   const [includeSystemAudio, setIncludeSystemAudio] = useState(false)
+  // Camera permission state, resolved as soon as the page opens so the live
+  // preview can show before the user records anything.
+  const [cameraState, setCameraState] = useState('prompting') // prompting | ready | denied | unsupported
+
+  const setStatusTracked = (next) => {
+    statusRef.current = next
+    setStatus(next)
+  }
 
   const stopTimer = () => {
     if (timerRef.current) {
@@ -92,11 +101,27 @@ function RecordVideoView({ tool }) {
     }, 200)
   }
 
-  const stopStreams = () => {
+  // attachPreview points the muted preview <video> at the live camera stream.
+  const attachPreview = () => {
+    if (previewRef.current && cameraStreamRef.current) {
+      previewRef.current.srcObject = cameraStreamRef.current
+      previewRef.current.play().catch(() => {})
+    }
+  }
+
+  const stopCamera = () => {
     if (cameraStreamRef.current) {
       cameraStreamRef.current.getTracks().forEach((track) => track.stop())
       cameraStreamRef.current = null
     }
+    if (previewRef.current) {
+      previewRef.current.srcObject = null
+    }
+  }
+
+  // stopRecordingExtras tears down only the screen-share and mixing graph used
+  // during a recording, leaving the camera (and its preview) running.
+  const stopRecordingExtras = () => {
     if (displayStreamRef.current) {
       displayStreamRef.current.getTracks().forEach((track) => track.stop())
       displayStreamRef.current = null
@@ -105,17 +130,36 @@ function RecordVideoView({ tool }) {
       audioCtxRef.current.close().catch(() => {})
       audioCtxRef.current = null
     }
-    if (previewRef.current) {
-      previewRef.current.srcObject = null
-    }
   }
 
-  const clearAllRecordings = () => {
-    setRecordings((prev) => {
-      prev.forEach((item) => URL.revokeObjectURL(item.url))
-      return []
-    })
-    setErrorMessage('')
+  const stopStreams = () => {
+    stopRecordingExtras()
+    stopCamera()
+  }
+
+  // acquireCamera requests the camera (with the mic when enabled) and shows the
+  // live preview. Called on page entry so the permission prompt appears up
+  // front, and again when the microphone toggle changes while idle so the held
+  // stream matches what a recording would capture.
+  const acquireCamera = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraState('unsupported')
+      setErrorMessage('Camera access is not supported in this browser.')
+      return false
+    }
+    stopCamera()
+    try {
+      const camera = await navigator.mediaDevices.getUserMedia({ video: true, audio: includeMic })
+      cameraStreamRef.current = camera
+      attachPreview()
+      setCameraState('ready')
+      setErrorMessage('')
+      return true
+    } catch (err) {
+      setCameraState('denied')
+      setErrorMessage(err?.message || 'Camera access was denied. Allow camera access, then reload this page.')
+      return false
+    }
   }
 
   const removeRecording = (id) => {
@@ -127,11 +171,16 @@ function RecordVideoView({ tool }) {
   }
 
   // buildRecordingStream assembles the camera video track plus any requested
-  // audio sources. When both the microphone and system audio are present they
-  // are mixed into a single track via the Web Audio API.
+  // audio sources. The camera was already acquired for the live preview when
+  // the page opened, so it is reused here (re-acquired only if missing). When
+  // both the microphone and system audio are present they are mixed into a
+  // single track via the Web Audio API.
   const buildRecordingStream = async () => {
-    const camera = await navigator.mediaDevices.getUserMedia({ video: true, audio: includeMic })
-    cameraStreamRef.current = camera
+    if (!cameraStreamRef.current) {
+      const ok = await acquireCamera()
+      if (!ok) throw new Error('Camera is not available.')
+    }
+    const camera = cameraStreamRef.current
 
     let display = null
     if (includeSystemAudio) {
@@ -181,7 +230,8 @@ function RecordVideoView({ tool }) {
     try {
       stream = await buildRecordingStream()
     } catch (err) {
-      stopStreams()
+      stopRecordingExtras()
+      attachPreview()
       setErrorMessage(err?.message || 'Camera or screen access was denied.')
       return
     }
@@ -192,10 +242,7 @@ function RecordVideoView({ tool }) {
       recorderRef.current = recorder
       chunksRef.current = []
 
-      if (previewRef.current) {
-        previewRef.current.srcObject = cameraStreamRef.current
-        previewRef.current.play().catch(() => {})
-      }
+      attachPreview()
 
       recorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
@@ -205,9 +252,10 @@ function RecordVideoView({ tool }) {
 
       recorder.onerror = (event) => {
         setErrorMessage(event.error?.message || 'Recording error.')
-        setStatus('idle')
+        setStatusTracked('idle')
         stopTimer()
-        stopStreams()
+        stopRecordingExtras()
+        attachPreview()
       }
 
       recorder.onstop = () => {
@@ -233,7 +281,9 @@ function RecordVideoView({ tool }) {
           ...prev
         ])
         chunksRef.current = []
-        stopStreams()
+        // Keep the camera (and its live preview) alive for the next take.
+        stopRecordingExtras()
+        attachPreview()
       }
 
       // If the user stops the screen share (system audio) from the browser UI,
@@ -241,7 +291,7 @@ function RecordVideoView({ tool }) {
       if (displayStreamRef.current) {
         displayStreamRef.current.getTracks().forEach((track) => {
           track.addEventListener('ended', () => {
-            if (recorderRef.current && (status === 'recording' || status === 'paused')) {
+            if (recorderRef.current && (statusRef.current === 'recording' || statusRef.current === 'paused')) {
               stopRecording()
             }
           })
@@ -249,21 +299,22 @@ function RecordVideoView({ tool }) {
       }
 
       recorder.start(200)
-      setStatus('recording')
+      setStatusTracked('recording')
       elapsedRef.current = 0
       setElapsedMs(0)
       startTimer()
     } catch (err) {
       setErrorMessage(err?.message || 'Could not start recording.')
-      stopStreams()
-      setStatus('idle')
+      stopRecordingExtras()
+      attachPreview()
+      setStatusTracked('idle')
     }
   }
 
   const pauseRecording = () => {
     if (recorderRef.current && status === 'recording') {
       recorderRef.current.pause()
-      setStatus('paused')
+      setStatusTracked('paused')
       stopTimer()
     }
   }
@@ -271,7 +322,7 @@ function RecordVideoView({ tool }) {
   const resumeRecording = () => {
     if (recorderRef.current && status === 'paused') {
       recorderRef.current.resume()
-      setStatus('recording')
+      setStatusTracked('recording')
       startTimer()
     }
   }
@@ -286,13 +337,22 @@ function RecordVideoView({ tool }) {
       recorderRef.current.stop()
       recorderRef.current = null
       stopTimer()
-      setStatus('stopped')
+      setStatusTracked('stopped')
     }
   }
 
   useEffect(() => {
     recordingsRef.current = recordings
   }, [recordings])
+
+  // Request the camera as soon as the page opens (and re-acquire when the mic
+  // toggle changes while idle) so the prompt appears on entry and the preview
+  // stays live. getDisplayMedia for system audio still needs the Start click.
+  useEffect(() => {
+    if (statusRef.current === 'recording' || statusRef.current === 'paused') return
+    acquireCamera()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includeMic])
 
   useEffect(() => () => {
     stopTimer()
@@ -340,8 +400,14 @@ function RecordVideoView({ tool }) {
             autoPlay
             playsInline
           />
-          {!isLive ? (
-            <div className="px-4 py-3 text-center text-xs text-slate-400">Live camera preview appears here while recording.</div>
+          {cameraState === 'prompting' ? (
+            <div className="px-4 py-3 text-center text-xs text-slate-400">Allow camera access to see your live preview…</div>
+          ) : cameraState === 'denied' ? (
+            <div className="px-4 py-3 text-center text-xs text-amber-200">Camera access was blocked. Allow it in your browser, then reload this page.</div>
+          ) : cameraState === 'unsupported' ? (
+            <div className="px-4 py-3 text-center text-xs text-amber-200">This browser does not support camera capture.</div>
+          ) : !isLive ? (
+            <div className="px-4 py-3 text-center text-xs text-slate-400">Live camera preview — press Start recording when you are ready.</div>
           ) : null}
         </div>
 
@@ -368,20 +434,17 @@ function RecordVideoView({ tool }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button className="rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400" type="button" onClick={startRecording} disabled={isLive}>
+          <button className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400" type="button" onClick={startRecording} disabled={isLive}>
             Start recording
           </button>
           <button className="rounded-lg border px-4 py-2 text-sm font-semibold transition border-amber-400/50 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20 disabled:cursor-not-allowed disabled:text-slate-500" type="button" onClick={pauseRecording} disabled={status !== 'recording'}>
             Pause
           </button>
-          <button className="rounded-lg border px-4 py-2 text-sm font-semibold transition border-emerald-400/50 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:text-slate-500" type="button" onClick={resumeRecording} disabled={status !== 'paused'}>
+          <button className="rounded-lg border px-4 py-2 text-sm font-semibold transition border-blue-400/50 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:text-slate-500" type="button" onClick={resumeRecording} disabled={status !== 'paused'}>
             Resume
           </button>
           <button className="rounded-lg border px-4 py-2 text-sm font-semibold transition border-slate-400/40 bg-slate-400/15 text-slate-200 hover:bg-slate-400/25 disabled:cursor-not-allowed disabled:text-slate-500" type="button" onClick={stopRecording} disabled={!isLive}>
             Stop
-          </button>
-          <button className="rounded-lg border px-4 py-2 text-sm font-semibold transition border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10" type="button" onClick={clearAllRecordings} disabled={!recordings.length}>
-            Clear recordings
           </button>
         </div>
 
@@ -410,9 +473,7 @@ function RecordVideoView({ tool }) {
                     </button>
                   </div>
                 </div>
-                <video className="mt-3 w-full rounded-lg bg-black" controls preload="metadata">
-                  <source src={recording.url} type={recording.mimeType} />
-                </video>
+                <video className="mt-3 w-full rounded-lg bg-black" controls preload="metadata" src={recording.url} />
                 {!recording.playable ? (
                   <div className="mt-2 text-xs text-amber-200">This browser cannot play {recording.mimeType}. Use the download instead.</div>
                 ) : null}
