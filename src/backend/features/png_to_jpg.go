@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"local-tools-hub/backend/features/shared"
 	"net/http"
 )
@@ -27,6 +28,16 @@ func HandlePngToJpg(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	if cfg, err := png.DecodeConfig(file); err == nil {
+		if cfg.Width <= 0 || cfg.Height <= 0 || int64(cfg.Width)*int64(cfg.Height) > maxImagePixels {
+			http.Error(w, "Image is too large to process safely.", http.StatusBadRequest)
+			return
+		}
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		http.Error(w, "Failed to read upload", http.StatusInternalServerError)
+		return
+	}
 	img, err := png.Decode(file)
 	if err != nil {
 		http.Error(w, "Failed to decode PNG. Ensure the file is a valid PNG.", http.StatusBadRequest)

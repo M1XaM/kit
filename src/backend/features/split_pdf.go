@@ -202,17 +202,23 @@ func addFileToZip(zw *zip.Writer, filePath string) error {
 	return err
 }
 
+// sanitizeRangeForFile turns a user-typed page range into a filename-safe
+// token. Anything outside a small whitelist is dropped so the value can never
+// corrupt the Content-Disposition header or the filename.
 func sanitizeRangeForFile(pageRange string) string {
-	replacer := strings.NewReplacer(
-		" ", "",
-		",", "_",
-		";", "_",
-		":", "-",
-		"/", "-",
-		"\\", "-",
-	)
-	sanitized := replacer.Replace(pageRange)
-	if sanitized == "" {
+	var b strings.Builder
+	for _, r := range pageRange {
+		switch {
+		case r >= '0' && r <= '9', r == '-':
+			b.WriteRune(r)
+		case r == ',', r == ';':
+			b.WriteRune('_')
+		case r == ':':
+			b.WriteRune('-')
+		}
+	}
+	sanitized := b.String()
+	if sanitized == "" || len(sanitized) > 60 {
 		return "range"
 	}
 	return sanitized

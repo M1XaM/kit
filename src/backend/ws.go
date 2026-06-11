@@ -34,6 +34,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	connsMutex.Lock()
 	connections[conn] = struct{}{}
+	active := len(connections)
 	connsMutex.Unlock()
 
 	defer func() {
@@ -68,7 +69,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	fmt.Printf("Client connected. Active connections: %d\n", len(connections))
+	fmt.Printf("Client connected. Active connections: %d\n", active)
 
 	for {
 		conn.SetReadDeadline(time.Now().Add(30 * time.Second))
@@ -119,5 +120,3 @@ func monitorConnections(server *http.Server) {
 		}
 	}
 }
-
-

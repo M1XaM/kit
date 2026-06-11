@@ -84,7 +84,7 @@ build_one() {
 	dest="${OUT_DIR}/${os}/lib"; mkdir -p "$dest"
 
 	echo "  [sidecar] building kit-bgremove for ${os}..."
-	if ! CGO_ENABLED=1 GOOS="$goos" GOARCH="$arch" CC="$cc" go build -trimpath -o "${dest}/${bin}" ./bgremove; then
+	if ! CGO_ENABLED=1 GOOS="$goos" GOARCH="$arch" CC="$cc" go build -trimpath -o "${dest}/${bin}" ./sidecars/bgremove; then
 		echo "  [sidecar] WARN: build failed for $os — skipping."; return 0
 	fi
 
@@ -93,7 +93,7 @@ build_one() {
 	# builds into the same lib/ dir. Both are CGO + dlopen ORT.
 	t2tbin="${bin/kit-bgremove/kit-text2text}"
 	echo "  [sidecar] building kit-text2text for ${os}..."
-	if ! CGO_ENABLED=1 GOOS="$goos" GOARCH="$arch" CC="$cc" go build -trimpath -o "${dest}/${t2tbin}" ./text2text; then
+	if ! CGO_ENABLED=1 GOOS="$goos" GOARCH="$arch" CC="$cc" go build -trimpath -o "${dest}/${t2tbin}" ./sidecars/text2text; then
 		echo "  [sidecar] WARN: kit-text2text build failed for $os — AI Summarize/Paraphrase unavailable on $os."
 		rm -f "${dest}/${t2tbin}"
 	fi

@@ -1,6 +1,7 @@
 package features
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"local-tools-hub/backend/features/shared"
@@ -66,6 +67,10 @@ func HandleBatchImage(w http.ResponseWriter, r *http.Request) {
 	outputs := make([]string, 0, len(headers))
 	for _, header := range headers {
 		img, err := decodeUploadedImage(header)
+		if errors.Is(err, errImageTooLarge) {
+			http.Error(w, fmt.Sprintf("%q is too large to process safely.", header.Filename), http.StatusBadRequest)
+			return
+		}
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to decode %q. Supported inputs: PNG, JPG, GIF, WebP, BMP, TIFF.", header.Filename), http.StatusBadRequest)
 			return
@@ -182,7 +187,7 @@ func decodeUploadedImage(header *multipart.FileHeader) (image.Image, error) {
 		return nil, err
 	}
 	defer f.Close()
-	img, _, err := image.Decode(f)
+	img, _, err := safeDecodeImage(f)
 	return img, err
 }
 

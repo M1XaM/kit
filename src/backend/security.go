@@ -18,6 +18,7 @@ type securityPolicy struct {
 	sessionToken   string
 	allowedOrigins map[string]struct{}
 	allowedHosts   map[string]struct{}
+	csp            string
 }
 
 func newSecurityPolicy(port string) *securityPolicy {
@@ -41,10 +42,24 @@ func newSecurityPolicy(port string) *securityPolicy {
 		allowedOrigins[origin] = struct{}{}
 	}
 
+	// connect-src lists Kit's own websocket origins explicitly rather than a
+	// blanket ws:, so page scripts can't open sockets to arbitrary hosts.
+	// media-src must allow blob: so recorded clips and uploaded-file previews
+	// play in the in-browser <video>/<audio> players (their URLs come from
+	// URL.createObjectURL); mediastream: covers the live camera/mic previews
+	// set via srcObject. Without this, default-src 'self' blocks them and only
+	// the download links work.
+	wsOrigins := "ws://localhost:" + port + " ws://127.0.0.1:" + port + " ws://[::1]:" + port
+	csp := "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; " +
+		"connect-src 'self' " + wsOrigins + " https://speed.cloudflare.com; " +
+		"img-src 'self' data: blob: https://speed.cloudflare.com; " +
+		"media-src 'self' blob: mediastream:; script-src 'self'; style-src 'self' 'unsafe-inline'"
+
 	return &securityPolicy{
 		sessionToken:   mustNewSessionToken(),
 		allowedOrigins: allowedOrigins,
 		allowedHosts:   allowedHosts,
+		csp:            csp,
 	}
 }
 
@@ -174,10 +189,5 @@ func (p *securityPolicy) setSecurityHeaders(w http.ResponseWriter) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
 	w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
-	// media-src must allow blob: so recorded clips and uploaded-file previews
-	// play in the in-browser <video>/<audio> players (their URLs come from
-	// URL.createObjectURL); mediastream: covers the live camera/mic previews
-	// set via srcObject. Without this, default-src 'self' blocks them and only
-	// the download links work.
-	w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; connect-src 'self' ws: wss: https://speed.cloudflare.com; img-src 'self' data: blob: https://speed.cloudflare.com; media-src 'self' blob: mediastream:; script-src 'self'; style-src 'self' 'unsafe-inline'")
+	w.Header().Set("Content-Security-Policy", p.csp)
 }

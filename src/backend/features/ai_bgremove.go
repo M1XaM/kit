@@ -79,7 +79,7 @@ var bgModels = []bgModel{
 		RecommendVRAMBytes: 2 * gib,
 		InputSize:          1024,
 		Profile:            "isnet",
-		Description: "Balanced quality and speed. A solid general-purpose choice with noticeably cleaner edges than the lite model.",
+		Description:        "Balanced quality and speed. A solid general-purpose choice with noticeably cleaner edges than the lite model.",
 	},
 	{
 		ID:                 "birefnet",
@@ -94,7 +94,7 @@ var bgModels = []bgModel{
 		GPURecommended:     true,
 		InputSize:          1024,
 		Profile:            "birefnet",
-		Description: "Highest quality, hair-level detail. Heavy: needs plenty of RAM and is slow on CPU — a GPU is recommended.",
+		Description:        "Highest quality, hair-level detail. Heavy: needs plenty of RAM and is slow on CPU — a GPU is recommended.",
 	},
 }
 
@@ -342,13 +342,21 @@ func runModelDownload(m bgModel) {
 	}
 	tmpName := tmp.Name()
 
+	// Never stream more than double the expected size: a misbehaving server
+	// (or hijacked redirect) must not be able to fill the disk.
+	maxBytes := m.SizeBytes * 2
 	hasher := md5.New()
 	pw := &progressWriter{id: m.ID, total: total}
-	_, copyErr := io.Copy(io.MultiWriter(tmp, hasher, pw), resp.Body)
+	written, copyErr := io.Copy(io.MultiWriter(tmp, hasher, pw), io.LimitReader(resp.Body, maxBytes+1))
 	tmp.Close()
 	if copyErr != nil {
 		os.Remove(tmpName)
 		setErr("Download interrupted: " + copyErr.Error())
+		return
+	}
+	if written > maxBytes {
+		os.Remove(tmpName)
+		setErr("Download was much larger than expected; aborted")
 		return
 	}
 

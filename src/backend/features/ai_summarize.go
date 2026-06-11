@@ -263,11 +263,18 @@ func downloadFile(ctx context.Context, f sumFile, dest string, pw *sumProgress) 
 		return fmt.Errorf("could not create temp file")
 	}
 	tmpName := tmp.Name()
-	_, copyErr := io.Copy(io.MultiWriter(tmp, pw), resp.Body)
+	// Never stream more than double the expected size: a misbehaving server
+	// (or hijacked redirect) must not be able to fill the disk.
+	maxBytes := f.Size * 2
+	written, copyErr := io.Copy(io.MultiWriter(tmp, pw), io.LimitReader(resp.Body, maxBytes+1))
 	tmp.Close()
 	if copyErr != nil {
 		os.Remove(tmpName)
 		return fmt.Errorf("download interrupted: %v", copyErr)
+	}
+	if written > maxBytes {
+		os.Remove(tmpName)
+		return fmt.Errorf("download of %s was much larger than expected; aborted", f.Name)
 	}
 	if err := os.Rename(tmpName, dest); err != nil {
 		os.Remove(tmpName)

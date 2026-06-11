@@ -77,6 +77,19 @@ func waitForServerReady(url string, timeout time.Duration) bool {
 	return false
 }
 
+// desktopExecQuote quotes a path for a .desktop Exec= line per the Desktop
+// Entry spec: wrap in double quotes and backslash-escape the reserved
+// characters, so paths with spaces (or stranger characters) keep working.
+func desktopExecQuote(path string) string {
+	replacer := strings.NewReplacer(
+		`\`, `\\`,
+		`"`, `\"`,
+		"`", "\\`",
+		`$`, `\$`,
+	)
+	return `"` + replacer.Replace(path) + `"`
+}
+
 func registerCustomScheme(showTerm bool) {
 	exePath, err := os.Executable()
 	if err != nil {
@@ -109,7 +122,7 @@ Exec=%s %%u
 Type=Application
 Terminal=%s
 MimeType=x-scheme-handler/kit;
-`, exePath, terminalValue)
+`, desktopExecQuote(exePath), terminalValue)
 		existingContent, err := os.ReadFile(desktopPath)
 		if err != nil || string(existingContent) != content {
 			os.WriteFile(desktopPath, []byte(content), 0644)
@@ -137,11 +150,12 @@ MimeType=x-scheme-handler/kit;
 		os.MkdirAll(macOSDir, 0755)
 
 		wrapperPath := filepath.Join(macOSDir, "Kit")
+		shellSafeExe := strings.ReplaceAll(exePath, `"`, `\"`)
 		var wrapperContent string
 		if showTerm {
-			wrapperContent = fmt.Sprintf("#!/bin/bash\nopen -a Terminal \"%s\" --args \"$@\"", exePath)
+			wrapperContent = fmt.Sprintf("#!/bin/bash\nopen -a Terminal \"%s\" --args \"$@\"", shellSafeExe)
 		} else {
-			wrapperContent = fmt.Sprintf("#!/bin/bash\n\"%s\" \"$@\"", exePath)
+			wrapperContent = fmt.Sprintf("#!/bin/bash\n\"%s\" \"$@\"", shellSafeExe)
 		}
 
 		existingWrapper, err := os.ReadFile(wrapperPath)

@@ -1,12 +1,14 @@
 package features
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,6 +29,31 @@ import (
 // maxImageDimension caps any single output dimension so a malformed request
 // can't ask us to allocate gigabytes for one image.
 const maxImageDimension = 20000
+
+// maxImagePixels caps the total pixels of a decoded input (~600 MB as RGBA).
+// Without it a kilobyte-sized crafted PNG declaring absurd dimensions would
+// make the decoder allocate gigabytes (a decompression bomb).
+const maxImagePixels = 150_000_000
+
+// errImageTooLarge distinguishes a bomb-guard rejection from a corrupt file.
+var errImageTooLarge = errors.New("image dimensions are too large")
+
+// safeDecodeImage decodes an image from a seekable stream after validating its
+// declared dimensions against maxImagePixels, so the size check happens before
+// any large allocation.
+func safeDecodeImage(f io.ReadSeeker) (image.Image, string, error) {
+	if cfg, _, err := image.DecodeConfig(f); err == nil {
+		if cfg.Width <= 0 || cfg.Height <= 0 ||
+			int64(cfg.Width)*int64(cfg.Height) > maxImagePixels {
+			return nil, "", errImageTooLarge
+		}
+	}
+	// On a config error fall through: image.Decode reports the real problem.
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return nil, "", err
+	}
+	return image.Decode(f)
+}
 
 // decodeImage reads and decodes an image from a multipart form field. It tries
 // "image" first, then "file", matching the rest of the codebase. On any failure
@@ -51,7 +78,11 @@ func receiveSingleImage(w http.ResponseWriter, r *http.Request) (img image.Image
 	}
 	defer file.Close()
 
-	decoded, format, err := image.Decode(file)
+	decoded, format, err := safeDecodeImage(file)
+	if errors.Is(err, errImageTooLarge) {
+		http.Error(w, "Image is too large to process safely.", http.StatusBadRequest)
+		return nil, "", "", false
+	}
 	if err != nil {
 		http.Error(w, "Failed to decode image. Supported inputs: PNG, JPG, GIF, WebP, BMP, TIFF.", http.StatusBadRequest)
 		return nil, "", "", false

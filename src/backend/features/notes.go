@@ -43,6 +43,16 @@ type noteMeta struct {
 	Size     int64  `json:"size"`
 }
 
+// windowsReservedNames are device names Windows refuses (or worse, hangs on)
+// as the part of a filename before the first dot, regardless of extension.
+var windowsReservedNames = map[string]bool{
+	"CON": true, "PRN": true, "AUX": true, "NUL": true,
+	"COM1": true, "COM2": true, "COM3": true, "COM4": true, "COM5": true,
+	"COM6": true, "COM7": true, "COM8": true, "COM9": true,
+	"LPT1": true, "LPT2": true, "LPT3": true, "LPT4": true, "LPT5": true,
+	"LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true,
+}
+
 // safeNoteName sanitizes a user-given note name for use as a filename. An
 // empty result means "unnamed". Stripping path separators and trimming dots
 // also makes the result safe against traversal.
@@ -50,6 +60,10 @@ func safeNoteName(name string) string {
 	name = noteNameUnsafe.ReplaceAllString(name, " ")
 	name = strings.Join(strings.Fields(name), " ")
 	name = strings.Trim(name, ". ")
+	stem, _, _ := strings.Cut(name, ".")
+	if windowsReservedNames[strings.ToUpper(stem)] {
+		name = "_" + name
+	}
 	return truncateRunes(name, 60)
 }
 

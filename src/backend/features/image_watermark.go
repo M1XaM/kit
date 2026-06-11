@@ -61,7 +61,7 @@ func HandleImageWatermark(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer wmFile.Close()
-		wmImg, _, err := image.Decode(wmFile)
+		wmImg, _, err := safeDecodeImage(wmFile)
 		if err != nil {
 			http.Error(w, "Failed to decode the watermark image.", http.StatusBadRequest)
 			return

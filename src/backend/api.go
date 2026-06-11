@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"local-tools-hub/backend/features"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -63,6 +64,10 @@ func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string) {
 }
 
 func handleOpenTab(port string) http.HandlerFunc {
+	var (
+		mu       sync.Mutex
+		lastOpen time.Time
+	)
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -73,8 +78,30 @@ func handleOpenTab(port string) http.HandlerFunc {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		url := fmt.Sprintf("http://localhost:%s", port)
-		go openBrowserWithRetry(url, 3, 400*time.Millisecond)
+		// The legitimate caller is a freshly launched Kit process (plain Go
+		// http.Get: no Origin, no Sec-Fetch-Site). A browser page on another
+		// site can still fire a no-CORS GET at this endpoint, so reject
+		// anything that identifies as a cross-site browser request.
+		if r.Header.Get("Origin") != "" {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		if sfs := r.Header.Get("Sec-Fetch-Site"); sfs != "" && sfs != "same-origin" && sfs != "none" {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		// Rate-limit so a misbehaving caller can't spam browser tabs. Still
+		// answer "ok" so a second Kit launch recognizes us and exits cleanly.
+		mu.Lock()
+		tooSoon := time.Since(lastOpen) < 2*time.Second
+		if !tooSoon {
+			lastOpen = time.Now()
+		}
+		mu.Unlock()
+		if !tooSoon {
+			url := fmt.Sprintf("http://localhost:%s", port)
+			go openBrowserWithRetry(url, 3, 400*time.Millisecond)
+		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	}

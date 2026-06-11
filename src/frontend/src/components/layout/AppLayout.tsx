@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import HomeGrid from './HomeGrid'
 import NotFound from './NotFound'
@@ -13,44 +13,16 @@ type HeaderBarProps = {
   status: string
 }
 
-// InfoButton renders a small info icon next to the status pill that opens a
-// welcome panel: a quick intro, the GitHub link, and the "launch from the
-// landing page so you can tick Always allow" tip.
+// InfoButton renders a small info icon next to the status pill that reveals a
+// welcome panel on hover (or keyboard focus): a quick intro, the GitHub link,
+// and the "launch from the landing page so you can tick Always allow" tip.
 function InfoButton() {
-  const [open, setOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement | null>(null)
-
-  // Close on outside click or Escape so the panel behaves like a popover.
-  useEffect(() => {
-    if (!open) return
-    const onClick = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false)
-      }
-    }
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('mousedown', onClick)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onClick)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="group relative">
       <button
         type="button"
         aria-label="About Kit"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
-          open
-            ? 'border-blue-400/50 bg-blue-600/20 text-blue-200'
-            : 'border-white/10 bg-white/5 text-blue-300 hover:border-white/20 hover:bg-white/10 hover:text-blue-200'
-        }`}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition border-white/10 bg-white/5 text-blue-300 hover:border-white/20 hover:bg-white/10 hover:text-blue-200 group-hover:border-blue-400/50 group-hover:bg-blue-600/20 group-hover:text-blue-200 group-focus-within:border-blue-400/50 group-focus-within:bg-blue-600/20 group-focus-within:text-blue-200"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"></circle>
@@ -59,8 +31,10 @@ function InfoButton() {
         </svg>
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-80 rounded-xl border p-4 text-left shadow-2xl border-white/10 bg-slate-950/95 backdrop-blur">
+      {/* pt-2 (not mt-2) keeps the hover region contiguous with the button so the
+          panel's links stay reachable; shown via group-hover / group-focus-within. */}
+      <div className="pointer-events-none absolute right-0 top-full z-30 pt-2 opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+        <div className="w-80 rounded-xl border p-4 text-left shadow-2xl border-white/10 bg-slate-950/95 backdrop-blur">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
             <span>👋</span>
             Welcome to Kit
@@ -94,7 +68,7 @@ function InfoButton() {
             View source on GitHub
           </a>
         </div>
-      )}
+      </div>
     </div>
   )
 }

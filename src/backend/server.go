@@ -24,6 +24,10 @@ func setupServer(port string) *http.Server {
 	fileServer := http.FileServer(http.FS(distFS))
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 		path := strings.TrimPrefix(r.URL.Path, "/")
 		if path == "" {
 			path = "index.html"
@@ -31,6 +35,11 @@ func setupServer(port string) *http.Server {
 		f, err := distFS.Open(path)
 		if err == nil {
 			f.Close()
+			// Vite emits content-hashed filenames under assets/, so those are
+			// safe to cache forever; everything else (index.html) stays fresh.
+			if strings.HasPrefix(path, "assets/") {
+				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			}
 			fileServer.ServeHTTP(w, r)
 			return
 		}
@@ -48,8 +57,9 @@ func setupServer(port string) *http.Server {
 
 	setupAPI(mux, security, port)
 
+	// No Addr here: main binds explicit loopback-only listeners and calls
+	// Serve, so the API is never reachable from other machines on the network.
 	return &http.Server{
-		Addr:    ":" + port,
 		Handler: security.wrapRootHandler(mux),
 		// ReadHeaderTimeout still guards against slow-header clients, but the
 		// body Read/Write timeouts are left unset: video uploads can be large

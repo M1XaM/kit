@@ -8,11 +8,11 @@
 // it can't live in the pure-static `kit` server; the server shells out to it.
 // For each input it:
 //
-//   1. tokenizes with the model's tokenizer.json (Unigram SentencePiece for T5),
-//   2. runs the ONNX *encoder* once to get the hidden states,
-//   3. runs the ONNX *decoder* autoregressively (greedy), feeding back each
-//      predicted token until it emits EOS or hits the length cap,
-//   4. detokenizes the generated ids back into text.
+//  1. tokenizes with the model's tokenizer.json (Unigram SentencePiece for T5),
+//  2. runs the ONNX *encoder* once to get the hidden states,
+//  3. runs the ONNX *decoder* autoregressively (greedy), feeding back each
+//     predicted token until it emits EOS or hits the length cap,
+//  4. detokenizes the generated ids back into text.
 //
 // In --batch mode the input/output files are JSON arrays of strings, so several
 // segments (e.g. the phrases a user selected to paraphrase) are processed with a

@@ -10,7 +10,7 @@ import (
 // recorded clips and uploaded-file previews (blob: URLs) and the live
 // camera/mic previews (mediastream:) keep playing in the in-browser players.
 func TestSecurityHeadersAllowBlobMedia(t *testing.T) {
-	p := &securityPolicy{}
+	p := newSecurityPolicy("8080")
 	rec := httptest.NewRecorder()
 	p.setSecurityHeaders(rec)
 

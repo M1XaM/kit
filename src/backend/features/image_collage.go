@@ -1,6 +1,7 @@
 package features
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -50,8 +51,12 @@ func HandleImageCollage(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to read an uploaded image.", http.StatusBadRequest)
 			return
 		}
-		decoded, _, err := image.Decode(f)
+		decoded, _, err := safeDecodeImage(f)
 		f.Close()
+		if errors.Is(err, errImageTooLarge) {
+			http.Error(w, fmt.Sprintf("%q is too large to process safely.", h.Filename), http.StatusBadRequest)
+			return
+		}
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to decode %q. Supported: PNG, JPG, GIF, WebP, BMP, TIFF.", h.Filename), http.StatusBadRequest)
 			return
