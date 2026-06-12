@@ -44,16 +44,21 @@ func newSecurityPolicy(port string) *securityPolicy {
 
 	// connect-src lists Kit's own websocket origins explicitly rather than a
 	// blanket ws:, so page scripts can't open sockets to arbitrary hosts.
+	// speed.cloudflare.com powers the Internet Speed test and keys.openpgp.org
+	// the checksum tool's automatic GPG key lookup.
 	// media-src must allow blob: so recorded clips and uploaded-file previews
 	// play in the in-browser <video>/<audio> players (their URLs come from
 	// URL.createObjectURL); mediastream: covers the live camera/mic previews
 	// set via srcObject. Without this, default-src 'self' blocks them and only
 	// the download links work.
+	// script-src needs 'wasm-unsafe-eval': the OCR engine (tesseract.js) and
+	// the MD5/CRC32 hashers (hash-wasm) compile WebAssembly at runtime; without
+	// it WebAssembly.instantiate is blocked and those tools fail outright.
 	wsOrigins := "ws://localhost:" + port + " ws://127.0.0.1:" + port + " ws://[::1]:" + port
 	csp := "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; " +
-		"connect-src 'self' " + wsOrigins + " https://speed.cloudflare.com; " +
+		"connect-src 'self' " + wsOrigins + " https://speed.cloudflare.com https://keys.openpgp.org; " +
 		"img-src 'self' data: blob: https://speed.cloudflare.com; " +
-		"media-src 'self' blob: mediastream:; script-src 'self'; style-src 'self' 'unsafe-inline'"
+		"media-src 'self' blob: mediastream:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'"
 
 	return &securityPolicy{
 		sessionToken:   mustNewSessionToken(),

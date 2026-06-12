@@ -23,12 +23,14 @@ const POSITIONS = [
 
 function ImageWatermarkView({ tool }: ImageWatermarkViewProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [batchMode, setBatchMode] = useState(false)
   const [watermarkImage, setWatermarkImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState('')
   const [dragActive, setDragActive] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const file = files[0] ?? null
 
   const [wmType, setWmType] = useState('text')
   const [text, setText] = useState('© Kit')
@@ -39,14 +41,14 @@ function ImageWatermarkView({ tool }: ImageWatermarkViewProps) {
   const [scale, setScale] = useState('25')
 
   useEffect(() => {
-    if (!file) {
+    if (!file || files.length > 1) {
       setPreviewUrl('')
       return
     }
     const url = URL.createObjectURL(file)
     setPreviewUrl(url)
     return () => URL.revokeObjectURL(url)
-  }, [file])
+  }, [file, files.length])
 
   const dropZoneClass = useMemo(
     () =>
@@ -58,11 +60,16 @@ function ImageWatermarkView({ tool }: ImageWatermarkViewProps) {
     [dragActive]
   )
 
-  const pickFile = (files: FileList | null) => {
-    const next = files?.[0]
-    if (!next) return
-    setFile(next)
+  const pickFile = (incoming: FileList | null) => {
+    const next = Array.from(incoming || [])
+    if (!next.length) return
+    setFiles((prev) => (batchMode ? [...prev, ...next] : next.slice(0, 1)))
     setErrorMessage('')
+  }
+
+  const toggleBatch = (enabled: boolean) => {
+    setBatchMode(enabled)
+    if (!enabled) setFiles((prev) => prev.slice(0, 1))
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -81,7 +88,7 @@ function ImageWatermarkView({ tool }: ImageWatermarkViewProps) {
     }
 
     const data = new FormData()
-    data.append('image', file)
+    files.forEach((f) => data.append('files', f))
     data.append('type', wmType)
     data.append('position', position)
     data.append('opacity', opacity)
@@ -105,7 +112,11 @@ function ImageWatermarkView({ tool }: ImageWatermarkViewProps) {
 
       const disposition = response.headers.get('content-disposition') || ''
       const match = disposition.match(/filename="?([^";]+)"?/i)
-      const filename = match ? match[1] : `${stripExtension(file.name)}_watermarked.png`
+      const filename = match
+        ? match[1]
+        : files.length > 1
+          ? 'batch_watermarked.zip'
+          : `${stripExtension(file.name)}_watermarked.png`
 
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
@@ -155,17 +166,49 @@ function ImageWatermarkView({ tool }: ImageWatermarkViewProps) {
               <polyline points="21 15 16 10 5 21"></polyline>
             </svg>
           )}
-          <div className="text-sm text-slate-200">{file ? file.name : 'Drag and drop an image here'}</div>
-          <div className="mt-2 text-xs text-slate-400">or click to choose an image</div>
+          <div className="text-sm text-slate-200">
+            {files.length > 1 ? `${files.length} images selected` : file ? file.name : `Drag and drop ${batchMode ? 'images' : 'an image'} here`}
+          </div>
+          <div className="mt-2 text-xs text-slate-400">or click to choose {batchMode ? 'images — add more anytime' : 'an image'}</div>
           <input
             type="file"
             accept="image/*"
+            multiple={batchMode}
             ref={fileInputRef}
             disabled={isProcessing}
-            onChange={(e) => pickFile(e.target.files)}
+            onChange={(e) => { pickFile(e.target.files); e.target.value = '' }}
             className="hidden"
           />
         </label>
+
+        <label className="flex items-center gap-2 text-sm text-slate-200">
+          <input
+            type="checkbox"
+            className="accent-blue-600"
+            checked={batchMode}
+            onChange={(e) => toggleBatch(e.target.checked)}
+            disabled={isProcessing}
+          />
+          Batch processing — stamp the same watermark onto multiple images (results download as a ZIP)
+        </label>
+
+        {batchMode && files.length > 0 && (
+          <div className="max-h-44 overflow-auto rounded-xl border border-white/10 bg-slate-950/60">
+            {files.map((f, index) => (
+              <div key={`${f.name}-${index}`} className="flex items-center justify-between gap-3 border-b px-4 py-2 text-sm border-white/5 last:border-b-0">
+                <span className="truncate text-slate-200">{f.name}</span>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-slate-400 transition hover:text-red-300"
+                  onClick={() => setFiles((prev) => prev.filter((_, i) => i !== index))}
+                  disabled={isProcessing}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -234,7 +277,7 @@ function ImageWatermarkView({ tool }: ImageWatermarkViewProps) {
           type="submit"
           disabled={isProcessing || !file}
         >
-          {isProcessing ? 'Processing...' : 'Watermark Image'}
+          {isProcessing ? 'Processing...' : files.length > 1 ? `Watermark ${files.length} Images → ZIP` : 'Watermark Image'}
         </button>
       </form>
     </div>

@@ -28,7 +28,7 @@ import PdfExtractTextView from './PdfExtractTextView'
 import PdfWatermarkView from './PdfWatermarkView'
 import ScreenRecordView from './ScreenRecordView'
 import ImageWatermarkView from './ImageWatermarkView'
-import BatchImageView from './BatchImageView'
+import YoutubeDownloadView from './YoutubeDownloadView'
 import RecommendedTools from './RecommendedTools'
 import FeatureHeader from './FeatureHeader'
 
@@ -38,9 +38,11 @@ function ToolView() {
 
   const [isProcessing, setIsProcessing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const [selectedFileName, setSelectedFileName] = useState('')
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [batchMode, setBatchMode] = useState(false)
   const [splitMode, setSplitMode] = useState('range')
   const [splitRange, setSplitRange] = useState('1-2')
+  const [compressLevel, setCompressLevel] = useState('medium')
 
   if (!id || !tool) {
     return <NotFound />
@@ -91,7 +93,7 @@ function ToolView() {
     'convert-image-formats': ImageToolView,
     'denoise-enhance': ImageToolView,
     'watermark-image': ImageWatermarkView,
-    'batch-image': BatchImageView,
+    'youtube-download': YoutubeDownloadView,
     'image-collage': ImageCollageView,
     'crop-rotate-flip': CropRotateFlipView,
     'palette-extraction': ColorPaletteView,
@@ -114,23 +116,27 @@ function ToolView() {
     return <NotFound />
   }
 
+  // png-to-jpg supports batch: several PNGs come back as one ZIP.
+  const supportsBatch = id === 'png-to-jpg'
+
   const handleProcess = async (event) => {
     event.preventDefault()
-    const file = fileInputRef.current?.files[0]
-    if (!file) {
+    if (!selectedFiles.length) {
       alert('Please select a file first')
       return
     }
 
     setIsProcessing(true)
     const formData = new FormData()
-    formData.append('image', file)
-    formData.append('file', file)
+    selectedFiles.forEach((file) => formData.append('files', file))
     if (id === 'split-pdf') {
       formData.append('mode', splitMode)
       if (splitMode === 'range') {
         formData.append('pages', splitRange)
       }
+    }
+    if (id === 'compress-pdf') {
+      formData.append('level', compressLevel)
     }
 
     try {
@@ -145,11 +151,11 @@ function ToolView() {
       }
 
       const disp = response.headers.get('content-disposition')
-      let downloadFilename = file.name.replace(/\.[^/.]+$/, '') + '_output'
+      let downloadFilename = selectedFiles[0].name.replace(/\.[^/.]+$/, '') + '_output'
 
-      if (id === 'png-to-jpg') downloadFilename += '.jpg'
+      if (id === 'png-to-jpg') downloadFilename += selectedFiles.length > 1 ? '.zip' : '.jpg'
       else if (id === 'split-pdf') downloadFilename += splitMode === 'per-page' ? '.zip' : '.pdf'
-      else downloadFilename += '.txt'
+      else downloadFilename += '.pdf'
 
       if (disp && disp.includes('filename=')) {
         downloadFilename = disp.split('filename=')[1].replace(/"/g, '')
@@ -165,7 +171,7 @@ function ToolView() {
       anchor.remove()
       window.URL.revokeObjectURL(url)
 
-      setSelectedFileName('')
+      setSelectedFiles([])
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
@@ -176,9 +182,10 @@ function ToolView() {
   }
 
   const handleFileChange = () => {
-    if (fileInputRef.current?.files[0]) {
-      setSelectedFileName(fileInputRef.current.files[0].name)
-    }
+    const incoming = Array.from(fileInputRef.current?.files || [])
+    if (!incoming.length) return
+    setSelectedFiles((prev) => (batchMode ? [...prev, ...incoming] : incoming.slice(0, 1)))
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   return (
@@ -204,16 +211,69 @@ function ToolView() {
             <polyline points="17 8 12 3 7 8"></polyline>
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
-          <div className="text-sm text-slate-200">{selectedFileName ? selectedFileName : 'Click or drag a file to upload'}</div>
+          <div className="text-sm text-slate-200">
+            {selectedFiles.length > 1
+              ? `${selectedFiles.length} files selected`
+              : selectedFiles[0]?.name || 'Click or drag a file to upload'}
+          </div>
           <input
             type="file"
-            accept={id === 'png-to-jpg' ? 'image/png' : id === 'split-pdf' ? 'application/pdf' : '*'}
+            accept={id === 'png-to-jpg' ? 'image/png' : (id === 'split-pdf' || id === 'compress-pdf') ? 'application/pdf' : '*'}
+            multiple={batchMode}
             ref={fileInputRef}
             disabled={isProcessing}
             onChange={handleFileChange}
             className="hidden"
           />
         </label>
+        {supportsBatch && (
+          <label className="flex items-center gap-2 text-sm text-slate-200">
+            <input
+              type="checkbox"
+              className="accent-blue-600"
+              checked={batchMode}
+              onChange={(event) => {
+                setBatchMode(event.target.checked)
+                if (!event.target.checked) setSelectedFiles((prev) => prev.slice(0, 1))
+              }}
+              disabled={isProcessing}
+            />
+            Batch processing — convert multiple PNGs at once (results download as a ZIP)
+          </label>
+        )}
+        {batchMode && selectedFiles.length > 0 && (
+          <div className="max-h-44 overflow-auto rounded-xl border border-white/10 bg-slate-950/60">
+            {selectedFiles.map((f, index) => (
+              <div key={`${f.name}-${index}`} className="flex items-center justify-between gap-3 border-b px-4 py-2 text-sm border-white/5 last:border-b-0">
+                <span className="truncate text-slate-200">{f.name}</span>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-slate-400 transition hover:text-red-300"
+                  onClick={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== index))}
+                  disabled={isProcessing}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {id === 'compress-pdf' && (
+          <div className="text-left">
+            <label className="mb-2 block text-xs uppercase tracking-[0.12em] text-slate-400">Compression level</label>
+            <select
+              value={compressLevel}
+              onChange={(event) => setCompressLevel(event.target.value)}
+              disabled={isProcessing}
+              className="w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white"
+            >
+              <option value="low">Low — best quality (300 dpi images)</option>
+              <option value="medium">Medium — recommended (150 dpi images)</option>
+              <option value="extreme">Extreme — smallest file (72 dpi images)</option>
+            </select>
+            <p className="mt-2 text-xs text-slate-500">Image downsampling needs Ghostscript; without it Kit still applies lossless optimization.</p>
+          </div>
+        )}
         {id === 'split-pdf' && (
           <div className="text-left">
             <label className="mb-2 block text-xs uppercase tracking-[0.12em] text-slate-400">Split mode</label>
@@ -245,9 +305,13 @@ function ToolView() {
         <button
           className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
           type="submit"
-          disabled={isProcessing || !selectedFileName || (id === 'split-pdf' && splitMode === 'range' && !splitRange.trim())}
+          disabled={isProcessing || !selectedFiles.length || (id === 'split-pdf' && splitMode === 'range' && !splitRange.trim())}
         >
-          {isProcessing ? 'Processing...' : 'Process File'}
+          {isProcessing
+            ? 'Processing...'
+            : selectedFiles.length > 1
+              ? `Process ${selectedFiles.length} Files`
+              : 'Process File'}
         </button>
       </form>
     </div>

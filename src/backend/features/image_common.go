@@ -55,42 +55,6 @@ func safeDecodeImage(f io.ReadSeeker) (image.Image, string, error) {
 	return image.Decode(f)
 }
 
-// decodeImage reads and decodes an image from a multipart form field. It tries
-// "image" first, then "file", matching the rest of the codebase. On any failure
-// it writes the HTTP error itself and returns ok=false.
-func receiveSingleImage(w http.ResponseWriter, r *http.Request) (img image.Image, srcFormat, name string, ok bool) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return nil, "", "", false
-	}
-	if err := r.ParseMultipartForm(50 << 20); err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
-		return nil, "", "", false
-	}
-
-	file, header, err := r.FormFile("image")
-	if err != nil {
-		file, header, err = r.FormFile("file")
-		if err != nil {
-			http.Error(w, "Image file is required", http.StatusBadRequest)
-			return nil, "", "", false
-		}
-	}
-	defer file.Close()
-
-	decoded, format, err := safeDecodeImage(file)
-	if errors.Is(err, errImageTooLarge) {
-		http.Error(w, "Image is too large to process safely.", http.StatusBadRequest)
-		return nil, "", "", false
-	}
-	if err != nil {
-		http.Error(w, "Failed to decode image. Supported inputs: PNG, JPG, GIF, WebP, BMP, TIFF.", http.StatusBadRequest)
-		return nil, "", "", false
-	}
-
-	return decoded, format, header.Filename, true
-}
-
 // normalizeOutputFormat resolves a requested output format, where "keep" (or an
 // empty value) means "reuse the source format". Formats we cannot encode (e.g.
 // webp) fall back to PNG so the request still succeeds.

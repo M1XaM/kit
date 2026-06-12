@@ -1,7 +1,7 @@
 package features
 
 import (
-	"local-tools-hub/backend/features/shared"
+	"image"
 	"net/http"
 	"strings"
 )
@@ -12,14 +12,16 @@ var allowedImageTargets = map[string]bool{
 	"png": true, "jpeg": true, "jpg": true, "gif": true, "bmp": true, "tiff": true, "tif": true,
 }
 
-// HandleConvertImage re-encodes an image into another format.
+// HandleConvertImage re-encodes images into another format.
 //
 // Form fields:
 //
 //	format  - target format: png, jpeg, gif, bmp or tiff
 //	quality - JPEG quality 1-100 (ignored for other formats)
+//
+// Accepts one image or many (batch); several inputs come back as a ZIP.
 func HandleConvertImage(w http.ResponseWriter, r *http.Request) {
-	img, _, name, ok := receiveSingleImage(w, r)
+	headers, ok := receiveImages(w, r)
 	if !ok {
 		return
 	}
@@ -32,5 +34,10 @@ func HandleConvertImage(w http.ResponseWriter, r *http.Request) {
 
 	format := normalizeOutputFormat(target, "")
 	quality := formInt(r, "quality", 90)
-	writeImageResult(w, img, format, quality, shared.SafeFileBase(name), "converted")
+
+	transform := func(img image.Image, _, _ string) (image.Image, string, error) {
+		return img, format, nil
+	}
+
+	serveProcessedImages(w, headers, transform, "converted", quality)
 }

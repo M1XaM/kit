@@ -12,7 +12,7 @@ type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
 type DragMode = 'new' | 'move' | 'resize'
 type DragState = { mode: DragMode; handle: Handle | null; origin: { x: number; y: number }; startRect: Rect }
 
-const MAX_DISPLAY_WIDTH = 520
+const MAX_DISPLAY_WIDTH = 800
 const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, '')
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
 
@@ -284,7 +284,7 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
     }`
 
   return (
-    <div className="mx-auto max-w-3xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
+    <div className="mx-auto max-w-5xl rounded-2xl border p-10 text-left border-white/10 bg-white/5 backdrop-blur shadow-none">
       <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -350,28 +350,35 @@ function CropRotateFlipView({ tool }: CropRotateFlipViewProps) {
             Drag on the image to draw a crop region, then drag its edges or corners to fine-tune. {selection ? 'Selection active.' : 'No selection — the full image is exported.'}
           </p>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {([
-              { field: 'x' as const, label: 'X (px)' },
-              { field: 'y' as const, label: 'Y (px)' },
-              { field: 'w' as const, label: 'Width (px)' },
-              { field: 'h' as const, label: 'Height (px)' }
-            ]).map(({ field, label }) => (
-              <div key={field}>
-                <label className="mb-1 block text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">{label}</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={fullSelection[field]}
-                  onChange={(e) => setFullField(field, Number(e.target.value))}
-                  className="w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white"
-                />
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-[0.7rem] text-slate-500">
-            Image is {fullSize.w} × {fullSize.h}px. Type exact pixel values as an alternative to dragging.
-          </p>
+          {/* Dragging is the primary way to crop; exact pixel entry stays
+              tucked away in an optional section. */}
+          <details className="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
+            <summary className="cursor-pointer select-none text-xs uppercase tracking-[0.12em] text-slate-400 hover:text-slate-200">
+              Exact pixel values (optional)
+            </summary>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {([
+                { field: 'x' as const, label: 'Left (px)' },
+                { field: 'y' as const, label: 'Top (px)' },
+                { field: 'w' as const, label: 'Width (px)' },
+                { field: 'h' as const, label: 'Height (px)' }
+              ]).map(({ field, label }) => (
+                <div key={field}>
+                  <label className="mb-1 block text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">{label}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={fullSelection[field]}
+                    onChange={(e) => setFullField(field, Number(e.target.value))}
+                    className="w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[0.7rem] text-slate-500">
+              Image is {fullSize.w} × {fullSize.h}px. Type exact pixel values as an alternative to dragging.
+            </p>
+          </details>
 
           <div className="flex flex-wrap items-center justify-center gap-2">
             <button type="button" className={toggleClass(false)} onClick={() => rotate(-90)}>⟲ Rotate left</button>

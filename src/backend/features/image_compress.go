@@ -1,11 +1,11 @@
 package features
 
 import (
-	"local-tools-hub/backend/features/shared"
+	"image"
 	"net/http"
 )
 
-// HandleCompressImage re-encodes an uploaded image to shrink its file size.
+// HandleCompressImage re-encodes uploaded images to shrink their file size.
 //
 //   - format "jpeg" with a quality slider (1-100) gives lossy compression and
 //     the biggest savings.
@@ -13,24 +13,16 @@ import (
 //     best compression level.
 //
 // An optional maxWidth/maxHeight downscales the image first, which is usually
-// the single most effective way to reduce size.
+// the single most effective way to reduce size. Accepts one image or many
+// (batch); several inputs come back as a ZIP.
 func HandleCompressImage(w http.ResponseWriter, r *http.Request) {
-	img, srcFormat, name, ok := receiveSingleImage(w, r)
+	headers, ok := receiveImages(w, r)
 	if !ok {
 		return
 	}
 
-	// Optional downscale before encoding.
 	maxW := formInt(r, "maxWidth", 0)
 	maxH := formInt(r, "maxHeight", 0)
-	if maxW > 0 || maxH > 0 {
-		bounds := img.Bounds()
-		// Only ever shrink — never enlarge — when compressing.
-		tw, th := fitDimensions(bounds.Dx(), bounds.Dy(), maxW, maxH)
-		if tw < bounds.Dx() || th < bounds.Dy() {
-			img = resizeImage(img, tw, th)
-		}
-	}
 
 	// Default compression target is JPEG since it yields the largest savings;
 	// callers can force PNG to stay lossless.
@@ -38,7 +30,6 @@ func HandleCompressImage(w http.ResponseWriter, r *http.Request) {
 	if requested == "" {
 		requested = "jpeg"
 	}
-	format := normalizeOutputFormat(requested, srcFormat)
 
 	quality := formInt(r, "quality", 75)
 	if quality < 1 {
@@ -48,5 +39,18 @@ func HandleCompressImage(w http.ResponseWriter, r *http.Request) {
 		quality = 100
 	}
 
-	writeImageResult(w, img, format, quality, shared.SafeFileBase(name), "compressed")
+	transform := func(img image.Image, srcFormat, _ string) (image.Image, string, error) {
+		// Optional downscale before encoding. Only ever shrink — never
+		// enlarge — when compressing.
+		if maxW > 0 || maxH > 0 {
+			bounds := img.Bounds()
+			tw, th := fitDimensions(bounds.Dx(), bounds.Dy(), maxW, maxH)
+			if tw < bounds.Dx() || th < bounds.Dy() {
+				img = resizeImage(img, tw, th)
+			}
+		}
+		return img, normalizeOutputFormat(requested, srcFormat), nil
+	}
+
+	serveProcessedImages(w, headers, transform, "compressed", quality)
 }

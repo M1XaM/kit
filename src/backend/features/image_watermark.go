@@ -1,9 +1,9 @@
 package features
 
 import (
+	"errors"
 	"image"
 	"image/color"
-	"local-tools-hub/backend/features/shared"
 	"net/http"
 	"strings"
 
@@ -31,14 +31,15 @@ import (
 //	            default 25)
 //	format    - output format ("keep" reuses the source format)
 //	quality   - JPEG quality 1-100
+//
+// Accepts one image or many (batch); several inputs come back as a ZIP. The
+// stamp is rebuilt per image so size-relative defaults (fontSize, scale) track
+// each base image.
 func HandleImageWatermark(w http.ResponseWriter, r *http.Request) {
-	img, srcFormat, name, ok := receiveSingleImage(w, r)
+	headers, ok := receiveImages(w, r)
 	if !ok {
 		return
 	}
-
-	base := toNRGBA(img)
-	bounds := base.Bounds()
 
 	opacity := clampRange(formFloat(r, "opacity", 50), 0, 100) / 100
 	margin := formInt(r, "margin", 24)
@@ -50,9 +51,10 @@ func HandleImageWatermark(w http.ResponseWriter, r *http.Request) {
 		position = "bottom-right"
 	}
 
-	// Build the watermark stamp as a standalone NRGBA layer with opacity
-	// already applied, then place it according to the requested position.
-	var stamp *image.NRGBA
+	// buildStamp produces the watermark layer (with opacity already applied)
+	// for a base image of the given width. Inputs that don't depend on the
+	// base image are validated/decoded once, up front.
+	var buildStamp func(baseWidth int) (*image.NRGBA, error)
 	switch strings.ToLower(strings.TrimSpace(r.FormValue("type"))) {
 	case "image":
 		wmFile, _, err := r.FormFile("watermark")
@@ -66,49 +68,60 @@ func HandleImageWatermark(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to decode the watermark image.", http.StatusBadRequest)
 			return
 		}
-
 		scalePct := clampRange(formFloat(r, "scale", 25), 1, 100)
-		targetW := int(float64(bounds.Dx()) * scalePct / 100)
-		if targetW < 1 {
-			targetW = 1
+		buildStamp = func(baseWidth int) (*image.NRGBA, error) {
+			targetW := int(float64(baseWidth) * scalePct / 100)
+			if targetW < 1 {
+				targetW = 1
+			}
+			wmBounds := wmImg.Bounds()
+			targetH := int(float64(targetW) * float64(wmBounds.Dy()) / float64(wmBounds.Dx()))
+			if targetH < 1 {
+				targetH = 1
+			}
+			return fadeAlpha(toNRGBA(resizeImage(wmImg, targetW, targetH)), opacity), nil
 		}
-		wmBounds := wmImg.Bounds()
-		targetH := int(float64(targetW) * float64(wmBounds.Dy()) / float64(wmBounds.Dx()))
-		if targetH < 1 {
-			targetH = 1
-		}
-		stamp = fadeAlpha(toNRGBA(resizeImage(wmImg, targetW, targetH)), opacity)
 	default:
 		text := strings.TrimSpace(r.FormValue("text"))
 		if text == "" {
 			http.Error(w, "Watermark text is required.", http.StatusBadRequest)
 			return
 		}
-		fontSize := formInt(r, "fontSize", bounds.Dx()/20)
-		if fontSize < 8 {
-			fontSize = 8
-		}
-		if fontSize > 512 {
-			fontSize = 512
-		}
+		requestedFontSize := formInt(r, "fontSize", 0)
 		col := parseHexColor(r.FormValue("color"), color.NRGBA{R: 255, G: 255, B: 255, A: 255})
 		col.A = uint8(float64(col.A)*opacity + 0.5)
-
-		rendered, err := renderText(text, fontSize, col)
-		if err != nil {
-			http.Error(w, "Failed to render the watermark text.", http.StatusInternalServerError)
-			return
+		buildStamp = func(baseWidth int) (*image.NRGBA, error) {
+			fontSize := requestedFontSize
+			if fontSize <= 0 {
+				fontSize = baseWidth / 20
+			}
+			if fontSize < 8 {
+				fontSize = 8
+			}
+			if fontSize > 512 {
+				fontSize = 512
+			}
+			return renderText(text, fontSize, col)
 		}
-		stamp = rendered
 	}
 
-	out := image.NewNRGBA(bounds)
-	draw.Draw(out, bounds, base, bounds.Min, draw.Src)
-	placeStamp(out, stamp, position, margin)
-
-	format := normalizeOutputFormat(r.FormValue("format"), srcFormat)
+	requestedFormat := r.FormValue("format")
 	quality := formInt(r, "quality", 90)
-	writeImageResult(w, out, format, quality, shared.SafeFileBase(name), "watermarked")
+
+	transform := func(img image.Image, srcFormat, _ string) (image.Image, string, error) {
+		base := toNRGBA(img)
+		bounds := base.Bounds()
+		stamp, err := buildStamp(bounds.Dx())
+		if err != nil {
+			return nil, "", errors.New("failed to render the watermark")
+		}
+		out := image.NewNRGBA(bounds)
+		draw.Draw(out, bounds, base, bounds.Min, draw.Src)
+		placeStamp(out, stamp, position, margin)
+		return out, normalizeOutputFormat(requestedFormat, srcFormat), nil
+	}
+
+	serveProcessedImages(w, headers, transform, "watermarked", quality)
 }
 
 // renderText draws text into a tightly sized transparent layer using the

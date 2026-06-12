@@ -23,6 +23,86 @@ function ImageCollageView({ tool }: ImageCollageViewProps) {
   const [tileHeight, setTileHeight] = useState('320')
   const [spacing, setSpacing] = useState('12')
   const [background, setBackground] = useState('#ffffff')
+  const [activePreset, setActivePreset] = useState('')
+
+  // Predefined blueprints: each one fills in the layout fields, which stay
+  // editable afterwards. Presets that depend on the number of images (strip,
+  // square) resolve when applied.
+  const PRESETS: { id: string; label: string; hint: string; apply: (count: number) => void }[] = [
+    {
+      id: 'square',
+      label: 'Square grid',
+      hint: 'Roughly square arrangement',
+      apply: (count) => {
+        setColumns(String(Math.max(1, Math.ceil(Math.sqrt(Math.max(count, 1))))))
+        setTileWidth('320')
+        setTileHeight('320')
+        setSpacing('12')
+      }
+    },
+    {
+      id: 'side-by-side',
+      label: 'Side by side',
+      hint: '2 across',
+      apply: () => {
+        setColumns('2')
+        setTileWidth('480')
+        setTileHeight('480')
+        setSpacing('10')
+      }
+    },
+    {
+      id: 'film-strip',
+      label: 'Film strip',
+      hint: 'One horizontal row',
+      apply: (count) => {
+        setColumns(String(Math.max(count, 1)))
+        setTileWidth('300')
+        setTileHeight('200')
+        setSpacing('8')
+        setBackground('#000000')
+      }
+    },
+    {
+      id: 'stack',
+      label: 'Vertical stack',
+      hint: 'One column',
+      apply: () => {
+        setColumns('1')
+        setTileWidth('640')
+        setTileHeight('420')
+        setSpacing('14')
+      }
+    },
+    {
+      id: 'polaroid',
+      label: 'Polaroid wall',
+      hint: '3 across, roomy white frame',
+      apply: () => {
+        setColumns('3')
+        setTileWidth('300')
+        setTileHeight('300')
+        setSpacing('28')
+        setBackground('#ffffff')
+      }
+    }
+  ]
+
+  const applyPreset = (preset: (typeof PRESETS)[number]) => {
+    preset.apply(thumbs.length)
+    setActivePreset(preset.id)
+  }
+
+  // "Help me choose" picks a sensible blueprint from the number of images.
+  const helpMeChoose = () => {
+    const count = thumbs.length
+    const preset =
+      count <= 2 ? PRESETS.find((p) => p.id === 'side-by-side')
+      : count <= 4 ? PRESETS.find((p) => p.id === 'square')
+      : count <= 6 ? PRESETS.find((p) => p.id === 'polaroid')
+      : PRESETS.find((p) => p.id === 'square')
+    if (preset) applyPreset(preset)
+  }
 
   useEffect(() => () => thumbs.forEach((t) => URL.revokeObjectURL(t.url)), [thumbs])
 
@@ -147,6 +227,40 @@ function ImageCollageView({ tool }: ImageCollageViewProps) {
             ))}
           </div>
         )}
+
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className={`${labelClass} mb-0`}>Blueprints</label>
+            <button
+              type="button"
+              onClick={helpMeChoose}
+              disabled={isProcessing || !thumbs.length}
+              className="rounded-md border px-2.5 py-1 text-xs font-semibold border-blue-400/40 bg-blue-600/20 text-blue-200 transition hover:bg-blue-600/30 disabled:opacity-40"
+              title="Pick a layout automatically based on how many images you added"
+            >
+              ✨ Help me choose
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => applyPreset(preset)}
+                disabled={isProcessing}
+                title={preset.hint}
+                className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                  activePreset === preset.id
+                    ? 'border-blue-500 bg-blue-600 text-white'
+                    : 'border-white/15 bg-white/5 text-slate-200 hover:bg-white/10'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500">Blueprints prefill the layout below — tweak anything afterwards.</p>
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>

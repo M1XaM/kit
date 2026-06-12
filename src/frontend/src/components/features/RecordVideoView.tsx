@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import FeatureHeader from './FeatureHeader'
+import { saveAs, saveToKit } from './saveRecording'
 
 const VIDEO_MIME_TYPES = [
   'video/webm;codecs=vp9,opus',
@@ -162,6 +163,31 @@ function RecordVideoView({ tool }) {
     }
   }
 
+  const patchRecording = (id, patch) => {
+    setRecordings((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+  }
+
+  // Save stores the clip under data/record-video/ next to the app; Save as
+  // opens the browser's save dialog instead.
+  const saveRecordingToKit = async (recording) => {
+    patchRecording(recording.id, { saving: true })
+    try {
+      const path = await saveToKit(recording.blob, 'record-video', recording.name)
+      patchRecording(recording.id, { saving: false, savedPath: path })
+    } catch (err) {
+      patchRecording(recording.id, { saving: false })
+      setErrorMessage(err?.message || 'Could not save the recording.')
+    }
+  }
+
+  const saveRecordingAs = async (recording) => {
+    try {
+      await saveAs(recording.blob, recording.name)
+    } catch (err) {
+      setErrorMessage(err?.message || 'Could not save the recording.')
+    }
+  }
+
   const removeRecording = (id) => {
     setRecordings((prev) => {
       const target = prev.find((item) => item.id === id)
@@ -271,12 +297,15 @@ function RecordVideoView({ tool }) {
           {
             id: buildRecordingId(),
             url,
+            blob,
             name: filename,
             mimeType: blob.type || finalType,
             createdAt: new Date(),
             durationMs: elapsedRef.current,
             size: blob.size,
-            playable
+            playable,
+            savedPath: '',
+            saving: false
           },
           ...prev
         ])
@@ -465,17 +494,34 @@ function RecordVideoView({ tool }) {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <a className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700" href={recording.url} download={recording.name}>
-                      Download
-                    </a>
+                    <button
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700"
+                      type="button"
+                      onClick={() => saveRecordingToKit(recording)}
+                      disabled={recording.saving}
+                      title="Save into data/record-video/ next to the app"
+                    >
+                      {recording.saving ? 'Saving…' : 'Save'}
+                    </button>
+                    <button
+                      className="rounded-lg border px-3 py-2 text-xs font-semibold transition border-slate-400/40 bg-slate-400/15 text-slate-200 hover:bg-slate-400/25"
+                      type="button"
+                      onClick={() => saveRecordingAs(recording)}
+                      title="Choose where to save the file"
+                    >
+                      Save as…
+                    </button>
                     <button className="rounded-lg border px-3 py-2 text-xs font-semibold transition border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10" type="button" onClick={() => removeRecording(recording.id)}>
                       Remove
                     </button>
                   </div>
                 </div>
+                {recording.savedPath ? (
+                  <div className="mt-2 break-all text-xs text-emerald-300">Saved to {recording.savedPath}</div>
+                ) : null}
                 <video className="mt-3 w-full rounded-lg bg-black" controls preload="metadata" src={recording.url} />
                 {!recording.playable ? (
-                  <div className="mt-2 text-xs text-amber-200">This browser cannot play {recording.mimeType}. Use the download instead.</div>
+                  <div className="mt-2 text-xs text-amber-200">This browser cannot play {recording.mimeType}. Use Save as instead.</div>
                 ) : null}
               </div>
             ))}

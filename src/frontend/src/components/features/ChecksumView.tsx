@@ -1,18 +1,9 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as openpgp from 'openpgp'
-import { createMD5 } from 'hash-wasm'
-import { sha1 } from '@noble/hashes/sha1'
-import { sha256 } from '@noble/hashes/sha256'
-import { bytesToHex } from '@noble/hashes/utils'
 import FeatureHeader from './FeatureHeader'
+import { HASH_ALGORITHMS, hashFile } from './hashing'
 import type { Tool } from './toolData'
-
-const ALGORITHMS = {
-  sha256: { label: 'SHA-256', create: () => sha256.create() },
-  sha1: { label: 'SHA-1', create: () => sha1.create() },
-  md5: { label: 'MD5', create: async () => createMD5() }
-}
 
 type ChecksumViewProps = {
   tool: Tool
@@ -82,45 +73,7 @@ function ChecksumView({ tool }: ChecksumViewProps) {
 
   const normalizeHash = (value: string) => value.replace(/[^a-fA-F0-9]/g, '').toLowerCase()
 
-  const computeHash = async (file: File) => {
-    const hasher = await ALGORITHMS[algorithm].create()
-    const total = file.size || 0
-    let processed = 0
-    let lastUpdate = 0
-
-    if (file.stream) {
-      const reader = file.stream().getReader()
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done) break
-        if (value) {
-          hasher.update(value)
-          processed += value.length
-        }
-        const now = Date.now()
-        if (total && now - lastUpdate > 120) {
-          setProgress(Math.min(100, Math.round((processed / total) * 100)))
-          lastUpdate = now
-        }
-      }
-    } else {
-      const chunkSize = 4 * 1024 * 1024
-      while (processed < total) {
-        const slice = file.slice(processed, processed + chunkSize)
-        const buffer = new Uint8Array(await slice.arrayBuffer())
-        hasher.update(buffer)
-        processed += buffer.length
-        setProgress(Math.min(100, Math.round((processed / total) * 100)))
-      }
-    }
-
-    setProgress(100)
-    const digest = hasher.digest()
-    if (typeof digest === 'string') {
-      return digest.toLowerCase()
-    }
-    return bytesToHex(digest)
-  }
+  const computeHash = (file: File) => hashFile(algorithm, file, setProgress)
 
   const handleGpgKeyPick = () => {
     setShowGpgPanel(true)
@@ -351,7 +304,7 @@ function ChecksumView({ tool }: ChecksumViewProps) {
               disabled={isProcessing}
               className="w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white"
             >
-              {Object.entries(ALGORITHMS).map(([value, { label }]) => (
+              {Object.entries(HASH_ALGORITHMS).map(([value, { label }]) => (
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>

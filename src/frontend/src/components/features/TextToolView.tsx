@@ -1,10 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import FeatureHeader from './FeatureHeader'
-import { createMD5 } from 'hash-wasm'
-import { sha1 } from '@noble/hashes/sha1'
-import { sha256 } from '@noble/hashes/sha256'
 import { bytesToHex } from '@noble/hashes/utils'
+import { HASH_ALGORITHMS, hashText } from './hashing'
+import MetadataEditor from './MetadataEditorView'
 
 const MAX_DIFF_LINES = 400
 
@@ -21,7 +20,6 @@ const ENCODING_OPTIONS = [
   { value: 'iso-8859-1', label: 'ISO-8859-1' }
 ]
 
-const stripExtension = (name) => name.replace(/\.[^/.]+$/, '')
 
 const formatBytes = (value) => {
   if (value == null || Number.isNaN(value)) return '--'
@@ -255,191 +253,6 @@ function ToolShell({ tool, subtitle, children }) {
   )
 }
 
-function MetadataEditor() {
-  const fileInputRef = useRef(null)
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [dragActive, setDragActive] = useState(false)
-  const [title, setTitle] = useState('')
-  const [author, setAuthor] = useState('')
-  const [subject, setSubject] = useState('')
-  const [keywords, setKeywords] = useState('')
-  const [customJson, setCustomJson] = useState('')
-  const [errorMessage, setErrorMessage] = useState('')
-
-  const dropZoneClass = `flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition text-slate-400 ${dragActive ? 'border-blue-400/70 bg-blue-600/20 text-slate-200' : 'border-white/20 hover:border-white/30 hover:bg-white/5'}`
-
-  const handleDragOver = (event) => {
-    event.preventDefault()
-    setDragActive(true)
-  }
-
-  const handleDragLeave = (event) => {
-    event.preventDefault()
-    setDragActive(false)
-  }
-
-  const handleDrop = (event) => {
-    event.preventDefault()
-    setDragActive(false)
-    const files = Array.from(event.dataTransfer.files || [])
-    if (files.length) {
-      setSelectedFile(files[0])
-      setErrorMessage('')
-    }
-  }
-
-  const handleFileChange = (event) => {
-    const files = Array.from(event.target.files || [])
-    if (files.length) {
-      setSelectedFile(files[0])
-      setErrorMessage('')
-    }
-  }
-
-  const customParsed = (() => {
-    if (!customJson.trim()) return { value: null, error: '' }
-    try {
-      return { value: JSON.parse(customJson), error: '' }
-    } catch (err) {
-      return { value: null, error: 'Invalid JSON in custom metadata.' }
-    }
-  })()
-
-  const metadata = useMemo(() => {
-    const meta = {}
-    if (selectedFile) {
-      meta.file = {
-        name: selectedFile.name,
-        size: selectedFile.size,
-        type: selectedFile.type || 'unknown',
-        lastModified: selectedFile.lastModified ? new Date(selectedFile.lastModified).toISOString() : null
-      }
-    }
-    if (title.trim()) meta.title = title.trim()
-    if (author.trim()) meta.author = author.trim()
-    if (subject.trim()) meta.subject = subject.trim()
-    const keywordList = keywords.split(',').map((item) => item.trim()).filter(Boolean)
-    if (keywordList.length) meta.keywords = keywordList
-    if (customParsed.value) meta.custom = customParsed.value
-    return meta
-  }, [selectedFile, title, author, subject, keywords, customParsed.value])
-
-  const metadataJson = JSON.stringify(metadata, null, 2)
-
-  const downloadMetadata = () => {
-    if (customParsed.error) {
-      setErrorMessage(customParsed.error)
-      return
-    }
-    const base = selectedFile ? stripExtension(selectedFile.name) : 'metadata'
-    const blob = new Blob([metadataJson], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `${base}.metadata.json`
-    document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-    URL.revokeObjectURL(url)
-    setErrorMessage('')
-  }
-
-  const copyMetadata = async () => {
-    if (customParsed.error) {
-      setErrorMessage(customParsed.error)
-      return
-    }
-    try {
-      await navigator.clipboard.writeText(metadataJson)
-      setErrorMessage('')
-    } catch (err) {
-      setErrorMessage('Unable to copy metadata to clipboard.')
-    }
-  }
-
-  return (
-    <div className="grid gap-6">
-      <div className="grid gap-4">
-        <label
-          className={dropZoneClass}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          <svg className="mb-2" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="17 8 12 3 7 8"></polyline>
-            <line x1="12" y1="3" x2="12" y2="15"></line>
-          </svg>
-          <div className="text-sm text-slate-200">
-            {selectedFile ? selectedFile.name : 'Drop a file to read basic metadata'}
-          </div>
-          <div className="mt-2 text-xs text-slate-400">or click to choose a file</div>
-          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
-        </label>
-
-        {selectedFile ? (
-          <div className="flex flex-wrap gap-3 rounded-xl border px-4 py-3 text-xs border-white/10 bg-slate-900/50 text-slate-300">
-            <span>Name: {selectedFile.name}</span>
-            <span>Size: {formatBytes(selectedFile.size)}</span>
-            <span>Type: {selectedFile.type || 'unknown'}</span>
-            <span>Modified: {selectedFile.lastModified ? new Date(selectedFile.lastModified).toLocaleString() : 'unknown'}</span>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="grid gap-2">
-          <label className={LABEL_CLASS}>Title</label>
-          <input className={INPUT_CLASS} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Document title" />
-        </div>
-        <div className="grid gap-2">
-          <label className={LABEL_CLASS}>Author</label>
-          <input className={INPUT_CLASS} value={author} onChange={(event) => setAuthor(event.target.value)} placeholder="Author name" />
-        </div>
-        <div className="grid gap-2">
-          <label className={LABEL_CLASS}>Subject</label>
-          <input className={INPUT_CLASS} value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject or category" />
-        </div>
-        <div className="grid gap-2">
-          <label className={LABEL_CLASS}>Keywords</label>
-          <input className={INPUT_CLASS} value={keywords} onChange={(event) => setKeywords(event.target.value)} placeholder="keyword1, keyword2" />
-        </div>
-      </div>
-
-      <div className="grid gap-2">
-        <label className={LABEL_CLASS}>Custom JSON metadata</label>
-        <textarea
-          className={`${INPUT_CLASS} min-h-[120px] font-mono`}
-          value={customJson}
-          onChange={(event) => setCustomJson(event.target.value)}
-          placeholder='{"department":"Design","version":"1.2"}'
-        />
-        {customParsed.error ? <div className="text-xs text-red-300">{customParsed.error}</div> : null}
-      </div>
-
-      {errorMessage ? (
-        <div className="rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{errorMessage}</div>
-      ) : null}
-
-      <div className="flex flex-wrap gap-3">
-        <button className={PRIMARY_BUTTON} type="button" onClick={downloadMetadata}>
-          Download metadata JSON
-        </button>
-        <button className={SECONDARY_BUTTON} type="button" onClick={copyMetadata}>
-          Copy JSON
-        </button>
-        <span className="text-xs text-slate-400">Exports a sidecar file, original file is unchanged.</span>
-      </div>
-
-      <div className="rounded-xl border p-4 border-white/10 bg-black/30">
-        <div className={LABEL_CLASS}>Preview</div>
-        <pre className="mt-3 max-h-64 overflow-auto text-xs text-slate-200">{metadataJson}</pre>
-      </div>
-    </div>
-  )
-}
-
 function DiffViewer({ diff }) {
   let leftLine = 0
   let rightLine = 0
@@ -624,25 +437,19 @@ function HashGeneratorTool() {
     setIsWorking(true)
     setError('')
     try {
-      const data = new TextEncoder().encode(text)
-      if (algorithm === 'md5') {
-        const hasher = await createMD5()
-        hasher.update(data)
-        const digest = hasher.digest()
-        setResult(typeof digest === 'string' ? digest.toLowerCase() : bytesToHex(digest))
-      } else if (algorithm === 'sha1') {
-        const hasher = sha1.create()
-        hasher.update(data)
-        setResult(bytesToHex(hasher.digest()))
-      } else {
-        const hasher = sha256.create()
-        hasher.update(data)
-        setResult(bytesToHex(hasher.digest()))
-      }
+      setResult(await hashText(algorithm, text))
     } catch (err) {
       setError('Failed to generate hash.')
     } finally {
       setIsWorking(false)
+    }
+  }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(result)
+    } catch (err) {
+      setError('Unable to copy the hash to the clipboard.')
     }
   }
 
@@ -658,20 +465,6 @@ function HashGeneratorTool() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex flex-col gap-2">
-          <label className={LABEL_CLASS}>Algorithm</label>
-          <select className={INPUT_CLASS} value={algorithm} onChange={(event) => setAlgorithm(event.target.value)}>
-            <option value="sha256">SHA-256</option>
-            <option value="sha1">SHA-1</option>
-            <option value="md5">MD5</option>
-          </select>
-        </div>
-        <button className={PRIMARY_BUTTON} type="button" onClick={handleGenerate} disabled={isWorking}>
-          {isWorking ? 'Generating...' : 'Generate hash'}
-        </button>
-      </div>
-
       {error ? (
         <div className="rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{error}</div>
       ) : null}
@@ -679,6 +472,20 @@ function HashGeneratorTool() {
       <div className="grid gap-2">
         <label className={LABEL_CLASS}>Output</label>
         <textarea className={`${INPUT_CLASS} min-h-[120px] font-mono`} value={result} readOnly placeholder="Hash output" />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <select className={`${INPUT_CLASS} w-auto`} value={algorithm} onChange={(event) => setAlgorithm(event.target.value)} aria-label="Algorithm">
+          {Object.entries(HASH_ALGORITHMS).map(([value, { label }]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+        <button className={PRIMARY_BUTTON} type="button" onClick={handleGenerate} disabled={isWorking}>
+          {isWorking ? 'Generating...' : 'Generate hash'}
+        </button>
+        <button className={SUBTLE_BUTTON} type="button" onClick={handleCopy} disabled={!result}>
+          Copy output
+        </button>
       </div>
     </div>
   )
@@ -727,6 +534,21 @@ function TransformTool({ encodeLabel, decodeLabel, encode, decode, inputPlacehol
         />
       </div>
 
+      {error ? (
+        <div className="rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{error}</div>
+      ) : null}
+
+      <div className="grid gap-2">
+        <label className={LABEL_CLASS}>Output</label>
+        <textarea
+          className={`${INPUT_CLASS} min-h-[140px] font-mono`}
+          value={output}
+          readOnly
+          placeholder={outputPlaceholder}
+        />
+      </div>
+
+      {/* All actions live in one row at the bottom. */}
       <div className="flex flex-wrap items-center gap-3">
         <button className={PRIMARY_BUTTON} type="button" onClick={handleEncode}>
           {encodeLabel}
@@ -746,23 +568,6 @@ function TransformTool({ encodeLabel, decodeLabel, encode, decode, inputPlacehol
         }}>
           Clear
         </button>
-      </div>
-
-      {error ? (
-        <div className="rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200">{error}</div>
-      ) : null}
-
-      <div className="grid gap-2">
-        <label className={LABEL_CLASS}>Output</label>
-        <textarea
-          className={`${INPUT_CLASS} min-h-[140px] font-mono`}
-          value={output}
-          readOnly
-          placeholder={outputPlaceholder}
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
         <button className={SUBTLE_BUTTON} type="button" onClick={handleCopy} disabled={!output}>
           Copy output
         </button>
@@ -968,7 +773,7 @@ function EncodingConvertTool() {
 function TextToolView({ tool }) {
   if (tool.id === 'metadata-edit') {
     return (
-      <ToolShell tool={tool} subtitle="Export metadata sidecars without leaving the browser.">
+      <ToolShell tool={tool} subtitle="Read the metadata inside a file and write your edits back into it — no sidecar files.">
         <MetadataEditor />
       </ToolShell>
     )
@@ -1030,7 +835,16 @@ function TextToolView({ tool }) {
 
   if (tool.id === 'url-encode-decode') {
     return (
-      <ToolShell tool={tool} subtitle="Encode or decode URL strings in your browser.">
+      <ToolShell tool={tool} subtitle="Percent-encode text for safe use inside URLs.">
+        <div className="mb-5 rounded-xl border px-4 py-3 text-xs leading-relaxed border-white/10 bg-slate-900/50 text-slate-400">
+          URL encoding is not the same as Base64 or Hex: it percent-encodes only the characters
+          that have special meaning in a URL (spaces, <code className="text-slate-300">?</code>,{' '}
+          <code className="text-slate-300">&amp;</code>, <code className="text-slate-300">=</code>,{' '}
+          <code className="text-slate-300">#</code>, non-ASCII letters, …). Use it when putting
+          arbitrary text into a query parameter or path segment — e.g.{' '}
+          <code className="text-slate-300">tom &amp; jerry</code> →{' '}
+          <code className="text-slate-300">tom%20%26%20jerry</code>.
+        </div>
         <TransformTool
           encodeLabel="Encode URL"
           decodeLabel="Decode URL"

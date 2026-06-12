@@ -12,10 +12,17 @@ require (
 )
 
 require (
+	github.com/bogem/id3v2/v2 v2.1.4 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
+	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8 // indirect
+	github.com/dsoprea/go-exif/v3 v3.0.1 // indirect
+	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
+	github.com/dsoprea/go-utility/v2 v2.0.0-20221003172846-a3e1774ef349 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
+	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/hhrutter/lzw v1.0.0 // indirect
 	github.com/hhrutter/pkcs7 v0.2.2 // indirect
 	github.com/hhrutter/tiff v1.0.3 // indirect
@@ -32,6 +39,7 @@ require (
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

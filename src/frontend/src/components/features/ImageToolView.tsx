@@ -26,11 +26,13 @@ const FILTERS: Record<string, { label: string; amount?: { min: number; max: numb
 
 function ImageToolView({ tool }: ImageToolViewProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [batchMode, setBatchMode] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [dragActive, setDragActive] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const file = files[0] ?? null
 
   // Resize controls
   const [resizeMode, setResizeMode] = useState('fit')
@@ -55,20 +57,15 @@ function ImageToolView({ tool }: ImageToolViewProps) {
   // Convert controls
   const [convertFormat, setConvertFormat] = useState('png')
 
-  // Enhance controls
-  const [denoise, setDenoise] = useState('30')
-  const [autoContrast, setAutoContrast] = useState(true)
-  const [sharpenAmount, setSharpenAmount] = useState('40')
-
   useEffect(() => {
-    if (!file) {
+    if (!file || files.length > 1) {
       setPreviewUrl('')
       return
     }
     const url = URL.createObjectURL(file)
     setPreviewUrl(url)
     return () => URL.revokeObjectURL(url)
-  }, [file])
+  }, [file, files.length])
 
   // Keep the filter amount in sync with whichever filter is selected.
   useEffect(() => {
@@ -86,16 +83,22 @@ function ImageToolView({ tool }: ImageToolViewProps) {
     [dragActive]
   )
 
-  const pickFile = (files: FileList | null) => {
-    const next = files?.[0]
-    if (!next) return
-    setFile(next)
+  const pickFile = (incoming: FileList | null) => {
+    const next = Array.from(incoming || [])
+    if (!next.length) return
+    // In batch mode new selections accumulate; otherwise they replace.
+    setFiles((prev) => (batchMode ? [...prev, ...next] : next.slice(0, 1)))
     setErrorMessage('')
+  }
+
+  const toggleBatch = (enabled: boolean) => {
+    setBatchMode(enabled)
+    if (!enabled) setFiles((prev) => prev.slice(0, 1))
   }
 
   const buildFormData = (): FormData | string => {
     const data = new FormData()
-    data.append('image', file as File)
+    files.forEach((f) => data.append('files', f))
 
     switch (tool.id) {
       case 'resize-image': {
@@ -139,14 +142,8 @@ function ImageToolView({ tool }: ImageToolViewProps) {
         break
       }
       case 'denoise-enhance': {
-        if (Number(denoise) <= 0 && Number(sharpenAmount) <= 0 && !autoContrast) {
-          return 'Enable at least one of denoise, auto contrast or sharpen.'
-        }
-        data.append('denoise', denoise)
-        data.append('autoContrast', autoContrast ? '1' : '0')
-        data.append('sharpen', sharpenAmount)
-        data.append('format', format)
-        data.append('quality', quality)
+        // One-click enhancement: the backend applies tuned defaults
+        // (denoise + auto contrast + sharpen) when no parameters are sent.
         break
       }
     }
@@ -177,7 +174,7 @@ function ImageToolView({ tool }: ImageToolViewProps) {
 
       const disposition = response.headers.get('content-disposition') || ''
       const match = disposition.match(/filename="?([^";]+)"?/i)
-      const fallback = `${stripExtension(file.name)}_${tool.id}.img`
+      const fallback = files.length > 1 ? `batch_${tool.id}.zip` : `${stripExtension(file.name)}_${tool.id}.img`
       const filename = match ? match[1] : fallback
 
       const blob = await response.blob()
@@ -198,7 +195,7 @@ function ImageToolView({ tool }: ImageToolViewProps) {
 
   const showQuality =
     (tool.id === 'compress-image') ||
-    ((tool.id === 'resize-image' || tool.id === 'image-filters' || tool.id === 'denoise-enhance') && (format === 'jpeg' || format === 'jpg')) ||
+    ((tool.id === 'resize-image' || tool.id === 'image-filters') && (format === 'jpeg' || format === 'jpg')) ||
     (tool.id === 'convert-image-formats' && convertFormat === 'jpeg')
 
   return (
@@ -233,17 +230,53 @@ function ImageToolView({ tool }: ImageToolViewProps) {
               <polyline points="21 15 16 10 5 21"></polyline>
             </svg>
           )}
-          <div className="text-sm text-slate-200">{file ? file.name : 'Drag and drop an image here'}</div>
-          <div className="mt-2 text-xs text-slate-400">or click to choose an image</div>
+          <div className="text-sm text-slate-200">
+            {files.length > 1
+              ? `${files.length} images selected`
+              : file
+                ? file.name
+                : `Drag and drop ${batchMode ? 'images' : 'an image'} here`}
+          </div>
+          <div className="mt-2 text-xs text-slate-400">or click to choose {batchMode ? 'images — add more anytime' : 'an image'}</div>
           <input
             type="file"
             accept="image/*"
+            multiple={batchMode}
             ref={fileInputRef}
             disabled={isProcessing}
-            onChange={(e) => pickFile(e.target.files)}
+            onChange={(e) => { pickFile(e.target.files); e.target.value = '' }}
             className="hidden"
           />
         </label>
+
+        <label className="flex items-center gap-2 text-sm text-slate-200">
+          <input
+            type="checkbox"
+            className="accent-blue-600"
+            checked={batchMode}
+            onChange={(e) => toggleBatch(e.target.checked)}
+            disabled={isProcessing}
+          />
+          Batch processing — apply the same settings to multiple images (results download as a ZIP)
+        </label>
+
+        {batchMode && files.length > 0 && (
+          <div className="max-h-44 overflow-auto rounded-xl border border-white/10 bg-slate-950/60">
+            {files.map((f, index) => (
+              <div key={`${f.name}-${index}`} className="flex items-center justify-between gap-3 border-b px-4 py-2 text-sm border-white/5 last:border-b-0">
+                <span className="truncate text-slate-200">{f.name}</span>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-slate-400 transition hover:text-red-300"
+                  onClick={() => setFiles((prev) => prev.filter((_, i) => i !== index))}
+                  disabled={isProcessing}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {tool.id === 'resize-image' && (
           <div className="flex flex-col gap-4">
@@ -359,40 +392,12 @@ function ImageToolView({ tool }: ImageToolViewProps) {
         )}
 
         {tool.id === 'denoise-enhance' && (
-          <div className="flex flex-col gap-4">
-            <div>
-              <label className={labelClass}>Denoise strength: {denoise}</label>
-              <input
-                type="range"
-                className="w-full accent-blue-600"
-                min="0"
-                max="100"
-                value={denoise}
-                onChange={(e) => setDenoise(e.target.value)}
-                disabled={isProcessing}
-              />
-              <p className="mt-1 text-xs text-slate-500">Edge-preserving smoothing — flat noisy areas are cleaned while details stay sharp. 0 turns it off.</p>
-            </div>
-            <div>
-              <label className={labelClass}>Sharpen: {sharpenAmount}</label>
-              <input
-                type="range"
-                className="w-full accent-blue-600"
-                min="0"
-                max="100"
-                value={sharpenAmount}
-                onChange={(e) => setSharpenAmount(e.target.value)}
-                disabled={isProcessing}
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm text-slate-200">
-              <input type="checkbox" className="accent-blue-600" checked={autoContrast} onChange={(e) => setAutoContrast(e.target.checked)} disabled={isProcessing} />
-              Auto contrast (stretch the histogram)
-            </label>
-          </div>
+          <p className="text-xs text-slate-400">
+            One click does it all: edge-preserving denoise, automatic contrast and gentle sharpening with tuned defaults.
+          </p>
         )}
 
-        {(tool.id === 'resize-image' || tool.id === 'image-filters' || tool.id === 'denoise-enhance') && (
+        {(tool.id === 'resize-image' || tool.id === 'image-filters') && (
           <div>
             <label className={labelClass}>Output format</label>
             <select className={inputClass} value={format} onChange={(e) => setFormat(e.target.value)} disabled={isProcessing}>
@@ -423,7 +428,11 @@ function ImageToolView({ tool }: ImageToolViewProps) {
           type="submit"
           disabled={isProcessing || !file}
         >
-          {isProcessing ? 'Processing...' : 'Process Image'}
+          {isProcessing
+            ? 'Processing...'
+            : files.length > 1
+              ? `Process ${files.length} Images → ZIP`
+              : 'Process Image'}
         </button>
       </form>
     </div>

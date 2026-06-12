@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
 import FeatureHeader from './FeatureHeader'
+import ModelPicker from './ModelPicker'
 
 // AI Paraphrase. A local sequence-to-sequence model (instruction-tuned FLAN-T5)
 // rewrites text. The twist: you paste text on the left, load it into the output
@@ -392,70 +393,49 @@ function ParaphraseView({ tool }) {
         )}
       </div>
 
-      {/* Model dropdown */}
+      {/* Card-based model picker */}
       <div className="mt-6">
         <label className={labelClass}>Model</label>
-        <select className={inputClass} value={selectedId} onChange={(e) => { setSelectedId(e.target.value); setUsedProvider('') }}>
-          <option value="">Select a model…</option>
-          {models.map((m) => {
+        <ModelPicker
+          models={models.map((m) => {
             const ev = evaluate(m)
-            const tags = [TIER_BADGES[m.tier].label, formatBytes(m.sizeBytes)]
-            if (m.id === recommendedId) tags.push('Recommended')
-            if (!ev.canRun) tags.push('not enough resources')
-            else if (!m.downloaded) tags.push('not downloaded')
-            return <option key={m.id} value={m.id}>{`${m.name} — ${tags.join(' • ')}`}</option>
+            return {
+              id: m.id,
+              name: m.name,
+              description: m.description,
+              sizeBytes: m.sizeBytes,
+              tier: m.tier,
+              downloaded: !!m.downloaded,
+              downloading: !!m.downloading,
+              progress: m.progress,
+              error: m.error,
+              recommended: m.id === recommendedId,
+              disabledReason: ev.canRun ? undefined : 'Not enough resources'
+            }
           })}
-        </select>
-      </div>
-
-      {/* Selected model detail + actions */}
-      {selectedModel && selectedEval && (
-        <div className={`mt-4 rounded-xl border p-4 ${selectedEval.canRun ? 'border-white/10 bg-white/5' : 'border-red-400/30 bg-red-900/10'}`}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-slate-100">{selectedModel.name}</span>
-                <span className={`rounded-full border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider ${TIER_BADGES[selectedModel.tier].cls}`}>{TIER_BADGES[selectedModel.tier].label}</span>
-                {selectedModel.id === recommendedId && (
-                  <span className="rounded-full bg-blue-500/90 px-2 py-0.5 text-[0.6rem] font-bold text-white">Recommended</span>
-                )}
-              </div>
-              <p className="mt-1 text-sm text-slate-400">{selectedModel.description}</p>
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
-                <span>Download: <span className="text-slate-200">{formatBytes(selectedModel.sizeBytes)}</span></span>
-                <span>Needs RAM: <span className="text-slate-200">{formatBytes(selectedModel.minRamBytes)}</span></span>
-                <span>{gpuPresent ? (selectedEval.gpuFits ? 'Will use your GPU' : 'Will use GPU (may fall back to CPU)') : 'Will run on CPU'}</span>
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-2">
-              {!selectedEval.canRun ? (
-                <span className="rounded-full border border-red-400/50 bg-red-900/30 px-3 py-1 text-xs font-semibold text-red-200">Not enough resources</span>
-              ) : selectedModel.downloaded ? (
-                <span className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-200">Downloaded</span>
-              ) : selectedModel.downloading ? (
-                <div className="w-40">
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
-                    <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${selectedModel.progress || 0}%` }} />
-                  </div>
-                  <div className="mt-1 text-right text-xs text-slate-400">{Math.round(selectedModel.progress || 0)}%</div>
-                </div>
-              ) : (
-                <button type="button" onClick={() => handleDownload(selectedModel.id)} className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Download</button>
-              )}
-              {selectedModel.downloaded && (
-                <button type="button" onClick={() => handleDelete(selectedModel.id)} className="text-xs text-slate-400 underline-offset-2 hover:text-red-300 hover:underline">Delete to free {formatBytes(selectedModel.sizeBytes)}</button>
-              )}
-            </div>
+          selectedId={selectedId}
+          busy={isProcessing}
+          onSelect={(id) => { setSelectedId(id); setUsedProvider('') }}
+          onDownload={handleDownload}
+          onDelete={handleDelete}
+        />
+        {selectedModel && selectedEval && (
+          <div className="mt-3 space-y-1">
+            <p className="text-xs text-slate-400">
+              {gpuPresent
+                ? (selectedEval.gpuFits ? 'Will use your GPU.' : 'Will use your GPU (may fall back to CPU).')
+                : 'Will run on the CPU.'}{' '}
+              Needs {formatBytes(selectedModel.minRamBytes)} RAM.
+            </p>
+            {selectedEval.lowAvailable && selectedEval.canRun && (
+              <p className="text-xs text-amber-300/90">Your free memory is below this model's footprint — close some apps before running.</p>
+            )}
+            {selectedEval.slowOnCpu && selectedEval.canRun && (
+              <p className="text-xs text-amber-300/90">No GPU detected — this model runs on the CPU and can be slow.</p>
+            )}
           </div>
-          {selectedEval.lowAvailable && selectedEval.canRun && (
-            <p className="mt-2 text-xs text-amber-300/90">Your free memory is below this model's footprint — close some apps before running.</p>
-          )}
-          {selectedEval.slowOnCpu && selectedEval.canRun && (
-            <p className="mt-2 text-xs text-amber-300/90">No GPU detected — this model runs on the CPU and can be slow.</p>
-          )}
-          {selectedModel.error && <p className="mt-2 text-xs text-red-300">{selectedModel.error}</p>}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Two-pane: input left, clickable output editor right */}
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">

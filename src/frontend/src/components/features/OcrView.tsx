@@ -2,10 +2,22 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { createWorker } from 'tesseract.js'
 import FeatureHeader from './FeatureHeader'
+import ModelPicker from './ModelPicker'
 import type { Tool } from './toolData'
 
 type OcrViewProps = {
   tool: Tool
+}
+
+type OcrModel = {
+  id: string
+  name: string
+  sizeBytes: number
+  bundled?: boolean
+  downloaded: boolean
+  downloading?: boolean
+  progress?: number
+  error?: string
 }
 
 const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, '')
@@ -14,12 +26,15 @@ const LABEL_CLASS = 'text-xs uppercase tracking-[0.12em] text-slate-400'
 const PRIMARY_BUTTON = 'rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400'
 const SUBTLE_BUTTON = 'rounded-lg border px-4 py-2 text-sm font-semibold transition border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:text-slate-500'
 
-// Everything Tesseract needs (worker, WASM core, English language data) is
-// served by Kit itself — see the tesseract assets plugin in vite.config.js.
-const TESSERACT_OPTIONS = {
+const MODELS_POLL_MS = 1500
+
+// Everything Tesseract needs (worker, WASM core) is served by Kit itself — see
+// the tesseract assets plugin in vite.config.js. The English language pack is
+// bundled the same way; other languages are downloaded by the backend into
+// data/ocr-models/ and served from /api/ocr/lang/.
+const TESSERACT_BASE = {
   workerPath: '/tesseract/worker.min.js',
   corePath: '/tesseract/tesseract-core-simd-lstm.wasm.js',
-  langPath: '/tesseract/lang',
   gzip: true
 }
 
@@ -34,6 +49,26 @@ function OcrView({ tool }: OcrViewProps) {
   const [resultText, setResultText] = useState('')
   const [confidence, setConfidence] = useState<number | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
+
+  const [models, setModels] = useState<OcrModel[]>([])
+  const [language, setLanguage] = useState('eng')
+
+  // Language registry + download state, polled so progress stays live (same
+  // pattern as the other AI tools).
+  useEffect(() => {
+    let mounted = true
+    const fetchModels = async () => {
+      try {
+        const res = await fetch('/api/ocr/models', { cache: 'no-store' })
+        if (!res.ok) throw new Error(await res.text())
+        const json = await res.json()
+        if (mounted) setModels(Array.isArray(json.models) ? json.models : [])
+      } catch { /* keep last known state */ }
+    }
+    fetchModels()
+    const timer = setInterval(fetchModels, MODELS_POLL_MS)
+    return () => { mounted = false; clearInterval(timer) }
+  }, [])
 
   useEffect(() => {
     if (!file) {
@@ -64,8 +99,33 @@ function OcrView({ tool }: OcrViewProps) {
     setErrorMessage('')
   }
 
+  const postId = async (path: string, id: string) => {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+    if (!res.ok && res.status !== 202) throw new Error(await res.text())
+  }
+
+  const handleDownload = async (id: string) => {
+    try { await postId('/api/ocr/models/download', id) }
+    catch (err) { setErrorMessage(err instanceof Error ? err.message : 'Download failed to start') }
+  }
+  const handleDelete = async (id: string) => {
+    try {
+      await postId('/api/ocr/models/delete', id)
+      if (language === id) setLanguage('eng')
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Could not delete the language pack')
+    }
+  }
+
+  const selectedModel = models.find((m) => m.id === language)
+  const canRun = !!file && !isProcessing && !!selectedModel?.downloaded
+
   const runOcr = async () => {
-    if (!file || isProcessing) return
+    if (!canRun || !file) return
     setIsProcessing(true)
     setErrorMessage('')
     setResultText('')
@@ -75,8 +135,12 @@ function OcrView({ tool }: OcrViewProps) {
 
     let worker = null
     try {
-      worker = await createWorker('eng', 1, {
-        ...TESSERACT_OPTIONS,
+      // The bundled English pack lives in the app bundle; every other
+      // language is served from the backend's data/ocr-models/ folder.
+      const langPath = language === 'eng' ? '/tesseract/lang' : '/api/ocr/lang'
+      worker = await createWorker(language, 1, {
+        ...TESSERACT_BASE,
+        langPath,
         logger: (m) => {
           if (m.status === 'recognizing text') {
             setStatusText('Recognizing text...')
@@ -88,7 +152,7 @@ function OcrView({ tool }: OcrViewProps) {
       setResultText(data.text || '')
       setConfidence(typeof data.confidence === 'number' ? Math.round(data.confidence) : null)
       if (!data.text?.trim()) {
-        setErrorMessage('No text was found in this image. Try a sharper or higher-contrast scan.')
+        setErrorMessage('No text was found in this image. Try a sharper or higher-contrast scan, or a different language model.')
       }
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Text recognition failed.')
@@ -133,7 +197,7 @@ function OcrView({ tool }: OcrViewProps) {
 
       <FeatureHeader
         tool={tool}
-        subtitle="Tesseract OCR runs entirely in your browser — the engine and language data are bundled with Kit, nothing is uploaded."
+        subtitle="Tesseract OCR runs entirely on your device. English ships with Kit; download more language models below."
       />
 
       {errorMessage && (
@@ -141,6 +205,29 @@ function OcrView({ tool }: OcrViewProps) {
       )}
 
       <div className="mt-6 grid gap-5">
+        {/* Language model picker — same card UI as the other AI tools. */}
+        <div>
+          <label className={`${LABEL_CLASS} mb-1.5 block`}>Language model</label>
+          <ModelPicker
+            models={models.map((m) => ({
+              id: m.id,
+              name: m.name,
+              sizeBytes: m.sizeBytes,
+              downloaded: !!m.downloaded,
+              downloading: !!m.downloading,
+              progress: m.progress,
+              error: m.error,
+              recommended: m.bundled
+            }))}
+            selectedId={language}
+            busy={isProcessing}
+            onSelect={setLanguage}
+            onDownload={handleDownload}
+            onDelete={handleDelete}
+            deletableIds={new Set(models.filter((m) => !m.bundled).map((m) => m.id))}
+          />
+        </div>
+
         <label
           className={dropZoneClass}
           onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
@@ -169,10 +256,13 @@ function OcrView({ tool }: OcrViewProps) {
         </label>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button className={PRIMARY_BUTTON} type="button" onClick={runOcr} disabled={isProcessing || !file}>
-            {isProcessing ? 'Recognizing...' : 'Extract Text'}
+          <button className={PRIMARY_BUTTON} type="button" onClick={runOcr} disabled={!canRun}>
+            {isProcessing
+              ? 'Recognizing...'
+              : selectedModel && !selectedModel.downloaded
+                ? 'Download the language model first'
+                : 'Extract Text'}
           </button>
-          <span className="text-xs text-slate-400">Language: English</span>
         </div>
 
         {isProcessing && (

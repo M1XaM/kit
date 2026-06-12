@@ -39,20 +39,26 @@ Heavy, whole-image work runs on the local Go engine so even large photos stay of
 * **Color Palette Extraction** *(client)*: Pull a dominant color palette via median-cut quantization and copy the hex codes.
 * **Convert Image Formats** *(server)*: Re-encode between PNG, JPEG, GIF, BMP and TIFF (WebP accepted as input).
 * **Image Watermark** *(server)*: Stamp text (rendered with a bundled font — no system fonts needed) or a logo onto an image, with position presets, tiling and opacity.
-* **Denoise / Enhance** *(server)*: Edge-preserving noise reduction, auto-contrast histogram stretch and unsharp-mask sharpening.
-* **Batch Image Processing** *(server)*: Convert, resize or compress up to 200 images in one go and download the results as a ZIP.
+* **Denoise / Enhance** *(server)*: One-click cleanup — edge-preserving noise reduction, auto-contrast histogram stretch and unsharp-mask sharpening with tuned defaults.
+
+Every server-side image tool above also has a **Batch processing** checkbox: select up to 200 images, the same settings are applied to all of them and the results download as a ZIP.
 
 ### 🔊 Audio Toolkit
 
 * **Merge Audio** *(client)*: Add multiple audio files, preview and reorder them, then combine into one track — decoded, resampled and concatenated in-browser with the Web Audio API and exported as WAV or MP3. Fully offline, no uploads.
 * **Convert Audio Formats** *(server)*: Transcode between MP3, WAV, FLAC, OGG, Opus, M4A and AAC with an optional bitrate — video files work too, the audio track is extracted automatically.
-* **Record Video** *(client)*: Record your camera with a live preview, plus optional microphone and system audio (mixed together via the Web Audio API). Pause/resume, then preview and download each clip — nothing leaves your device.
-* **Screen Recording** *(client)*: Capture your screen, a window or a tab with optional system audio and microphone (mixed via the Web Audio API), with a live preview, pause/resume and per-clip downloads — fully offline.
+* **Record Video** *(client)*: Record your camera with a live preview, plus optional microphone and system audio (mixed together via the Web Audio API). Pause/resume, then preview each clip — nothing leaves your device.
+* **Screen Recording** *(client)*: Capture your screen, a window or a tab with optional system audio and microphone (mixed via the Web Audio API), with a live preview and pause/resume — fully offline.
+
+All three recording tools offer **Save** (stores the clip under `data/<feature>/` next to the app) and **Save as…** (the browser's native save dialog).
+
+* **YouTube Download** *(server)*: Paste one or many YouTube links, choose video+audio, audio-only (MP3) or video-only and a quality cap — Kit drives a locally installed **yt-dlp**; several links come back as one ZIP.
+* **File Converter** *(server)*: The universal catch-all — images ↔ any image format or one combined PDF (drag rows to set the page order), audio ↔ any audio format, video ↔ any video format or audio-only extraction, and PDF → page images.
 
 ### 📄 Document & Text Toolkit
 
 * **Notes** *(server)*: A persistent notepad with live **Markdown + LaTeX** rendering (KaTeX, in-browser). Every keystroke syncs to the local engine, so nothing is ever lost — notes are stored as **plain text files in `data/notes/`** right next to the app (alongside `bin` and `lib`), readable with any editor. Give a note an optional **name** (it becomes the file name, e.g. `Shopping list.txt`), archive it to the list below the editor, reopen any archived note to keep editing, or flip its **read-only lock** (a client-side guard) so you can't change it by accident.
-* **OCR** *(client)*: Extract text from images and scans with Tesseract running entirely in your browser — the engine, WASM core and English language data ship inside Kit, so it works fully offline with zero uploads.
+* **Metadata Editor** *(server)*: Read the metadata actually embedded in a file and write your edits back into it — PDF info dictionary (Title/Author/Subject/Keywords/Creator), MP3 ID3 tags, and EXIF viewing plus one-click **strip all metadata** for images. No sidecar files; the modified file downloads directly.
 * **Extract Text from PDF** *(client)*: Pull the text layer out of any PDF in-browser via the bundled PDF.js, with copy and .txt download. Scanned PDFs are pointed to the OCR tool.
 * **Watermark Documents** *(server)*: Stamp text or an image above or behind the content of PDF pages, with opacity, rotation, color, font size and page-range control.
 
@@ -65,6 +71,8 @@ Runs a neural-net model **locally** — no cloud, no uploads. Inference happens 
 * **AI Summarize** *(server)*: Condense long text into a short summary with a local sequence-to-sequence model. The feature page is a **two-pane editor** — paste text on the left, read the summary on the right — with the same **live system monitor** and a model dropdown offering three tiers — **T5 Small** (~310 MB, runs anywhere), **T5 Base** (~990 MB), and **FLAN-T5 Base** (~1.1 GB, instruction-tuned for the best quality). As with background removal, weights are **downloaded on demand**, can be **deleted any time**, the best tier for your machine is flagged **Recommended**, and inference uses your **GPU (CUDA)** when available else the **CPU** — the result shows which ran.
 
 * **AI Paraphrase** *(server)*: Rewrite text with a local instruction-tuned model, **highlighting only the words you want changed**. Paste text on the left and load it into the **output editor** on the right, then **click individual words (or several in a row)** to highlight spans — only the highlighted spans are sent to the model and rewritten in place (everything else stays untouched). Two tiers — **FLAN-T5 Small** (~376 MB, runs anywhere) and **FLAN-T5 Base** (~1.1 GB, better, more varied rewrites). Same **live system monitor**, **Recommended** flag, **on-demand** weights you can **delete any time**, and **GPU/CPU** auto-selection as the other AI tools. (It shares the same local text engine as AI Summarize.)
+
+* **OCR** *(client)*: Extract text from images and scans with Tesseract running entirely on your device — the engine, WASM core and English language pack ship inside Kit. **19 more languages** (Spanish, French, German, Russian, Chinese, …) download on demand from the page, are stored under `data/ocr-models/` and can be deleted any time — the same model-card flow as the other AI tools.
 
 > **Availability & GPU builds:** every official release ships the **CPU** engine for **Linux, Windows and macOS (Apple Silicon)**, so the AI features work out of the box on all three — no extra download beyond the model weights. Inference runs on the CPU by default; building with the GPU option (`make build with-gpu`) instead bundles the full CUDA + cuDNN runtime so any NVIDIA machine runs on the GPU with zero setup — at the cost of a much larger download (~2.9 GB per OS, which exceeds GitHub's 2 GB per-asset limit, so GPU bundles aren't attached to releases and are a build-from-source option). Without it (or on machines with no NVIDIA GPU) Kit automatically falls back to the CPU. If you build from source on a machine without a C/Go toolchain the sidecar is skipped and the feature reports itself as unavailable on the page.
 

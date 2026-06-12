@@ -84,6 +84,7 @@ function NotesView({ tool }: NotesViewProps) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const [lockedIds, setLockedIds] = useState<Set<string>>(loadLockedIds)
+  const [showPreview, setShowPreview] = useState(false)
 
   // Per-keystroke sync with coalescing: while one save is in flight, only the
   // latest content is kept queued, so fast typing never floods the server.
@@ -225,6 +226,36 @@ function NotesView({ tool }: NotesViewProps) {
     await refreshList()
   }
 
+  // eraseEditor moves the current note into data/notes/trash (kept for 7 days,
+  // purged on app launch) and starts a fresh one.
+  const eraseEditor = async () => {
+    const oldId = idRef.current
+    sessionRef.current += 1
+    idRef.current = ''
+    setCurrentId('')
+    setContent('')
+    setName('')
+    setStatus('idle')
+    if (oldId) {
+      try {
+        const res = await fetch('/api/notes/trash', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: oldId })
+        })
+        if (!res.ok && res.status !== 404) throw new Error(await res.text())
+        if (lockedIds.has(oldId)) {
+          const next = new Set(lockedIds)
+          next.delete(oldId)
+          persistLocks(next)
+        }
+      } catch {
+        setErrorMessage('Could not move the note to the trash.')
+      }
+    }
+    await refreshList()
+  }
+
   const openNote = async (id: string) => {
     setErrorMessage('')
     try {
@@ -300,7 +331,7 @@ function NotesView({ tool }: NotesViewProps) {
 
       <FeatureHeader
         tool={tool}
-        subtitle="A persistent notepad with Markdown and LaTeX. Every keystroke is saved to plain text files in data/notes/ next to the app."
+        subtitle="A notepad with Markdown and LaTeX — every keystroke saved locally."
       />
 
       {errorMessage && (
@@ -308,17 +339,35 @@ function NotesView({ tool }: NotesViewProps) {
       )}
 
       <div className="mt-6 grid gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* One compact toolbar: name, status, lock, edit/preview, actions. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            className={`${INPUT_CLASS} max-w-xs flex-1 ${isLocked ? 'opacity-70' : ''}`}
+            type="text"
+            value={name}
+            readOnly={isLocked}
+            onChange={(e) => handleNameChange(e.target.value)}
+            placeholder="Note name (optional)"
+            maxLength={60}
+          />
           <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusBadge.cls}`}>{statusBadge.text}</span>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-2">
             <button
-              className={`${ACTION_BUTTON} ${isLocked ? 'border-amber-400/50 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20' : ''}`}
+              className={`${ACTION_BUTTON} px-3 ${isLocked ? 'border-amber-400/50 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20' : ''}`}
               type="button"
               onClick={() => toggleLock(currentId)}
               disabled={!currentId}
-              title="Read-only lock — a client-side guard against accidental edits"
+              title={isLocked ? 'Unlock (read-only lock against accidental edits)' : 'Lock (read-only)'}
+              aria-label={isLocked ? 'Unlock note' : 'Lock note'}
             >
-              {isLocked ? '🔒 Locked (read-only)' : '🔓 Unlocked'}
+              {isLocked ? '🔒' : '🔓'}
+            </button>
+            <button
+              className={`${ACTION_BUTTON} ${showPreview ? 'border-blue-400/50 bg-blue-500/10 text-blue-200' : ''}`}
+              type="button"
+              onClick={() => setShowPreview((v) => !v)}
+            >
+              {showPreview ? 'Edit' : 'Preview'}
             </button>
             <button
               className={PRIMARY_BUTTON}
@@ -327,58 +376,46 @@ function NotesView({ tool }: NotesViewProps) {
               disabled={!currentId && content === '' && name === ''}
               title="Move this note to the archive below and start a new one"
             >
-              Archive &amp; New Note
+              Archive &amp; New
+            </button>
+            <button
+              className={`${ACTION_BUTTON} hover:border-red-400/40 hover:text-red-300`}
+              type="button"
+              onClick={eraseEditor}
+              disabled={!currentId}
+              title="Move this note to data/notes/trash (kept 7 days) and start a new one"
+            >
+              Erase &amp; New
             </button>
           </div>
         </div>
 
-        <div className="grid gap-2">
-          <label className={LABEL_CLASS}>Note name (optional)</label>
-          <input
-            className={`${INPUT_CLASS} max-w-md ${isLocked ? 'opacity-70' : ''}`}
-            type="text"
-            value={name}
+        {showPreview ? (
+          <div className="min-h-[340px] overflow-auto rounded-xl border px-4 py-3 border-white/10 bg-slate-950/70">
+            {content.trim() ? (
+              <div className="kit-md" dangerouslySetInnerHTML={{ __html: preview }} />
+            ) : (
+              <div className="text-sm text-slate-500">Nothing to preview yet.</div>
+            )}
+          </div>
+        ) : (
+          <textarea
+            className={`min-h-[340px] w-full rounded-xl border px-4 py-3 font-mono text-sm leading-relaxed border-slate-800 bg-slate-900/70 text-white placeholder:text-slate-500 ${isLocked ? 'opacity-70' : ''}`}
+            value={content}
             readOnly={isLocked}
-            onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="e.g. Shopping list — becomes the file name in data/notes/"
-            maxLength={60}
+            onChange={(e) => handleChange(e.target.value)}
+            placeholder={'Start typing… Markdown and LaTeX ($e^{i\\pi}+1=0$) are rendered in Preview.'}
+            spellCheck={false}
           />
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="grid gap-2">
-            <label className={LABEL_CLASS}>Write {isLocked ? '— locked' : ''}</label>
-            <textarea
-              className={`min-h-[340px] w-full rounded-xl border px-4 py-3 font-mono text-sm leading-relaxed border-slate-800 bg-slate-900/70 text-white placeholder:text-slate-500 ${isLocked ? 'opacity-70' : ''}`}
-              value={content}
-              readOnly={isLocked}
-              onChange={(e) => handleChange(e.target.value)}
-              placeholder={'Start typing…\n\n# Markdown works\n- lists, **bold**, `code`\n\nLaTeX too: $e^{i\\pi} + 1 = 0$ or block math:\n\n$$\\int_0^\\infty e^{-x^2}\\,dx = \\frac{\\sqrt{\\pi}}{2}$$'}
-              spellCheck={false}
-            />
-          </div>
-          <div className="grid gap-2">
-            <label className={LABEL_CLASS}>Preview</label>
-            <div className="min-h-[340px] overflow-auto rounded-xl border px-4 py-3 border-white/10 bg-slate-950/70">
-              {content.trim() ? (
-                <div className="kit-md" dangerouslySetInnerHTML={{ __html: preview }} />
-              ) : (
-                <div className="text-sm text-slate-500">The rendered Markdown + LaTeX preview appears here.</div>
-              )}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="mt-10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-slate-50">Archived notes</h2>
-          <div className="text-xs text-slate-500">Stored as plain text in data/notes/</div>
-        </div>
+        <h2 className="text-xl font-semibold text-slate-50">Archived notes</h2>
 
         {archivedNotes.length === 0 ? (
           <div className="mt-4 rounded-2xl border px-5 py-8 text-sm border-white/10 bg-white/5 text-slate-400">
-            Nothing archived yet. Use “Archive &amp; New Note” to put the current note away — it stays editable from this list.
+            Nothing archived yet.
           </div>
         ) : (
           <div className="mt-4 grid gap-4">

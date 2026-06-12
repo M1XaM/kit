@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -25,7 +26,10 @@ type systemMetrics struct {
 	Memory    memoryMetrics  `json:"memory"`
 	Storage   storageMetrics `json:"storage"`
 	Network   networkMetrics `json:"network"`
-	GPU       gpuMetrics     `json:"gpu"`
+	// GPU is the primary adapter (kept for existing consumers); GPUs lists
+	// every detected adapter — discrete NVIDIA/AMD and integrated GPUs.
+	GPU  gpuMetrics   `json:"gpu"`
+	GPUs []gpuMetrics `json:"gpus"`
 }
 
 type cpuMetrics struct {
@@ -58,6 +62,7 @@ type networkMetrics struct {
 
 type gpuMetrics struct {
 	Status            string  `json:"status"`
+	Vendor            string  `json:"vendor,omitempty"` // nvidia | amd | intel
 	Name              string  `json:"name,omitempty"`
 	Utilization       float64 `json:"utilization,omitempty"`
 	MemoryUsed        uint64  `json:"memoryUsed,omitempty"`
@@ -95,10 +100,8 @@ const gpuCacheTTL = 2 * time.Second
 var gpuCache = struct {
 	sync.Mutex
 	lastFetched time.Time
-	lastStats   gpuMetrics
-}{
-	lastStats: gpuMetrics{Status: "unavailable", Reason: "GPU metrics not collected yet"},
-}
+	lastStats   []gpuMetrics
+}{}
 
 func handleSystemMetrics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -182,7 +185,14 @@ func collectSystemMetrics() systemMetrics {
 		PacketsRecvPerSec: rates.netPacketsRecv,
 	}
 
-	gpu := getGPUStats()
+	gpus := getGPUStats()
+	primary := gpuMetrics{Status: "unavailable", Reason: "No GPU detected (NVIDIA, AMD and Intel adapters are probed)"}
+	for _, g := range gpus {
+		if g.Status == "ok" {
+			primary = g
+			break
+		}
+	}
 
 	return systemMetrics{
 		Timestamp: now,
@@ -193,7 +203,8 @@ func collectSystemMetrics() systemMetrics {
 		Memory:  memory,
 		Storage: storage,
 		Network: network,
-		GPU:     gpu,
+		GPU:     primary,
+		GPUs:    gpus,
 	}
 }
 
@@ -295,7 +306,10 @@ func systemDiskPath() string {
 	return "/"
 }
 
-func getGPUStats() gpuMetrics {
+// getGPUStats returns every detected GPU: NVIDIA via nvidia-smi, AMD and Intel
+// via the Linux DRM sysfs interface (built into the kernel drivers — no extra
+// tools needed). Results are cached briefly since vendor tooling is slow.
+func getGPUStats() []gpuMetrics {
 	gpuCache.Lock()
 	if time.Since(gpuCache.lastFetched) < gpuCacheTTL {
 		cached := gpuCache.lastStats
@@ -304,7 +318,9 @@ func getGPUStats() gpuMetrics {
 	}
 	gpuCache.Unlock()
 
-	stats := queryNvidiaSmi()
+	var stats []gpuMetrics
+	stats = append(stats, queryNvidiaSmi()...)
+	stats = append(stats, querySysfsGPUs()...)
 
 	gpuCache.Lock()
 	gpuCache.lastFetched = time.Now()
@@ -314,11 +330,7 @@ func getGPUStats() gpuMetrics {
 	return stats
 }
 
-func queryNvidiaSmi() gpuMetrics {
-	if runtime.GOOS == "darwin" {
-		return gpuMetrics{Status: "unavailable", Reason: "GPU metrics are not supported on macOS"}
-	}
-
+func queryNvidiaSmi() []gpuMetrics {
 	ctx, cancel := context.WithTimeout(context.Background(), 900*time.Millisecond)
 	defer cancel()
 
@@ -326,36 +338,20 @@ func queryNvidiaSmi() gpuMetrics {
 	output, err := cmd.Output()
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return gpuMetrics{Status: "unavailable", Reason: "nvidia-smi timed out"}
+			return []gpuMetrics{{Status: "unavailable", Vendor: "nvidia", Reason: "nvidia-smi timed out"}}
 		}
-		return gpuMetrics{Status: "unavailable", Reason: "nvidia-smi not available"}
+		// nvidia-smi missing simply means no NVIDIA GPU is set up — not an
+		// error worth reporting as a card.
+		return nil
 	}
 
-	stats, parseErr := parseNvidiaSmiOutput(string(output))
-	if parseErr != nil {
-		return gpuMetrics{Status: "unavailable", Reason: "Unable to parse nvidia-smi output"}
-	}
-	stats.Status = "ok"
-	return stats
+	return parseNvidiaSmiOutput(string(output))
 }
 
-func parseNvidiaSmiOutput(output string) (gpuMetrics, error) {
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	if len(lines) == 0 || strings.TrimSpace(lines[0]) == "" {
-		return gpuMetrics{}, errors.New("empty output")
-	}
-
-	var (
-		totalUtil     float64
-		totalMemUtil  float64
-		totalTemp     float64
-		totalMemUsed  float64
-		totalMemTotal float64
-		names         []string
-		count         int
-	)
-
-	for _, line := range lines {
+// parseNvidiaSmiOutput returns one entry per GPU line.
+func parseNvidiaSmiOutput(output string) []gpuMetrics {
+	var gpus []gpuMetrics
+	for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
 		parts := strings.Split(line, ",")
 		if len(parts) < 6 {
 			continue
@@ -369,33 +365,144 @@ func parseNvidiaSmiOutput(output string) (gpuMetrics, error) {
 		if err1 != nil || err2 != nil || err3 != nil || err4 != nil || err5 != nil {
 			continue
 		}
-		names = append(names, name)
-		totalUtil += util
-		totalMemUtil += memUtil
-		totalMemTotal += memTotal
-		totalMemUsed += memUsed
-		totalTemp += temp
-		count += 1
+		gpus = append(gpus, gpuMetrics{
+			Status:            "ok",
+			Vendor:            "nvidia",
+			Name:              name,
+			Utilization:       clampPercent(util),
+			MemoryUtilization: clampPercent(memUtil),
+			MemoryTotal:       uint64(memTotal * 1024 * 1024),
+			MemoryUsed:        uint64(memUsed * 1024 * 1024),
+			Temperature:       temp,
+		})
+	}
+	return gpus
+}
+
+// querySysfsGPUs detects AMD and Intel GPUs through /sys/class/drm on Linux.
+// The amdgpu driver exposes busy percent, VRAM and temperature directly; the
+// i915/xe drivers expose less, so Intel utilization is approximated from the
+// current vs. max GPU clock when available.
+func querySysfsGPUs() []gpuMetrics {
+	if runtime.GOOS != "linux" {
+		return nil
+	}
+	cards, err := filepath.Glob("/sys/class/drm/card[0-9]*")
+	if err != nil {
+		return nil
 	}
 
-	if count == 0 {
-		return gpuMetrics{}, errors.New("no parsable gpu metrics")
+	var gpus []gpuMetrics
+	for _, card := range cards {
+		// Skip render/connector nodes like card0-HDMI-A-1.
+		if strings.Contains(filepath.Base(card), "-") {
+			continue
+		}
+		device := filepath.Join(card, "device")
+		vendorID := strings.TrimSpace(readSysfsFile(filepath.Join(device, "vendor")))
+		switch vendorID {
+		case "0x1002": // AMD
+			gpus = append(gpus, readAmdGPU(device))
+		case "0x8086": // Intel
+			gpus = append(gpus, readIntelGPU(card, device))
+		}
 	}
+	return gpus
+}
 
-	name := names[0]
-	if len(names) > 1 {
-		name = name + " (+" + strconv.Itoa(len(names)-1) + ")"
+func readSysfsFile(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
 	}
+	return string(data)
+}
 
-	memTotalBytes := uint64(totalMemTotal * 1024 * 1024)
-	memUsedBytes := uint64(totalMemUsed * 1024 * 1024)
+func readSysfsUint(path string) (uint64, bool) {
+	v, err := strconv.ParseUint(strings.TrimSpace(readSysfsFile(path)), 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
+}
 
-	return gpuMetrics{
-		Name:              name,
-		Utilization:       clampPercent(totalUtil / float64(count)),
-		MemoryUtilization: clampPercent(totalMemUtil / float64(count)),
-		MemoryTotal:       memTotalBytes,
-		MemoryUsed:        memUsedBytes,
-		Temperature:       totalTemp / float64(count),
-	}, nil
+func readAmdGPU(device string) gpuMetrics {
+	gpu := gpuMetrics{Status: "ok", Vendor: "amd", Name: "AMD GPU"}
+	if busy, ok := readSysfsUint(filepath.Join(device, "gpu_busy_percent")); ok {
+		gpu.Utilization = clampPercent(float64(busy))
+	}
+	if total, ok := readSysfsUint(filepath.Join(device, "mem_info_vram_total")); ok {
+		gpu.MemoryTotal = total
+		if used, ok := readSysfsUint(filepath.Join(device, "mem_info_vram_used")); ok {
+			gpu.MemoryUsed = used
+			if total > 0 {
+				gpu.MemoryUtilization = clampPercent(float64(used) / float64(total) * 100)
+			}
+		}
+	}
+	if temp, ok := readGPUHwmonTemp(device); ok {
+		gpu.Temperature = temp
+	}
+	if name := pciDeviceName(device); name != "" {
+		gpu.Name = name
+	}
+	return gpu
+}
+
+func readIntelGPU(card, device string) gpuMetrics {
+	gpu := gpuMetrics{Status: "ok", Vendor: "intel", Name: "Intel GPU"}
+	// i915 has no busy-percent file; approximate activity from the current
+	// vs. max GPU clock. 0 MHz means the GPU is power-gated (idle).
+	cur, okCur := readSysfsUint(filepath.Join(card, "gt_cur_freq_mhz"))
+	max, okMax := readSysfsUint(filepath.Join(card, "gt_max_freq_mhz"))
+	if okCur && okMax && max > 0 {
+		gpu.Utilization = clampPercent(float64(cur) / float64(max) * 100)
+	}
+	if temp, ok := readGPUHwmonTemp(device); ok {
+		gpu.Temperature = temp
+	}
+	if name := pciDeviceName(device); name != "" {
+		gpu.Name = name
+	}
+	return gpu
+}
+
+// readGPUHwmonTemp finds the first temperature sensor under the device's hwmon
+// directory (reported in millidegrees Celsius).
+func readGPUHwmonTemp(device string) (float64, bool) {
+	matches, err := filepath.Glob(filepath.Join(device, "hwmon", "hwmon*", "temp1_input"))
+	if err != nil || len(matches) == 0 {
+		return 0, false
+	}
+	if milli, ok := readSysfsUint(matches[0]); ok {
+		return float64(milli) / 1000, true
+	}
+	return 0, false
+}
+
+// pciDeviceName resolves a marketing-ish name for a PCI GPU. The kernel
+// itself only exposes vendor/device IDs; "label" or the uevent's DRIVER plus
+// the ID is the best built-in option without shelling out to lspci.
+func pciDeviceName(device string) string {
+	// Some drivers expose a product string directly.
+	for _, f := range []string{"product_name", "label"} {
+		if name := strings.TrimSpace(readSysfsFile(filepath.Join(device, f))); name != "" {
+			return name
+		}
+	}
+	vendor := strings.TrimSpace(readSysfsFile(filepath.Join(device, "vendor")))
+	dev := strings.TrimSpace(readSysfsFile(filepath.Join(device, "device")))
+	vendorName := ""
+	switch vendor {
+	case "0x1002":
+		vendorName = "AMD GPU"
+	case "0x8086":
+		vendorName = "Intel GPU"
+	default:
+		return ""
+	}
+	if dev != "" {
+		return vendorName + " [" + strings.TrimPrefix(dev, "0x") + "]"
+	}
+	return vendorName
 }

@@ -20,7 +20,6 @@ func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string) {
 	mux.HandleFunc("/api/image/convert", policy.wrapAPIHandler(features.HandleConvertImage))
 	mux.HandleFunc("/api/image/watermark", policy.wrapAPIHandler(features.HandleImageWatermark))
 	mux.HandleFunc("/api/image/enhance", policy.wrapAPIHandler(features.HandleEnhanceImage))
-	mux.HandleFunc("/api/image/batch", policy.wrapAPIHandler(features.HandleBatchImage))
 	mux.HandleFunc("/api/pdf/compress", policy.wrapAPIHandler(features.HandleCompressPDF))
 	mux.HandleFunc("/api/pdf/split", policy.wrapAPIHandler(features.HandleSplitPDF))
 	mux.HandleFunc("/api/pdf/merge", policy.wrapAPIHandler(features.HandleMergePDF))
@@ -57,6 +56,15 @@ func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string) {
 	mux.HandleFunc("/api/notes/get", policy.wrapAPIHandler(features.HandleGetNote))
 	mux.HandleFunc("/api/notes/save", policy.wrapAPIHandler(features.HandleSaveNote))
 	mux.HandleFunc("/api/notes/delete", policy.wrapAPIHandler(features.HandleDeleteNote))
+	mux.HandleFunc("/api/notes/trash", policy.wrapAPIHandler(features.HandleTrashNote))
+	mux.HandleFunc("/api/recordings/save", policy.wrapAPIHandler(features.HandleSaveRecording))
+	mux.HandleFunc("/api/youtube/download", policy.wrapAPIHandler(features.HandleYoutubeDownload))
+	mux.HandleFunc("/api/metadata/read", policy.wrapAPIHandler(features.HandleReadMetadata))
+	mux.HandleFunc("/api/metadata/apply", policy.wrapAPIHandler(features.HandleApplyMetadata))
+	mux.HandleFunc("/api/ocr/models", policy.wrapAPIHandler(features.HandleListOcrModels))
+	mux.HandleFunc("/api/ocr/models/download", policy.wrapAPIHandler(features.HandleDownloadOcrModel))
+	mux.HandleFunc("/api/ocr/models/delete", policy.wrapAPIHandler(features.HandleDeleteOcrModel))
+	mux.HandleFunc("/api/ocr/lang/", policy.wrapAPIHandler(features.HandleOcrLangData))
 	mux.HandleFunc("/api/system/metrics", policy.wrapAPIHandler(handleSystemMetrics))
 	// /api/open — opens a browser tab on the running server.
 	// Called by kit://start when an instance is already listening on the base port.

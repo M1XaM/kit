@@ -1,12 +1,17 @@
 package features
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"local-tools-hub/backend/features/shared"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
@@ -88,9 +93,80 @@ func HandleImagesToPDF(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// HandlePdfToImages extracts the images embedded in a PDF and returns them as a
-// ZIP. Note: this recovers embedded image XObjects (e.g. PDFs built from
-// images); it does not rasterize text/vector pages.
+// pdfRasterTimeout caps one PDF rasterization run.
+const pdfRasterTimeout = 10 * time.Minute
+
+// rasterizePDF renders every page of the PDF into images in outDir using the
+// first available rasterizer: pdftoppm (poppler), Ghostscript, or mutool.
+// Returns false when no rasterizer is installed; a found-but-failed tool is an
+// error.
+func rasterizePDF(inputPath, outDir, format string, dpi int) (bool, error) {
+	jpeg := format == "jpeg" || format == "jpg"
+
+	ctx, cancel := context.WithTimeout(context.Background(), pdfRasterTimeout)
+	defer cancel()
+
+	if bin, err := exec.LookPath("pdftoppm"); err == nil {
+		args := []string{"-r", strconv.Itoa(dpi)}
+		if jpeg {
+			args = append(args, "-jpeg")
+		} else {
+			args = append(args, "-png")
+		}
+		args = append(args, inputPath, filepath.Join(outDir, "page"))
+		out, err := exec.CommandContext(ctx, bin, args...).CombinedOutput()
+		if err != nil {
+			return true, fmt.Errorf("pdftoppm: %v: %s", err, strings.TrimSpace(string(out)))
+		}
+		return true, nil
+	}
+
+	if bin, ok := ghostscriptPath(); ok {
+		device := "png16m"
+		ext := "png"
+		if jpeg {
+			device = "jpeg"
+			ext = "jpg"
+		}
+		out, err := exec.CommandContext(ctx, bin,
+			"-sDEVICE="+device,
+			"-r"+strconv.Itoa(dpi),
+			"-dNOPAUSE", "-dQUIET", "-dBATCH", "-dSAFER",
+			"-o", filepath.Join(outDir, "page-%03d."+ext),
+			inputPath,
+		).CombinedOutput()
+		if err != nil {
+			return true, fmt.Errorf("ghostscript: %v: %s", err, strings.TrimSpace(string(out)))
+		}
+		return true, nil
+	}
+
+	if bin, err := exec.LookPath("mutool"); err == nil {
+		// mutool draw encodes JPEG only in newer builds; PNG is universal.
+		out, err := exec.CommandContext(ctx, bin, "draw",
+			"-r", strconv.Itoa(dpi),
+			"-o", filepath.Join(outDir, "page-%03d.png"),
+			inputPath,
+		).CombinedOutput()
+		if err != nil {
+			return true, fmt.Errorf("mutool: %v: %s", err, strings.TrimSpace(string(out)))
+		}
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// HandlePdfToImages converts a PDF to images and returns them as a ZIP. Pages
+// are rasterized with pdftoppm/Ghostscript/mutool when one of those tools is
+// installed (so text and vector pages convert too); otherwise it falls back to
+// extracting the images embedded in the PDF.
+//
+// Form fields:
+//
+//	file   - the PDF
+//	format - png (default) or jpeg
+//	dpi    - render resolution, 36-600 (default 150)
 func HandlePdfToImages(w http.ResponseWriter, r *http.Request) {
 	inputPath, name, cleanup, ok := receiveSinglePDF(w, r)
 	if !ok {
@@ -105,11 +181,30 @@ func HandlePdfToImages(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.RemoveAll(outDir)
 
-	conf := model.NewDefaultConfiguration()
-	if err := api.ExtractImagesFile(inputPath, outDir, nil, conf); err != nil {
-		fmt.Printf("pdf-to-images error: %v\n", err)
-		http.Error(w, "Failed to extract images. Ensure it is a valid PDF.", http.StatusBadRequest)
+	format := strings.ToLower(strings.TrimSpace(r.FormValue("format")))
+	dpi := formInt(r, "dpi", 150)
+	if dpi < 36 {
+		dpi = 36
+	}
+	if dpi > 600 {
+		dpi = 600
+	}
+
+	rasterized, rasterErr := rasterizePDF(inputPath, outDir, format, dpi)
+	if rasterErr != nil {
+		fmt.Printf("pdf rasterize error: %v\n", rasterErr)
+		http.Error(w, "Failed to render the PDF pages. Ensure it is a valid, unencrypted PDF.", http.StatusBadRequest)
 		return
+	}
+	if !rasterized {
+		// No rasterizer on this machine: fall back to extracting embedded
+		// image objects, which still covers scanned/image-built PDFs.
+		conf := model.NewDefaultConfiguration()
+		if err := api.ExtractImagesFile(inputPath, outDir, nil, conf); err != nil {
+			fmt.Printf("pdf-to-images error: %v\n", err)
+			http.Error(w, "Failed to extract images. Ensure it is a valid PDF.", http.StatusBadRequest)
+			return
+		}
 	}
 
 	images, err := collectFiles(outDir)
@@ -118,7 +213,7 @@ func HandlePdfToImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(images) == 0 {
-		http.Error(w, "No embedded images found. This converter extracts images embedded in a PDF (e.g. PDFs built from images); it does not rasterize text or vector pages.", http.StatusBadRequest)
+		http.Error(w, "No images could be produced. Install poppler (pdftoppm), Ghostscript or mupdf-tools to convert text/vector pages; without them only embedded images can be extracted.", http.StatusBadRequest)
 		return
 	}
 

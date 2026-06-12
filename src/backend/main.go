@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"local-tools-hub/backend/features"
 	"log"
 	"net"
 	"net/http"
@@ -41,6 +42,9 @@ func main() {
 	if port == "" {
 		log.Fatalf("No free port found in range %d-%d", basePort, basePort+9)
 	}
+
+	// Erased notes live in data/notes/trash for 7 days; purge expired ones.
+	go features.CleanupNotesTrash()
 
 	url := fmt.Sprintf("http://localhost:%s", port)
 	server := setupServer(port)

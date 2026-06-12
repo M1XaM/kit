@@ -1,63 +1,69 @@
 package features
 
 import (
-	"local-tools-hub/backend/features/shared"
+	"image"
 	"net/http"
 	"strings"
 )
 
-// HandleResizeImage resizes an uploaded image. Supported modes:
+// HandleResizeImage resizes uploaded images. Supported modes:
 //
 //	fit      - scale to fit within width x height, preserving aspect ratio (default)
 //	exact    - stretch to exactly width x height, ignoring aspect ratio
 //	percent  - scale by a percentage of the original size
 //
-// Output format is configurable ("keep", png, jpeg, ...); quality applies to JPEG.
+// Output format is configurable ("keep", png, jpeg, ...); quality applies to
+// JPEG. Accepts one image or many (batch); several inputs come back as a ZIP.
 func HandleResizeImage(w http.ResponseWriter, r *http.Request) {
-	img, srcFormat, name, ok := receiveSingleImage(w, r)
+	headers, ok := receiveImages(w, r)
 	if !ok {
 		return
 	}
-
-	bounds := img.Bounds()
-	srcW, srcH := bounds.Dx(), bounds.Dy()
 
 	mode := strings.ToLower(strings.TrimSpace(r.FormValue("mode")))
 	if mode == "" {
 		mode = "fit"
 	}
 
-	var targetW, targetH int
+	percent := formFloat(r, "percent", 0)
+	width := formInt(r, "width", 0)
+	height := formInt(r, "height", 0)
 	switch mode {
 	case "percent":
-		percent := formFloat(r, "percent", 100)
 		if percent <= 0 {
 			http.Error(w, "Percentage must be greater than zero.", http.StatusBadRequest)
 			return
 		}
-		targetW = clampDim(int(float64(srcW)*percent/100 + 0.5))
-		targetH = clampDim(int(float64(srcH)*percent/100 + 0.5))
 	case "exact":
-		targetW = formInt(r, "width", srcW)
-		targetH = formInt(r, "height", srcH)
-		if targetW <= 0 || targetH <= 0 {
+		if width <= 0 || height <= 0 {
 			http.Error(w, "Width and height are required for exact resizing.", http.StatusBadRequest)
 			return
 		}
-		targetW, targetH = clampDim(targetW), clampDim(targetH)
 	default: // fit
-		maxW := formInt(r, "width", 0)
-		maxH := formInt(r, "height", 0)
-		if maxW <= 0 && maxH <= 0 {
+		if width <= 0 && height <= 0 {
 			http.Error(w, "Provide a width and/or height to resize to.", http.StatusBadRequest)
 			return
 		}
-		targetW, targetH = fitDimensions(srcW, srcH, maxW, maxH)
 	}
 
-	resized := resizeImage(img, targetW, targetH)
-
-	format := normalizeOutputFormat(r.FormValue("format"), srcFormat)
+	requestedFormat := r.FormValue("format")
 	quality := formInt(r, "quality", 90)
-	writeImageResult(w, resized, format, quality, shared.SafeFileBase(name), "resized")
+
+	transform := func(img image.Image, srcFormat, _ string) (image.Image, string, error) {
+		bounds := img.Bounds()
+		srcW, srcH := bounds.Dx(), bounds.Dy()
+		var targetW, targetH int
+		switch mode {
+		case "percent":
+			targetW = clampDim(int(float64(srcW)*percent/100 + 0.5))
+			targetH = clampDim(int(float64(srcH)*percent/100 + 0.5))
+		case "exact":
+			targetW, targetH = clampDim(width), clampDim(height)
+		default:
+			targetW, targetH = fitDimensions(srcW, srcH, width, height)
+		}
+		return resizeImage(img, targetW, targetH), normalizeOutputFormat(requestedFormat, srcFormat), nil
+	}
+
+	serveProcessedImages(w, headers, transform, "resized", quality)
 }

@@ -28,10 +28,13 @@ func receiveSinglePDF(w http.ResponseWriter, r *http.Request) (inputPath, origin
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		file, header, err = r.FormFile("image")
-		if err != nil {
-			http.Error(w, "PDF file is required", http.StatusBadRequest)
-			return "", "", nil, false
-		}
+	}
+	if err != nil {
+		file, header, err = r.FormFile("files")
+	}
+	if err != nil {
+		http.Error(w, "PDF file is required", http.StatusBadRequest)
+		return "", "", nil, false
 	}
 	defer file.Close()
 

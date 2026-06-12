@@ -29,10 +29,13 @@ func HandleSplitPDF(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		file, header, err = r.FormFile("image")
-		if err != nil {
-			http.Error(w, "PDF file is required", http.StatusBadRequest)
-			return
-		}
+	}
+	if err != nil {
+		file, header, err = r.FormFile("files")
+	}
+	if err != nil {
+		http.Error(w, "PDF file is required", http.StatusBadRequest)
+		return
 	}
 	defer file.Close()
 

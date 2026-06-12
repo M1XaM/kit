@@ -2,52 +2,58 @@ package features
 
 import (
 	"image"
-	"local-tools-hub/backend/features/shared"
 	"net/http"
 )
 
-// HandleEnhanceImage denoises and/or enhances an image. All three steps are
-// optional and run in a fixed order: denoise -> auto contrast -> sharpen.
+// HandleEnhanceImage cleans up noisy images. The pipeline runs in a fixed
+// order: denoise -> auto contrast -> sharpen, with defaults tuned so a request
+// with no parameters performs a sensible one-click enhancement.
 //
-// Form fields:
+// Form fields (all optional):
 //
-//	denoise      - 0-100 strength of the edge-preserving smoothing (0 = off)
-//	autoContrast - "1" to stretch the histogram for better contrast
-//	sharpen      - 0-100 unsharp-mask strength (0 = off)
+//	denoise      - 0-100 strength of the edge-preserving smoothing (default 30)
+//	autoContrast - "0" to skip the histogram stretch (default on)
+//	sharpen      - 0-100 unsharp-mask strength (default 40)
 //	format       - output format ("keep" reuses the source format)
 //	quality      - JPEG quality 1-100
+//
+// Accepts one image or many (batch); several inputs come back as a ZIP.
 func HandleEnhanceImage(w http.ResponseWriter, r *http.Request) {
-	img, srcFormat, name, ok := receiveSingleImage(w, r)
+	headers, ok := receiveImages(w, r)
 	if !ok {
 		return
 	}
 
-	denoise := clampRange(formFloat(r, "denoise", 0), 0, 100)
-	sharpenAmt := clampRange(formFloat(r, "sharpen", 0), 0, 100)
-	autoContrast := r.FormValue("autoContrast") == "1" || r.FormValue("autoContrast") == "true"
+	denoise := clampRange(formFloat(r, "denoise", 30), 0, 100)
+	sharpenAmt := clampRange(formFloat(r, "sharpen", 40), 0, 100)
+	autoContrast := r.FormValue("autoContrast") != "0" && r.FormValue("autoContrast") != "false"
 
 	if denoise == 0 && sharpenAmt == 0 && !autoContrast {
 		http.Error(w, "Enable at least one of denoise, auto contrast or sharpen.", http.StatusBadRequest)
 		return
 	}
 
-	out := toNRGBA(img)
-	if denoise > 0 {
-		// Strength maps to a larger blur radius and a higher edge threshold.
-		radius := 1 + int(denoise/40)               // 1..3
-		threshold := 12 + denoise*0.28              // 12..40
-		out = selectiveBlur(out, radius, threshold) // edge-preserving smoothing
-	}
-	if autoContrast {
-		out = stretchContrast(out, 0.005)
-	}
-	if sharpenAmt > 0 {
-		out = sharpen(out, sharpenAmt/100)
+	requestedFormat := r.FormValue("format")
+	quality := formInt(r, "quality", 90)
+
+	transform := func(img image.Image, srcFormat, _ string) (image.Image, string, error) {
+		out := toNRGBA(img)
+		if denoise > 0 {
+			// Strength maps to a larger blur radius and a higher edge threshold.
+			radius := 1 + int(denoise/40)               // 1..3
+			threshold := 12 + denoise*0.28              // 12..40
+			out = selectiveBlur(out, radius, threshold) // edge-preserving smoothing
+		}
+		if autoContrast {
+			out = stretchContrast(out, 0.005)
+		}
+		if sharpenAmt > 0 {
+			out = sharpen(out, sharpenAmt/100)
+		}
+		return out, normalizeOutputFormat(requestedFormat, srcFormat), nil
 	}
 
-	format := normalizeOutputFormat(r.FormValue("format"), srcFormat)
-	quality := formInt(r, "quality", 90)
-	writeImageResult(w, out, format, quality, shared.SafeFileBase(name), "enhanced")
+	serveProcessedImages(w, headers, transform, "enhanced", quality)
 }
 
 // selectiveBlur is an O(n) edge-preserving denoiser ("surface blur"): each

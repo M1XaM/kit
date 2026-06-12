@@ -99,21 +99,27 @@ var notesBaseDirOverride = ""
 // notesDir resolves (and creates) the notes folder next to the executable,
 // falling back to the working directory for dev builds run via `go run`.
 func notesDir() (string, error) {
-	base := ""
 	if notesBaseDirOverride != "" {
-		base = notesBaseDirOverride
-	} else if exe, err := os.Executable(); err == nil {
-		base = filepath.Dir(exe)
-	} else if wd, err := os.Getwd(); err == nil {
-		base = wd
-	} else {
+		dir := filepath.Join(notesBaseDirOverride, "data", "notes")
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return "", err
+		}
+		return dir, nil
+	}
+	return dataDir("notes")
+}
+
+// notesTrashDir resolves (and creates) the trash folder for erased notes.
+func notesTrashDir() (string, error) {
+	dir, err := notesDir()
+	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(base, "data", "notes")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	trash := filepath.Join(dir, "trash")
+	if err := os.MkdirAll(trash, 0o755); err != nil {
 		return "", err
 	}
-	return dir, nil
+	return trash, nil
 }
 
 // noteTitleAndPreview derives a list title (first non-empty line) and a short
@@ -339,6 +345,96 @@ func HandleSaveNote(w http.ResponseWriter, r *http.Request) {
 		"preview":  preview,
 		"modified": time.Now().UnixMilli(),
 	})
+}
+
+// noteTrashMaxAge is how long an erased note survives in data/notes/trash
+// before CleanupNotesTrash removes it for good.
+const noteTrashMaxAge = 7 * 24 * time.Hour
+
+// HandleTrashNote moves a note into data/notes/trash ("Erase"). Trashed notes
+// are kept for up to 7 days and purged on application launch.
+func HandleTrashNote(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body.", http.StatusBadRequest)
+		return
+	}
+	if !validNoteID(req.ID) {
+		http.Error(w, "Invalid note id.", http.StatusBadRequest)
+		return
+	}
+	dir, err := notesDir()
+	if err != nil {
+		http.Error(w, "Failed to open the notes folder.", http.StatusInternalServerError)
+		return
+	}
+	trash, err := notesTrashDir()
+	if err != nil {
+		http.Error(w, "Failed to open the trash folder.", http.StatusInternalServerError)
+		return
+	}
+
+	notesMu.Lock()
+	defer notesMu.Unlock()
+
+	src := filepath.Join(dir, req.ID+".txt")
+	if _, err := os.Stat(src); err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "Note not found.", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Failed to erase the note.", http.StatusInternalServerError)
+		return
+	}
+
+	dst := filepath.Join(trash, req.ID+".txt")
+	for n := 2; ; n++ {
+		if _, err := os.Stat(dst); os.IsNotExist(err) {
+			break
+		}
+		dst = filepath.Join(trash, fmt.Sprintf("%s (%d).txt", req.ID, n))
+	}
+	if err := os.Rename(src, dst); err != nil {
+		http.Error(w, "Failed to erase the note.", http.StatusInternalServerError)
+		return
+	}
+	// The 7-day countdown starts now, not at the note's last edit: rename
+	// preserves mtime, so stamp the file with the erase time explicitly.
+	now := time.Now()
+	os.Chtimes(dst, now, now)
+	writeNoteJSON(w, map[string]any{"ok": true})
+}
+
+// CleanupNotesTrash deletes trashed notes older than 7 days. Called once on
+// application launch.
+func CleanupNotesTrash() {
+	trash, err := notesTrashDir()
+	if err != nil {
+		return
+	}
+	entries, err := os.ReadDir(trash)
+	if err != nil {
+		return
+	}
+	cutoff := time.Now().Add(-noteTrashMaxAge)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().Before(cutoff) {
+			os.Remove(filepath.Join(trash, entry.Name()))
+		}
+	}
 }
 
 // HandleDeleteNote removes a note file permanently.

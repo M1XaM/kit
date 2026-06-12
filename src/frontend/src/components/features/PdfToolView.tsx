@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import FeatureHeader from './FeatureHeader'
+import FileReorderList from './FileReorderList'
 import type { Tool } from './toolData'
 
 type FieldType = 'text' | 'select' | 'password'
@@ -137,9 +138,11 @@ function PdfToolView({ tool }: PdfToolViewProps) {
     [dragActive]
   )
 
+  // Multi-file tools (Merge PDF) append so the user can add more PDFs and
+  // rearrange them; single-file tools replace.
   const updateFiles = (files: File[]) => {
     if (!files.length) return
-    setSelectedFiles(isMulti ? files : files.slice(0, 1))
+    setSelectedFiles((prev) => (isMulti ? [...prev, ...files] : files.slice(0, 1)))
     setErrorMessage('')
   }
 
@@ -161,6 +164,8 @@ function PdfToolView({ tool }: PdfToolViewProps) {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     updateFiles(Array.from(event.target.files || []))
+    // Reset so picking the same file again still fires onChange.
+    event.target.value = ''
   }
 
   const setField = (name: string, value: string) => {
@@ -209,7 +214,6 @@ function PdfToolView({ tool }: PdfToolViewProps) {
       selectedFiles.forEach((file) => formData.append('files', file))
     } else {
       formData.append('file', selectedFiles[0])
-      formData.append('image', selectedFiles[0])
     }
     config.fields.forEach((field) => {
       const value = fieldValues[field.name]
@@ -273,12 +277,14 @@ function PdfToolView({ tool }: PdfToolViewProps) {
         </label>
 
         {isMulti && selectedFiles.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {selectedFiles.map((file, index) => (
-              <span key={`${file.name}-${index}`} className="rounded-full border px-3 py-1 text-xs border-white/20 bg-slate-900/60 text-slate-200">
-                {index + 1}. {file.name}
-              </span>
-            ))}
+          <div className="flex flex-col gap-2">
+            <FileReorderList
+              files={selectedFiles}
+              disabled={isProcessing}
+              onReorder={setSelectedFiles}
+              onRemove={(index) => setSelectedFiles((prev) => prev.filter((_, i) => i !== index))}
+            />
+            <p className="text-xs text-slate-500">Drag rows (or use the arrows) to set the merge order. Drop more PDFs above to add them.</p>
           </div>
         )}
 

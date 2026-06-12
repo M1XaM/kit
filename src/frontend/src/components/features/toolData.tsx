@@ -22,16 +22,6 @@ const TEXT_TOOLS = [
     runtime: 'server'
   },
   {
-    id: 'ocr',
-    title: 'OCR',
-    description: 'Extract text from images and scans — recognition runs entirely in your browser.',
-    category: 'text',
-    icon: ICONS.sparkles,
-    colorClass: resolveColorClass('icon-purple'),
-    toolType: 'ocr',
-    runtime: 'client'
-  },
-  {
     id: 'extract-text-pdf',
     title: 'Extract Text from PDF',
     description: 'Pull plain text from PDF files without uploading anything.',
@@ -55,10 +45,11 @@ const TEXT_TOOLS = [
   {
     id: 'metadata-edit',
     title: 'Metadata Editor',
-    description: 'View file details and export metadata sidecars locally.',
+    description: 'Read and edit the metadata embedded in PDFs, images and audio files.',
     category: 'text',
     icon: ICONS.text,
-    colorClass: resolveColorClass('icon-purple')
+    colorClass: resolveColorClass('icon-purple'),
+    runtime: 'server'
   },
   {
     id: 'text-compare',
@@ -260,6 +251,17 @@ const VIDEO_TOOLS = [
     apiEndpoint: '/api/audio/trim',
     toolType: 'video',
     runtime: 'server'
+  },
+  {
+    id: 'youtube-download',
+    title: 'YouTube Download',
+    description: 'Download YouTube videos or just their audio with yt-dlp — paste one or many links.',
+    category: 'video',
+    icon: ICONS.video,
+    colorClass: resolveColorClass('icon-red'),
+    apiEndpoint: '/api/youtube/download',
+    toolType: 'youtube',
+    runtime: 'server'
   }
 ]
 
@@ -327,7 +329,7 @@ const DOCUMENT_TOOLS = [
   {
     id: 'file-converter',
     title: 'File Converter',
-    description: 'Convert images into a PDF and extract embedded images back out.',
+    description: 'Convert anything: images, audio, video and PDFs between all supported formats.',
     category: 'documents',
     icon: ICONS.swap,
     colorClass: resolveColorClass('icon-blue'),
@@ -340,6 +342,16 @@ const DOCUMENT_TOOLS = [
 // inference happens on the Go side; weights are downloaded on demand from the
 // feature page and can be deleted to reclaim storage.
 const AI_TOOLS = [
+  {
+    id: 'ocr',
+    title: 'OCR',
+    description: 'Extract text from images and scans with on-device recognition — download extra languages on demand.',
+    category: 'ai-tools',
+    icon: ICONS.sparkles,
+    colorClass: resolveColorClass('icon-green'),
+    toolType: 'ocr',
+    runtime: 'client'
+  },
   {
     id: 'ai-paraphrase',
     title: 'AI Paraphrase',
@@ -467,20 +479,9 @@ const IMAGE_TOOLS = [
     runtime: 'server'
   },
   {
-    id: 'batch-image',
-    title: 'Batch Image Processing',
-    description: 'Convert, resize or compress many images at once and download a ZIP.',
-    category: 'image',
-    icon: ICONS.layers,
-    colorClass: resolveColorClass('icon-green'),
-    apiEndpoint: '/api/image/batch',
-    toolType: 'image-batch',
-    runtime: 'server'
-  },
-  {
     id: 'denoise-enhance',
     title: 'Denoise/Enhance',
-    description: 'Clean up noise, stretch contrast and sharpen images.',
+    description: 'One-click cleanup for noisy images: denoise, auto contrast and sharpen.',
     category: 'image',
     icon: ICONS.sparkles,
     colorClass: resolveColorClass('icon-green'),
@@ -626,7 +627,6 @@ export const CATEGORY_SECTIONS = [
     title: 'Text',
     toolIds: [
       'notes',
-      'ocr',
       'extract-text-pdf',
       'watermark-documents',
       'metadata-edit',
@@ -645,7 +645,8 @@ export const CATEGORY_SECTIONS = [
     toolIds: [
       'ai-summarize',
       'ai-paraphrase',
-      'ai-remove-background'
+      'ai-remove-background',
+      'ocr'
     ]
   },
   {
@@ -658,7 +659,8 @@ export const CATEGORY_SECTIONS = [
       'resize-video',
       'compress-video',
       'convert-video',
-      'trim-audio'
+      'trim-audio',
+      'youtube-download'
     ]
   },
   {
@@ -682,7 +684,6 @@ export const CATEGORY_SECTIONS = [
       'convert-image-formats',
       'png-to-jpg',
       'crop-rotate-flip',
-      'batch-image',
       'denoise-enhance',
       'palette-extraction',
       'image-collage',

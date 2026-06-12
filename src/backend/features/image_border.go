@@ -3,7 +3,6 @@ package features
 import (
 	"image"
 	"image/color"
-	"local-tools-hub/backend/features/shared"
 	"math"
 	"net/http"
 
@@ -18,8 +17,10 @@ import (
 //	borderWidth  - border thickness in pixels (default 0)
 //	borderColor  - hex color for the border, e.g. #ffffff (default white)
 //	cornerRadius - corner radius in pixels applied to the outer rectangle (default 0)
+//
+// Accepts one image or many (batch); several inputs come back as a ZIP.
 func HandleImageBorder(w http.ResponseWriter, r *http.Request) {
-	img, _, name, ok := receiveSingleImage(w, r)
+	headers, ok := receiveImages(w, r)
 	if !ok {
 		return
 	}
@@ -37,22 +38,25 @@ func HandleImageBorder(w http.ResponseWriter, r *http.Request) {
 		cornerRadius = 0
 	}
 
-	src := img.Bounds()
-	outW := src.Dx() + 2*borderWidth
-	outH := src.Dy() + 2*borderWidth
-	out := image.NewRGBA(image.Rect(0, 0, outW, outH))
+	transform := func(img image.Image, _, _ string) (image.Image, string, error) {
+		src := img.Bounds()
+		outW := src.Dx() + 2*borderWidth
+		outH := src.Dy() + 2*borderWidth
+		out := image.NewRGBA(image.Rect(0, 0, outW, outH))
 
-	// Fill with the border color, then draw the source image inset by the
-	// border width. When borderWidth is 0 the fill is fully covered.
-	draw.Draw(out, out.Bounds(), image.NewUniform(borderColor), image.Point{}, draw.Src)
-	dstRect := image.Rect(borderWidth, borderWidth, borderWidth+src.Dx(), borderWidth+src.Dy())
-	draw.Draw(out, dstRect, img, src.Min, draw.Over)
+		// Fill with the border color, then draw the source image inset by the
+		// border width. When borderWidth is 0 the fill is fully covered.
+		draw.Draw(out, out.Bounds(), image.NewUniform(borderColor), image.Point{}, draw.Src)
+		dstRect := image.Rect(borderWidth, borderWidth, borderWidth+src.Dx(), borderWidth+src.Dy())
+		draw.Draw(out, dstRect, img, src.Min, draw.Over)
 
-	if cornerRadius > 0 {
-		applyRoundedMask(out, cornerRadius)
+		if cornerRadius > 0 {
+			applyRoundedMask(out, cornerRadius)
+		}
+		return out, "png", nil
 	}
 
-	writeImageResult(w, out, "png", 100, shared.SafeFileBase(name), "framed")
+	serveProcessedImages(w, headers, transform, "framed", 100)
 }
 
 // applyRoundedMask multiplies each pixel's alpha by its coverage inside a

@@ -2,7 +2,6 @@ package features
 
 import (
 	"image"
-	"local-tools-hub/backend/features/shared"
 	"net/http"
 	"strings"
 
@@ -20,8 +19,10 @@ import (
 //	           blur:    radius in pixels (1..50)
 //	           sharpen: strength 0..100
 //	         Ignored by grayscale/sepia/invert.
+//
+// Accepts one image or many (batch); several inputs come back as a ZIP.
 func HandleImageFilter(w http.ResponseWriter, r *http.Request) {
-	img, srcFormat, name, ok := receiveSingleImage(w, r)
+	headers, ok := receiveImages(w, r)
 	if !ok {
 		return
 	}
@@ -29,57 +30,68 @@ func HandleImageFilter(w http.ResponseWriter, r *http.Request) {
 	filter := strings.ToLower(strings.TrimSpace(r.FormValue("filter")))
 	amount := formFloat(r, "amount", 0)
 
-	src := toNRGBA(img)
-	var out *image.NRGBA
-
+	// applyFilter is resolved up front so an unknown filter fails before any
+	// image is decoded.
+	var applyFilter func(src *image.NRGBA) *image.NRGBA
 	switch filter {
 	case "grayscale", "greyscale":
-		out = mapPixels(src, grayscalePixel)
+		applyFilter = func(src *image.NRGBA) *image.NRGBA { return mapPixels(src, grayscalePixel) }
 	case "sepia":
-		out = mapPixels(src, sepiaPixel)
+		applyFilter = func(src *image.NRGBA) *image.NRGBA { return mapPixels(src, sepiaPixel) }
 	case "invert":
-		out = mapPixels(src, invertPixel)
+		applyFilter = func(src *image.NRGBA) *image.NRGBA { return mapPixels(src, invertPixel) }
 	case "brightness":
 		factor := 1 + clampRange(amount, -100, 100)/100
-		out = mapPixels(src, func(r, g, b uint8) (uint8, uint8, uint8) {
-			return clampByte(float64(r) * factor), clampByte(float64(g) * factor), clampByte(float64(b) * factor)
-		})
+		applyFilter = func(src *image.NRGBA) *image.NRGBA {
+			return mapPixels(src, func(r, g, b uint8) (uint8, uint8, uint8) {
+				return clampByte(float64(r) * factor), clampByte(float64(g) * factor), clampByte(float64(b) * factor)
+			})
+		}
 	case "contrast":
 		c := clampRange(amount, -100, 100) * 2.55 // map to -255..255
 		factor := (259 * (c + 255)) / (255 * (259 - c))
-		out = mapPixels(src, func(r, g, b uint8) (uint8, uint8, uint8) {
-			return clampByte(factor*(float64(r)-128) + 128),
-				clampByte(factor*(float64(g)-128) + 128),
-				clampByte(factor*(float64(b)-128) + 128)
-		})
+		applyFilter = func(src *image.NRGBA) *image.NRGBA {
+			return mapPixels(src, func(r, g, b uint8) (uint8, uint8, uint8) {
+				return clampByte(factor*(float64(r)-128) + 128),
+					clampByte(factor*(float64(g)-128) + 128),
+					clampByte(factor*(float64(b)-128) + 128)
+			})
+		}
 	case "saturate", "saturation":
 		factor := 1 + clampRange(amount, -100, 100)/100
-		out = mapPixels(src, func(r, g, b uint8) (uint8, uint8, uint8) {
-			lum := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
-			return clampByte(lum + (float64(r)-lum)*factor),
-				clampByte(lum + (float64(g)-lum)*factor),
-				clampByte(lum + (float64(b)-lum)*factor)
-		})
+		applyFilter = func(src *image.NRGBA) *image.NRGBA {
+			return mapPixels(src, func(r, g, b uint8) (uint8, uint8, uint8) {
+				lum := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
+				return clampByte(lum + (float64(r)-lum)*factor),
+					clampByte(lum + (float64(g)-lum)*factor),
+					clampByte(lum + (float64(b)-lum)*factor)
+			})
+		}
 	case "blur":
 		radius := int(clampRange(amount, 1, 50) + 0.5)
 		if radius < 1 {
 			radius = 3
 		}
-		out = boxBlur(src, radius)
+		applyFilter = func(src *image.NRGBA) *image.NRGBA { return boxBlur(src, radius) }
 	case "sharpen":
 		strength := clampRange(amount, 0, 100) / 100
 		if strength == 0 {
 			strength = 0.6
 		}
-		out = sharpen(src, strength)
+		applyFilter = func(src *image.NRGBA) *image.NRGBA { return sharpen(src, strength) }
 	default:
 		http.Error(w, "Unknown filter. Use grayscale, sepia, invert, brightness, contrast, saturate, blur or sharpen.", http.StatusBadRequest)
 		return
 	}
 
-	format := normalizeOutputFormat(r.FormValue("format"), srcFormat)
+	requestedFormat := r.FormValue("format")
 	quality := formInt(r, "quality", 90)
-	writeImageResult(w, out, format, quality, shared.SafeFileBase(name), "filtered")
+
+	transform := func(img image.Image, srcFormat, _ string) (image.Image, string, error) {
+		return applyFilter(toNRGBA(img)), normalizeOutputFormat(requestedFormat, srcFormat), nil
+	}
+
+	serveProcessedImages(w, headers, transform, "filtered", quality)
 }
 
 // toNRGBA returns src as a non-premultiplied *image.NRGBA so per-channel math
