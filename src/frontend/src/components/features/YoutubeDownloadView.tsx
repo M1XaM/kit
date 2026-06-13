@@ -115,7 +115,7 @@ function YoutubeDownloadView({ tool }: YoutubeDownloadViewProps) {
         Back to Tools
       </Link>
 
-      <FeatureHeader tool={tool} subtitle="Downloads run locally through yt-dlp — install it once and Kit handles the rest." />
+      <FeatureHeader tool={tool} subtitle="Downloads run locally through yt-dlp, which ships bundled with Kit — nothing to install." />
 
       {errorMessage && (
         <div className="mt-5 rounded-xl border px-4 py-3 text-sm border-red-400/50 bg-red-900/25 text-red-200 whitespace-pre-wrap">{errorMessage}</div>
@@ -163,7 +163,8 @@ function YoutubeDownloadView({ tool }: YoutubeDownloadViewProps) {
         </div>
 
         <p className="text-xs text-slate-500">
-          Several links download as one ZIP. Merging the best video and audio streams (and MP3 extraction) uses ffmpeg when installed.
+          Several links download as one ZIP. Merging video + audio (and MP3 extraction) uses ffmpeg when installed.
+          Best/1080p and below come out as H.264 MP4 that plays anywhere; 1440p/4K exist only as VP9/AV1 on YouTube, so they're saved as MKV.
           Only download content you have the right to save.
         </p>
 

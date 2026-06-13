@@ -52,7 +52,7 @@ Every server-side image tool above also has a **Batch processing** checkbox: sel
 
 All three recording tools offer **Save** (stores the clip under `data/<feature>/` next to the app) and **Save as…** (the browser's native save dialog).
 
-* **YouTube Download** *(server)*: Paste one or many YouTube links, choose video+audio, audio-only (MP3) or video-only and a quality cap — Kit drives a locally installed **yt-dlp**; several links come back as one ZIP.
+* **YouTube Download** *(server)*: Paste one or many YouTube links, choose video+audio, audio-only (MP3) or video-only and a quality cap — Kit drives a **bundled yt-dlp** (shipped in each release's `lib/` folder, no separate install); several links come back as one ZIP. MP3 extraction and best-quality merging additionally use ffmpeg when it's installed.
 * **File Converter** *(server)*: The universal catch-all — images ↔ any image format or one combined PDF (drag rows to set the page order), audio ↔ any audio format, video ↔ any video format or audio-only extraction, and PDF → page images.
 
 ### 📄 Document & Text Toolkit
@@ -85,6 +85,29 @@ Runs a neural-net model **locally** — no cloud, no uploads. Inference happens 
 3. **Bookmark (Pro Tip):** Save `kit://start` as a bookmark to start the application natively whenever you need it!
 
 Each OS folder contains `install-kit`, `uninstall-kit`, and a `lib/` folder with everything else.
+
+---
+
+## 🗂️ Recent Files
+
+A **Recent files** panel lives behind the arrow tab on the right edge of the window. Every file you load into a tool (via the picker or drag&drop) is remembered there so you can:
+
+* **Preview** it on hover (images, video, audio, PDFs and text render inline; documents scroll and media get play controls).
+* **Drag it straight onto another tool** to reuse it without hunting through your folders again.
+
+The panel keeps lightweight **references** to the originals on your machine — nothing is copied, stored or uploaded, so it never doubles your disk usage. (Browsers, for security, never expose a file's path or let a picked file be re-opened after a reload, so the list is session-scoped and resets when you reload.)
+
+---
+
+## 🧪 Testing
+
+Kit's backend features are covered by Go unit tests that run in Docker, exactly like the release build:
+
+```bash
+make test          # build the test image and run every backend unit test
+```
+
+A failing test aborts the build and its full log is printed to the console. **Releases are gated on the tests** — `make release <version>` runs `make test` first and refuses to tag/push the version if anything fails, so a broken commit can never ship.
 
 ---
 

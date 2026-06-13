@@ -86,6 +86,33 @@ case "$TARGET_OS" in
 		;;
 esac
 
+# Bundle yt-dlp (single self-contained binary per OS) into each OS's lib/ folder,
+# so the YouTube tool works without the user installing yt-dlp. Best-effort: a
+# failed download just leaves Kit to fall back to a system yt-dlp on PATH.
+YTDLP_VERSION="2026.06.09"
+bundle_ytdlp() {
+	local os="$1" asset="$2" out="$3"
+	mkdir -p "../bin/$os/lib"
+	if curl -fsSL "https://github.com/yt-dlp/yt-dlp/releases/download/$YTDLP_VERSION/$asset" -o "../bin/$os/lib/$out"; then
+		[ "$out" = "yt-dlp" ] && chmod +x "../bin/$os/lib/yt-dlp"
+		echo "Bundled yt-dlp for $os."
+	else
+		echo "Warning: could not download yt-dlp for $os; YouTube downloads will need a system yt-dlp."
+	fi
+}
+
+echo "Bundling yt-dlp..."
+case "$TARGET_OS" in
+	all)
+		bundle_ytdlp linux yt-dlp_linux yt-dlp
+		bundle_ytdlp windows yt-dlp.exe yt-dlp.exe
+		bundle_ytdlp macos yt-dlp_macos yt-dlp
+		;;
+	linux)   bundle_ytdlp linux yt-dlp_linux yt-dlp ;;
+	windows) bundle_ytdlp windows yt-dlp.exe yt-dlp.exe ;;
+	macos)   bundle_ytdlp macos yt-dlp_macos yt-dlp ;;
+esac
+
 # Build the AI background-removal sidecar (kit-bgremove) + bundle the ONNX
 # Runtime library alongside each kit binary. This is a CGO build and needs a C
 # toolchain per target; the helper skips any target whose toolchain is missing

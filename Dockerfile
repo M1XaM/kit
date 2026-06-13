@@ -105,12 +105,41 @@ RUN SIDECAR_TARGETS="$(echo "$TARGET_OS" | tr ' ' '\n' | grep -E 'linux|windows|
 
 
 # ==========================================
-# Stage 4: Export artifacts to the host
+# Stage 4: Bundle yt-dlp (YouTube downloader)
+# ==========================================
+# yt-dlp ships as a single self-contained binary per OS, so we just download the
+# right one for each requested target into that OS's lib/ folder — the same place
+# the AI sidecars live. Kit resolves lib/yt-dlp at runtime (see findSidecar), so
+# the YouTube tool works out of the box with no separate install from the user.
+FROM debian:bookworm-slim AS ytdlp
+ARG TARGET_OS=all
+RUN apt-get update && apt-get install -y --no-install-recommends \
+		curl ca-certificates && rm -rf /var/lib/apt/lists/*
+WORKDIR /ytdlp
+# Pin a known-good release so builds are reproducible; bump deliberately.
+ARG YTDLP_VERSION=2026.06.09
+RUN set -eux; \
+		base="https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}"; \
+		if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " linux "; then \
+			mkdir -p linux/lib; curl -fsSL "$base/yt-dlp_linux" -o linux/lib/yt-dlp; chmod +x linux/lib/yt-dlp; \
+		fi; \
+		if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " windows "; then \
+			mkdir -p windows/lib; curl -fsSL "$base/yt-dlp.exe" -o windows/lib/yt-dlp.exe; \
+		fi; \
+		if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " macos "; then \
+			mkdir -p macos/lib; curl -fsSL "$base/yt-dlp_macos" -o macos/lib/yt-dlp; chmod +x macos/lib/yt-dlp; \
+		fi
+
+
+# ==========================================
+# Stage 5: Export artifacts to the host
 # ==========================================
 # We use a scratch image simply to hold the binaries.
 # BuildKit's `--output` flag will dump everything in /out to the host.
-# The backend (kit) and sidecar (kit-bgremove + lib/) outputs share the same
-# per-OS folder layout, so copying both into "/" merges them per OS.
+# The backend (kit), sidecar (kit-bgremove + lib/) and yt-dlp (lib/yt-dlp)
+# outputs share the same per-OS folder layout, so copying them into "/" merges
+# them per OS.
 FROM scratch AS export-stage
 COPY --from=backend /out /
 COPY --from=sidecar /sidecar /
+COPY --from=ytdlp /ytdlp /

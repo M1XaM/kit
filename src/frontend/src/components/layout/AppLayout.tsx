@@ -3,10 +3,11 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import HomeGrid from './HomeGrid'
 import NotFound from './NotFound'
 import ToolView from '../features/ToolView'
+import RecentFilesPanel from './RecentFilesPanel'
 import { FavoritesProvider } from '../../state/favorites'
 
 const GITHUB_URL = 'https://github.com/M1XaM/kit'
-const LANDING_PAGE_URL = 'https://m1xam.github.io/kit/'
+const GITHUB_ISSUES_URL = 'https://github.com/M1XaM/kit/issues'
 const HOME_SCROLL_KEY = 'kit-home-scroll'
 
 type HeaderBarProps = {
@@ -45,17 +46,6 @@ function InfoButton() {
             tab and shuts itself down a few seconds later.
           </p>
 
-          <div className="mt-3 rounded-lg border p-3 border-blue-400/20 bg-blue-500/5">
-            <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-blue-300">Launch without the prompt</div>
-            <p className="mt-1 text-xs leading-relaxed text-slate-400">
-              Open Kit from the{' '}
-              <a href={LANDING_PAGE_URL} target="_blank" rel="noreferrer" className="text-blue-300 underline">landing page</a>{' '}
-              and tick <span className="text-slate-200">“Always allow”</span> in the browser
-              prompt — after that <span className="text-slate-200">kit://start</span> launches
-              instantly every time.
-            </p>
-          </div>
-
           <a
             href={GITHUB_URL}
             target="_blank"
@@ -66,6 +56,61 @@ function InfoButton() {
               <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"></path>
             </svg>
             View source on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ReportBugButton mirrors the InfoButton style: a circular pill that reveals a
+// small panel on hover (or keyboard focus) inviting the user to report a bug or
+// propose a change, with a direct link to the GitHub issues page.
+function ReportBugButton() {
+  return (
+    <div className="group relative">
+      <button
+        type="button"
+        aria-label="Report a bug"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition border-white/10 bg-white/5 text-amber-300 hover:border-white/20 hover:bg-white/10 hover:text-amber-200 group-hover:border-amber-400/50 group-hover:bg-amber-500/20 group-hover:text-amber-200 group-focus-within:border-amber-400/50 group-focus-within:bg-amber-500/20 group-focus-within:text-amber-200"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m8 2 1.88 1.88"></path>
+          <path d="M14.12 3.88 16 2"></path>
+          <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"></path>
+          <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"></path>
+          <path d="M12 20v-9"></path>
+          <path d="M6.53 9C4.6 8.8 3 7.1 3 5"></path>
+          <path d="M6 13H2"></path>
+          <path d="M3 21c0-2.1 1.7-3.9 3.8-4"></path>
+          <path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"></path>
+          <path d="M22 13h-4"></path>
+          <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"></path>
+        </svg>
+      </button>
+
+      {/* pt-2 (not mt-2) keeps the hover region contiguous with the button so the
+          panel's link stays reachable; shown via group-hover / group-focus-within. */}
+      <div className="pointer-events-none absolute right-0 top-full z-30 pt-2 opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+        <div className="w-72 rounded-xl border p-4 text-left shadow-2xl border-white/10 bg-slate-950/95 backdrop-blur">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+            <span>🐞</span>
+            Found a bug?
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-slate-400">
+            If you ran into something broken or want to propose a change, open an
+            issue on GitHub — every report helps make Kit better.
+          </p>
+          <a
+            href={GITHUB_ISSUES_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition border-amber-400/30 bg-amber-500/10 text-amber-200 hover:border-amber-400/50 hover:bg-amber-500/20"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"></path>
+            </svg>
+            Report it on GitHub Issues
           </a>
         </div>
       </div>
@@ -97,6 +142,7 @@ function HeaderBar({ status }: HeaderBarProps) {
             Local background server keeps running after you close this tab. Use the kit://start bookmark to reopen anytime.
           </div>
         </div>
+        <ReportBugButton />
         <InfoButton />
       </div>
     </div>
@@ -198,6 +244,8 @@ function AppLayout() {
           </FavoritesProvider>
         </div>
       </main>
+
+      <RecentFilesPanel />
     </div>
   )
 }

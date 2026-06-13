@@ -14,8 +14,10 @@ import (
 	"time"
 )
 
-// YouTube Download shells out to yt-dlp, which the user installs themselves
-// (same pattern as ffmpeg for the video tools). Only YouTube URLs are
+// YouTube Download shells out to yt-dlp. Releases bundle yt-dlp under the lib/
+// folder next to the Kit binary (same place as the AI sidecars), so the user
+// never has to install it — we resolve the bundled copy first and only fall
+// back to a yt-dlp already on PATH for dev builds. Only YouTube URLs are
 // accepted; the binary is never handed anything else.
 
 const (
@@ -59,23 +61,64 @@ func ytQualityFormat(mode, quality string) []string {
 		if height != "" {
 			sel = fmt.Sprintf("bestvideo[height<=%s]", height)
 		}
-		return []string{"-f", sel + "/best"}
+		// Same preference as "both" so a no-audio download is a playable file,
+		// not a VP9/AV1 stream that shows as a black screen.
+		return append([]string{"-f", sel + "/best"}, ytSortArgs(height)...)
 	default: // both
 		if _, err := ffmpegPath(); err == nil {
 			sel := "bestvideo+bestaudio/best"
 			if height != "" {
 				sel = fmt.Sprintf("bestvideo[height<=%s]+bestaudio/best[height<=%s]", height, height)
 			}
-			return []string{"-f", sel, "--merge-output-format", "mp4"}
+			// YouTube's outright "best" video is usually VP9/AV1; muxed into MP4
+			// those play as audio-only — a black screen with sound — in browsers,
+			// QuickTime and many players. ytSortArgs prefers H.264 + AAC so the
+			// common case is a universally playable MP4; the explicit 1440p/2160p
+			// options are VP9/AV1-only, so those keep their resolution and merge
+			// into an MKV container (see ytMergeFormat), which plays them reliably.
+			args := []string{"-f", sel}
+			args = append(args, ytSortArgs(height)...)
+			args = append(args, "--merge-output-format", ytMergeFormat(height))
+			return args
 		}
 		// Without ffmpeg yt-dlp cannot merge separate streams; use the best
-		// single (progressive) file instead.
-		sel := "best"
+		// single (progressive) file instead. Progressive streams are H.264+AAC
+		// MP4, so prefer an mp4 one — it always plays.
+		sel := "best[ext=mp4]/best"
 		if height != "" {
-			sel = fmt.Sprintf("best[height<=%s]", height)
+			sel = fmt.Sprintf("best[height<=%s][ext=mp4]/best[height<=%s]", height, height)
 		}
 		return []string{"-f", sel}
 	}
+}
+
+// highResVP9 reports whether a requested height is one YouTube only serves as
+// VP9/AV1 (no H.264). For these the user explicitly wants the resolution, so we
+// must not let an H.264 preference downgrade them to 1080p.
+func highResVP9(height string) bool {
+	return height == "1440" || height == "2160"
+}
+
+// ytSortArgs returns yt-dlp's -S format sort. For the H.264-capable resolutions
+// (best/1080p and below) we prefer H.264 video + AAC audio so the result is a
+// universally playable MP4. For 1440p/2160p — which exist only as VP9/AV1 — we
+// sort by resolution instead, so the user actually gets the resolution they
+// asked for (the container then handles playability; see ytMergeFormat).
+func ytSortArgs(height string) []string {
+	if highResVP9(height) {
+		return []string{"-S", "res,vcodec,acodec"}
+	}
+	return []string{"-S", "vcodec:h264,res,acodec:aac"}
+}
+
+// ytMergeFormat picks the output container for merged downloads: MP4 for the
+// H.264 path (plays everywhere) and MKV for the high-res VP9/AV1 path, since MP4
+// can't reliably hold those codecs (the symptom is a black screen with sound).
+func ytMergeFormat(height string) string {
+	if highResVP9(height) {
+		return "mkv"
+	}
+	return "mp4"
 }
 
 // validYoutubeURL parses and validates one link.
@@ -112,9 +155,9 @@ func HandleYoutubeDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ytBin, err := exec.LookPath("yt-dlp")
-	if err != nil {
-		http.Error(w, "yt-dlp is required for YouTube downloads but was not found on your system. Install yt-dlp (https://github.com/yt-dlp/yt-dlp), then restart Kit.", http.StatusServiceUnavailable)
+	ytBin, _, ok := findSidecar("yt-dlp")
+	if !ok {
+		http.Error(w, "yt-dlp was not found. It ships bundled with Kit, so this usually means the lib/ folder next to the Kit binary is missing — reinstall Kit, or install yt-dlp (https://github.com/yt-dlp/yt-dlp) and restart.", http.StatusServiceUnavailable)
 		return
 	}
 

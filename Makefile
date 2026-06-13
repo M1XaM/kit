@@ -1,4 +1,4 @@
-.PHONY: all build local-build run dev clean release linux windows macos platform-build with-terminal with-gpu
+.PHONY: all build local-build run dev clean release test linux windows macos platform-build with-terminal with-gpu
 
 # Plain `make` must build everything. `with-terminal` is defined as a target
 # below (so Make doesn't choke on `make build with-terminal`), but it must
@@ -82,8 +82,19 @@ dev:
 	fi
 	@cd src && rm -rf backend/frontend/dist && mkdir -p backend/frontend/dist && cp -r frontend/dist/* backend/frontend/dist/ && cd backend && go run .
 
-# Tags the current commit with the specified version and pushes it
-release:
+# Runs every backend unit test inside Docker (same as the build runs in Docker).
+# A non-zero exit means at least one test failed; BuildKit prints the failing
+# stage's full log because we force plain progress. The build cache is bypassed
+# with --no-cache so a test run always reflects the current source.
+test:
+	@echo "Running unit tests in Docker..."
+	@DOCKER_BUILDKIT=1 docker build --file Dockerfile.test --target test --no-cache --progress=plain .
+	@echo "All unit tests passed."
+
+# Tags the current commit with the specified version and pushes it. The unit
+# tests must pass first: `make test` fails the build (and this target) if any
+# test fails, so a broken commit can never be tagged as a release.
+release: test
 	@if [ -z "$(RELEASE_VERSION)" ]; then \
 		echo "Error: Please specify a version. Example: make release v1.2.3"; \
 		exit 1; \
