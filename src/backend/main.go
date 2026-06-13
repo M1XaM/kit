@@ -43,6 +43,12 @@ func main() {
 		log.Fatalf("No free port found in range %d-%d", basePort, basePort+9)
 	}
 
+	// Sweep working files left over by a previous run that didn't exit cleanly.
+	// Runs synchronously before the server accepts requests so it can't race a
+	// handler creating a temp file. Safe because we're the sole instance (a
+	// second launch already exited during the port probe above).
+	features.CleanupTempRoot()
+
 	// Erased notes live in data/notes/trash for 7 days; purge expired ones.
 	go features.CleanupNotesTrash()
 

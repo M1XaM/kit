@@ -42,7 +42,7 @@ func HandleArchiveExtract(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpInput, err := os.CreateTemp("", "archive-input-*")
+	tmpInput, err := os.CreateTemp(tempRoot(), "archive-input-*")
 	if err != nil {
 		http.Error(w, "Failed to prepare archive", http.StatusInternalServerError)
 		return
@@ -56,7 +56,7 @@ func HandleArchiveExtract(w http.ResponseWriter, r *http.Request) {
 	}
 	tmpInput.Close()
 
-	outputDir, err := os.MkdirTemp("", "archive-output-*")
+	outputDir, err := os.MkdirTemp(tempRoot(), "archive-output-*")
 	if err != nil {
 		http.Error(w, "Failed to prepare output folder", http.StatusInternalServerError)
 		return
@@ -68,7 +68,7 @@ func HandleArchiveExtract(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zipOutput, err := os.CreateTemp("", "archive-extracted-*.zip")
+	zipOutput, err := os.CreateTemp(tempRoot(), "archive-extracted-*.zip")
 	if err != nil {
 		http.Error(w, "Failed to prepare output archive", http.StatusInternalServerError)
 		return

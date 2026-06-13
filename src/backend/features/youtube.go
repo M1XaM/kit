@@ -189,7 +189,7 @@ func HandleYoutubeDownload(w http.ResponseWriter, r *http.Request) {
 		urls = append(urls, u)
 	}
 
-	outDir, err := os.MkdirTemp("", "kit-youtube-*")
+	outDir, err := os.MkdirTemp(tempRoot(), "kit-youtube-*")
 	if err != nil {
 		http.Error(w, "Failed to create workspace", http.StatusInternalServerError)
 		return
@@ -213,7 +213,7 @@ func HandleYoutubeDownload(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.CommandContext(ctx, ytBin, args...)
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
+	if err := runHeavyJob(ctx, cmd.Run); err != nil {
 		// --max-downloads makes yt-dlp exit with code 101 even on success;
 		// treat the run as failed only when nothing was produced.
 		files, _ := collectFiles(outDir)
@@ -245,7 +245,7 @@ func HandleYoutubeDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zipFile, err := os.CreateTemp("", "kit-youtube-*.zip")
+	zipFile, err := os.CreateTemp(tempRoot(), "kit-youtube-*.zip")
 	if err != nil {
 		http.Error(w, "Failed to create archive", http.StatusInternalServerError)
 		return

@@ -31,7 +31,7 @@ func HandleMergePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inputDir, err := os.MkdirTemp("", "merge-pdf-*")
+	inputDir, err := os.MkdirTemp(tempRoot(), "merge-pdf-*")
 	if err != nil {
 		http.Error(w, "Failed to create temp dir", http.StatusInternalServerError)
 		return
@@ -49,7 +49,7 @@ func HandleMergePDF(w http.ResponseWriter, r *http.Request) {
 		paths = append(paths, f.Path)
 	}
 
-	outFile, err := os.CreateTemp("", "merged-*.pdf")
+	outFile, err := os.CreateTemp(tempRoot(), "merged-*.pdf")
 	if err != nil {
 		http.Error(w, "Failed to create temp output file", http.StatusInternalServerError)
 		return

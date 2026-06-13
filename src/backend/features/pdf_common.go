@@ -38,7 +38,7 @@ func receiveSinglePDF(w http.ResponseWriter, r *http.Request) (inputPath, origin
 	}
 	defer file.Close()
 
-	tmpInput, err := os.CreateTemp("", "input-*.pdf")
+	tmpInput, err := os.CreateTemp(tempRoot(), "input-*.pdf")
 	if err != nil {
 		http.Error(w, "Failed to create temp input file", http.StatusInternalServerError)
 		return "", "", nil, false
@@ -60,7 +60,7 @@ func receiveSinglePDF(w http.ResponseWriter, r *http.Request) (inputPath, origin
 // the resulting PDF back with filename "<base>_<suffix>.pdf". On failure it
 // responds with errMsg. The op receives input and output temp paths.
 func runSinglePDFOp(w http.ResponseWriter, inputPath, originalName, suffix, errMsg string, op func(inPath, outPath string) error) {
-	tmpOutput, err := os.CreateTemp("", "output-*.pdf")
+	tmpOutput, err := os.CreateTemp(tempRoot(), "output-*.pdf")
 	if err != nil {
 		http.Error(w, "Failed to create temp output file", http.StatusInternalServerError)
 		return

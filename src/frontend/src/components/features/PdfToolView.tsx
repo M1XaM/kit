@@ -101,8 +101,6 @@ const PDF_TOOL_CONFIG: Record<string, PdfToolConfig> = {
   }
 }
 
-export const PDF_TOOL_IDS = Object.keys(PDF_TOOL_CONFIG)
-
 const INPUT_CLASS = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white placeholder:text-slate-500'
 const LABEL_CLASS = 'text-xs uppercase tracking-[0.12em] text-slate-400'
 

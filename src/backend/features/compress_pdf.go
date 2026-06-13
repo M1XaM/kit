@@ -83,7 +83,7 @@ func HandleCompressPDF(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	workDir, err := os.MkdirTemp("", "pdf-compress-*")
+	workDir, err := os.MkdirTemp(tempRoot(), "pdf-compress-*")
 	if err != nil {
 		http.Error(w, "Failed to create workspace", http.StatusInternalServerError)
 		return
@@ -121,7 +121,7 @@ func HandleCompressPDF(w http.ResponseWriter, r *http.Request) {
 			"-dNOPAUSE", "-dQUIET", "-dBATCH", "-dSAFER",
 			"-o", gsOut, inputPath,
 		)
-		if err := cmd.Run(); err != nil {
+		if err := runHeavyJob(ctx, cmd.Run); err != nil {
 			fmt.Printf("ghostscript compress failed (falling back to pdfcpu): %v\n", err)
 		} else if size := fileSize(gsOut); size > 0 && size < bestSize && pdfIsValid(gsOut) {
 			bestPath, bestSize = gsOut, size

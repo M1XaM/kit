@@ -44,7 +44,7 @@ func HandleSplitPDF(w http.ResponseWriter, r *http.Request) {
 		mode = "range"
 	}
 
-	tmpInput, err := os.CreateTemp("", "input-*.pdf")
+	tmpInput, err := os.CreateTemp(tempRoot(), "input-*.pdf")
 	if err != nil {
 		http.Error(w, "Failed to create temp input file", http.StatusInternalServerError)
 		return
@@ -85,7 +85,7 @@ func HandleSplitPDF(w http.ResponseWriter, r *http.Request) {
 }
 
 func splitByRangeAndSendPDF(w http.ResponseWriter, inputPath, originalFileName, pagesValue string, conf *model.Configuration) error {
-	tmpOutput, err := os.CreateTemp("", "split-range-*.pdf")
+	tmpOutput, err := os.CreateTemp(tempRoot(), "split-range-*.pdf")
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func splitByRangeAndSendPDF(w http.ResponseWriter, inputPath, originalFileName, 
 }
 
 func splitPerPageAndSendZip(w http.ResponseWriter, inputPath, originalFileName string, conf *model.Configuration) error {
-	outDir, err := os.MkdirTemp("", "split-pages-*")
+	outDir, err := os.MkdirTemp(tempRoot(), "split-pages-*")
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func splitPerPageAndSendZip(w http.ResponseWriter, inputPath, originalFileName s
 		return fmt.Errorf("no split pages generated")
 	}
 
-	zipFile, err := os.CreateTemp("", "split-pages-*.zip")
+	zipFile, err := os.CreateTemp(tempRoot(), "split-pages-*.zip")
 	if err != nil {
 		return err
 	}

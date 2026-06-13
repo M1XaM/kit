@@ -44,7 +44,7 @@ func HandleConvertAudio(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "-b:a", fmt.Sprintf("%dk", bitrate))
 	}
 
-	outPath, err := os.CreateTemp("", "aconvert-out-*"+ext)
+	outPath, err := os.CreateTemp(tempRoot(), "aconvert-out-*"+ext)
 	if err != nil {
 		http.Error(w, "Failed to create output", http.StatusInternalServerError)
 		return

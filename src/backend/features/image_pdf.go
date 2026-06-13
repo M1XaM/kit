@@ -41,7 +41,7 @@ func HandleImagesToPDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inputDir, err := os.MkdirTemp("", "img2pdf-in-*")
+	inputDir, err := os.MkdirTemp(tempRoot(), "img2pdf-in-*")
 	if err != nil {
 		http.Error(w, "Failed to create temp dir", http.StatusInternalServerError)
 		return
@@ -60,7 +60,7 @@ func HandleImagesToPDF(w http.ResponseWriter, r *http.Request) {
 
 	// ImportImagesFile APPENDS to outFile (creating it if missing), so the
 	// output path must not already exist — use a path inside a fresh temp dir.
-	outDir, err := os.MkdirTemp("", "img2pdf-out-*")
+	outDir, err := os.MkdirTemp(tempRoot(), "img2pdf-out-*")
 	if err != nil {
 		http.Error(w, "Failed to create temp dir", http.StatusInternalServerError)
 		return
@@ -114,7 +114,7 @@ func rasterizePDF(inputPath, outDir, format string, dpi int) (bool, error) {
 			args = append(args, "-png")
 		}
 		args = append(args, inputPath, filepath.Join(outDir, "page"))
-		out, err := exec.CommandContext(ctx, bin, args...).CombinedOutput()
+		out, err := combinedOutputGated(ctx, exec.CommandContext(ctx, bin, args...))
 		if err != nil {
 			return true, fmt.Errorf("pdftoppm: %v: %s", err, strings.TrimSpace(string(out)))
 		}
@@ -128,13 +128,13 @@ func rasterizePDF(inputPath, outDir, format string, dpi int) (bool, error) {
 			device = "jpeg"
 			ext = "jpg"
 		}
-		out, err := exec.CommandContext(ctx, bin,
+		out, err := combinedOutputGated(ctx, exec.CommandContext(ctx, bin,
 			"-sDEVICE="+device,
 			"-r"+strconv.Itoa(dpi),
 			"-dNOPAUSE", "-dQUIET", "-dBATCH", "-dSAFER",
 			"-o", filepath.Join(outDir, "page-%03d."+ext),
 			inputPath,
-		).CombinedOutput()
+		))
 		if err != nil {
 			return true, fmt.Errorf("ghostscript: %v: %s", err, strings.TrimSpace(string(out)))
 		}
@@ -143,11 +143,11 @@ func rasterizePDF(inputPath, outDir, format string, dpi int) (bool, error) {
 
 	if bin, err := exec.LookPath("mutool"); err == nil {
 		// mutool draw encodes JPEG only in newer builds; PNG is universal.
-		out, err := exec.CommandContext(ctx, bin, "draw",
+		out, err := combinedOutputGated(ctx, exec.CommandContext(ctx, bin, "draw",
 			"-r", strconv.Itoa(dpi),
 			"-o", filepath.Join(outDir, "page-%03d.png"),
 			inputPath,
-		).CombinedOutput()
+		))
 		if err != nil {
 			return true, fmt.Errorf("mutool: %v: %s", err, strings.TrimSpace(string(out)))
 		}
@@ -174,7 +174,7 @@ func HandlePdfToImages(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cleanup()
 
-	outDir, err := os.MkdirTemp("", "pdf2img-*")
+	outDir, err := os.MkdirTemp(tempRoot(), "pdf2img-*")
 	if err != nil {
 		http.Error(w, "Failed to create temp dir", http.StatusInternalServerError)
 		return
@@ -217,7 +217,7 @@ func HandlePdfToImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zipFile, err := os.CreateTemp("", "pdf2img-*.zip")
+	zipFile, err := os.CreateTemp(tempRoot(), "pdf2img-*.zip")
 	if err != nil {
 		http.Error(w, "Failed to create temp zip", http.StatusInternalServerError)
 		return

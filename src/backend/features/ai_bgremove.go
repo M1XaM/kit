@@ -494,7 +494,7 @@ func HandleRemoveBackground(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.Remove(inPath)
 
-	outFile, err := os.CreateTemp("", "bgremove-out-*.png")
+	outFile, err := os.CreateTemp(tempRoot(), "bgremove-out-*.png")
 	if err != nil {
 		http.Error(w, "Failed to create output", http.StatusInternalServerError)
 		return
@@ -521,7 +521,7 @@ func HandleRemoveBackground(w http.ResponseWriter, r *http.Request) {
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	runErr := cmd.Run()
+	runErr := runHeavyJob(ctx, cmd.Run)
 	if runErr != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			http.Error(w, "Background removal timed out. Try a lighter model.", http.StatusGatewayTimeout)

@@ -403,7 +403,7 @@ func HandleSummarize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inFile, err := os.CreateTemp("", "summarize-in-*.txt")
+	inFile, err := os.CreateTemp(tempRoot(), "summarize-in-*.txt")
 	if err != nil {
 		http.Error(w, "Failed to stage input", http.StatusInternalServerError)
 		return
@@ -417,7 +417,7 @@ func HandleSummarize(w http.ResponseWriter, r *http.Request) {
 	}
 	inFile.Close()
 
-	outFile, err := os.CreateTemp("", "summarize-out-*.txt")
+	outFile, err := os.CreateTemp(tempRoot(), "summarize-out-*.txt")
 	if err != nil {
 		http.Error(w, "Failed to create output", http.StatusInternalServerError)
 		return
@@ -446,7 +446,7 @@ func HandleSummarize(w http.ResponseWriter, r *http.Request) {
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if runErr := cmd.Run(); runErr != nil {
+	if runErr := runHeavyJob(ctx, cmd.Run); runErr != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			http.Error(w, "Summarization timed out. Try a lighter model or shorter text.", http.StatusGatewayTimeout)
 			return

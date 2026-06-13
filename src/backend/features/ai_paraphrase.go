@@ -315,7 +315,7 @@ func HandleParaphrase(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid segments", http.StatusBadRequest)
 		return
 	}
-	inFile, err := os.CreateTemp("", "paraphrase-in-*.json")
+	inFile, err := os.CreateTemp(tempRoot(), "paraphrase-in-*.json")
 	if err != nil {
 		http.Error(w, "Failed to stage input", http.StatusInternalServerError)
 		return
@@ -329,7 +329,7 @@ func HandleParaphrase(w http.ResponseWriter, r *http.Request) {
 	}
 	inFile.Close()
 
-	outFile, err := os.CreateTemp("", "paraphrase-out-*.json")
+	outFile, err := os.CreateTemp(tempRoot(), "paraphrase-out-*.json")
 	if err != nil {
 		http.Error(w, "Failed to create output", http.StatusInternalServerError)
 		return
@@ -359,7 +359,7 @@ func HandleParaphrase(w http.ResponseWriter, r *http.Request) {
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if runErr := cmd.Run(); runErr != nil {
+	if runErr := runHeavyJob(ctx, cmd.Run); runErr != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			http.Error(w, "Paraphrasing timed out. Try a lighter model or fewer words.", http.StatusGatewayTimeout)
 			return

@@ -85,7 +85,7 @@ func receiveMetadataUpload(w http.ResponseWriter, r *http.Request) (path, name s
 	}
 	defer file.Close()
 
-	dir, err := os.MkdirTemp("", "kit-metadata-*")
+	dir, err := os.MkdirTemp(tempRoot(), "kit-metadata-*")
 	if err != nil {
 		http.Error(w, "Failed to create workspace", http.StatusInternalServerError)
 		return "", "", nil, nil, false

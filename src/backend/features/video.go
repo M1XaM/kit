@@ -135,7 +135,7 @@ func HandleAdjustAudio(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "-b:a", fmt.Sprintf("%dk", bitrate))
 	}
 
-	outPath, err := os.CreateTemp("", "adjust-out-*"+ext)
+	outPath, err := os.CreateTemp(tempRoot(), "adjust-out-*"+ext)
 	if err != nil {
 		http.Error(w, "Failed to create output", http.StatusInternalServerError)
 		return
@@ -183,7 +183,7 @@ func trimMedia(w http.ResponseWriter, r *http.Request, fallbackExt string) {
 	duration := end - start
 
 	ext := inputExt(header.Filename, fallbackExt)
-	outPath, err := os.CreateTemp("", "trim-out-*"+ext)
+	outPath, err := os.CreateTemp(tempRoot(), "trim-out-*"+ext)
 	if err != nil {
 		http.Error(w, "Failed to create output", http.StatusInternalServerError)
 		return
@@ -242,7 +242,7 @@ func HandleResizeVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ext := inputExt(header.Filename, ".mp4")
-	outPath, err := os.CreateTemp("", "resize-out-*"+ext)
+	outPath, err := os.CreateTemp(tempRoot(), "resize-out-*"+ext)
 	if err != nil {
 		http.Error(w, "Failed to create output", http.StatusInternalServerError)
 		return
@@ -304,7 +304,7 @@ func HandleCompressVideo(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "-c:v", "libx264", "-crf", fmt.Sprintf("%d", crf), "-preset", "medium", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart")
 	}
 
-	outPath, err := os.CreateTemp("", "compress-out-*"+ext)
+	outPath, err := os.CreateTemp(tempRoot(), "compress-out-*"+ext)
 	if err != nil {
 		http.Error(w, "Failed to create output", http.StatusInternalServerError)
 		return
@@ -348,7 +348,7 @@ func HandleConvertVideo(w http.ResponseWriter, r *http.Request) {
 	}
 	ext := "." + target
 
-	outPath, err := os.CreateTemp("", "convert-out-*"+ext)
+	outPath, err := os.CreateTemp(tempRoot(), "convert-out-*"+ext)
 	if err != nil {
 		http.Error(w, "Failed to create output", http.StatusInternalServerError)
 		return
@@ -422,7 +422,7 @@ func HandleSplitVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outDir, err := os.MkdirTemp("", "split-clips-*")
+	outDir, err := os.MkdirTemp(tempRoot(), "split-clips-*")
 	if err != nil {
 		http.Error(w, "Failed to create workspace", http.StatusInternalServerError)
 		return
@@ -456,7 +456,7 @@ func HandleSplitVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zipFile, err := os.CreateTemp("", "split-clips-*.zip")
+	zipFile, err := os.CreateTemp(tempRoot(), "split-clips-*.zip")
 	if err != nil {
 		http.Error(w, "Failed to create archive", http.StatusInternalServerError)
 		return
@@ -507,7 +507,7 @@ func HandleMergeVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workDir, err := os.MkdirTemp("", "merge-*")
+	workDir, err := os.MkdirTemp(tempRoot(), "merge-*")
 	if err != nil {
 		http.Error(w, "Failed to create workspace", http.StatusInternalServerError)
 		return

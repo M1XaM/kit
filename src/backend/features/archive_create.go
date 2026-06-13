@@ -39,7 +39,7 @@ func HandleArchiveCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inputDir, err := os.MkdirTemp("", "archive-create-*")
+	inputDir, err := os.MkdirTemp(tempRoot(), "archive-create-*")
 	if err != nil {
 		http.Error(w, "Failed to prepare workspace", http.StatusInternalServerError)
 		return
@@ -58,7 +58,7 @@ func HandleArchiveCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpOutput, err := os.CreateTemp("", "archive-*"+outputExt)
+	tmpOutput, err := os.CreateTemp(tempRoot(), "archive-*"+outputExt)
 	if err != nil {
 		http.Error(w, "Failed to prepare output archive", http.StatusInternalServerError)
 		return

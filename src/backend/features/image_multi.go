@@ -89,7 +89,7 @@ func serveProcessedImages(w http.ResponseWriter, headers []*multipart.FileHeader
 		return
 	}
 
-	outDir, err := os.MkdirTemp("", "kit-images-*")
+	outDir, err := os.MkdirTemp(tempRoot(), "kit-images-*")
 	if err != nil {
 		http.Error(w, "Failed to create workspace", http.StatusInternalServerError)
 		return
@@ -126,7 +126,7 @@ func serveProcessedImages(w http.ResponseWriter, headers []*multipart.FileHeader
 		outputs = append(outputs, outPath)
 	}
 
-	zipFile, err := os.CreateTemp("", "kit-images-*.zip")
+	zipFile, err := os.CreateTemp(tempRoot(), "kit-images-*.zip")
 	if err != nil {
 		http.Error(w, "Failed to create archive", http.StatusInternalServerError)
 		return

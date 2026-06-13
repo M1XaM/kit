@@ -47,7 +47,7 @@ func requireFFmpeg(w http.ResponseWriter) (string, bool) {
 func saveUploadToTemp(file multipart.File, originalName, prefix string) (string, error) {
 	ext := strings.ToLower(filepath.Ext(originalName))
 	ext = sanitizeExt(ext)
-	tmp, err := os.CreateTemp("", prefix+"-*"+ext)
+	tmp, err := os.CreateTemp(tempRoot(), prefix+"-*"+ext)
 	if err != nil {
 		return "", err
 	}
@@ -88,7 +88,9 @@ func runFFmpeg(bin string, args ...string) error {
 	cmd := exec.CommandContext(ctx, bin, full...)
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
+	// Gated through the heavy-job pool so concurrent transcodes can't thrash the
+	// machine; the ctx timeout also bounds how long a job waits in the queue.
+	if err := runHeavyJob(ctx, cmd.Run); err != nil {
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
 			msg = err.Error()

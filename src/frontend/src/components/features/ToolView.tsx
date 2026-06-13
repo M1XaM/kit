@@ -1,36 +1,51 @@
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { TOOLS, type Tool } from './toolData'
 import ComingSoon from './ComingSoon'
 import NotFound from '../layout/NotFound'
-import PerformanceViewer from './PerformanceViewer'
-import InternetSpeed from './InternetSpeed'
-import ArchiveToolView from './ArchiveToolView'
-import ChecksumView from './ChecksumView'
-import TextToolView from './TextToolView'
-import RecordAudioView from './RecordAudioView'
-import PdfToolView, { PDF_TOOL_IDS } from './PdfToolView'
-import FileConverterView from './FileConverterView'
-import ImageToolView from './ImageToolView'
-import ImageCollageView from './ImageCollageView'
-import CropRotateFlipView from './CropRotateFlipView'
-import ColorPaletteView from './ColorPaletteView'
-import MergeAudioView from './MergeAudioView'
-import RecordVideoView from './RecordVideoView'
-import VideoToolView from './VideoToolView'
-import MergeVideoView from './MergeVideoView'
-import RemoveBackgroundView from './RemoveBackgroundView'
-import SummarizeView from './SummarizeView'
-import ParaphraseView from './ParaphraseView'
-import NotesView from './NotesView'
-import OcrView from './OcrView'
-import PdfExtractTextView from './PdfExtractTextView'
-import PdfWatermarkView from './PdfWatermarkView'
-import ScreenRecordView from './ScreenRecordView'
-import ImageWatermarkView from './ImageWatermarkView'
-import YoutubeDownloadView from './YoutubeDownloadView'
 import RecommendedTools from './RecommendedTools'
 import FeatureHeader from './FeatureHeader'
+import { PDF_TOOL_IDS } from './pdfToolIds'
+
+// Feature views are code-split: each one's bundle (pdf.js, openpgp, tesseract,
+// recharts, katex, …) loads only when its tool is opened, instead of all of
+// them shipping up front on the home page.
+const PerformanceViewer = lazy(() => import('./PerformanceViewer'))
+const InternetSpeed = lazy(() => import('./InternetSpeed'))
+const ArchiveToolView = lazy(() => import('./ArchiveToolView'))
+const ChecksumView = lazy(() => import('./ChecksumView'))
+const TextToolView = lazy(() => import('./TextToolView'))
+const RecordAudioView = lazy(() => import('./RecordAudioView'))
+const PdfToolView = lazy(() => import('./PdfToolView'))
+const FileConverterView = lazy(() => import('./FileConverterView'))
+const ImageToolView = lazy(() => import('./ImageToolView'))
+const ImageCollageView = lazy(() => import('./ImageCollageView'))
+const CropRotateFlipView = lazy(() => import('./CropRotateFlipView'))
+const ColorPaletteView = lazy(() => import('./ColorPaletteView'))
+const MergeAudioView = lazy(() => import('./MergeAudioView'))
+const RecordVideoView = lazy(() => import('./RecordVideoView'))
+const VideoToolView = lazy(() => import('./VideoToolView'))
+const MergeVideoView = lazy(() => import('./MergeVideoView'))
+const RemoveBackgroundView = lazy(() => import('./RemoveBackgroundView'))
+const SummarizeView = lazy(() => import('./SummarizeView'))
+const ParaphraseView = lazy(() => import('./ParaphraseView'))
+const NotesView = lazy(() => import('./NotesView'))
+const OcrView = lazy(() => import('./OcrView'))
+const PdfExtractTextView = lazy(() => import('./PdfExtractTextView'))
+const PdfWatermarkView = lazy(() => import('./PdfWatermarkView'))
+const ScreenRecordView = lazy(() => import('./ScreenRecordView'))
+const ImageWatermarkView = lazy(() => import('./ImageWatermarkView'))
+const YoutubeDownloadView = lazy(() => import('./YoutubeDownloadView'))
+
+// Shown while a feature view's code-split chunk is fetched.
+function ViewLoading() {
+  return (
+    <div className="mx-auto flex max-w-3xl items-center justify-center gap-3 rounded-2xl border p-16 border-white/10 bg-white/5 text-slate-400">
+      <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-500 border-t-transparent" />
+      <span className="text-sm">Loading…</span>
+    </div>
+  )
+}
 
 function ToolView() {
   const { id } = useParams()
@@ -106,7 +121,9 @@ function ToolView() {
   if (CustomView) {
     return (
       <>
-        <CustomView tool={tool} />
+        <Suspense fallback={<ViewLoading />}>
+          <CustomView tool={tool} />
+        </Suspense>
         <RecommendedTools currentId={id} />
       </>
     )
