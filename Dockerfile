@@ -53,13 +53,18 @@ RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " linux "; then
 			GOOS=linux GOARCH=amd64 go build -o /out/linux/uninstall-kit ./uninstall/main.go; \
 		fi
 
-# Windows
+# Windows. A normal console-subsystem .exe pops a terminal window as soon as it
+# is double-clicked — before any runtime flag is read — so the default (release)
+# build links both binaries with `-H windowsgui` to suppress that console
+# entirely. --with-terminal opts into a console build (and the kit:// runtime
+# terminal) so logs are visible for people who built it deliberately.
 RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " windows "; then \
 			mkdir -p /out/windows; \
-			LDFLAGS=""; \
-			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="-ldflags=-X=main.withTerminal=true"; fi; \
-			GOOS=windows GOARCH=amd64 go build $LDFLAGS -o /out/windows/install-kit.exe ./backend; \
-			GOOS=windows GOARCH=amd64 go build -o /out/windows/uninstall-kit.exe ./uninstall/main.go; \
+			INSTALL_LDFLAGS="-H windowsgui"; \
+			UNINSTALL_LDFLAGS="-H windowsgui"; \
+			if [ "$WITH_TERMINAL" = "true" ]; then INSTALL_LDFLAGS="-X main.withTerminal=true"; UNINSTALL_LDFLAGS=""; fi; \
+			GOOS=windows GOARCH=amd64 go build -ldflags="$INSTALL_LDFLAGS" -o /out/windows/install-kit.exe ./backend; \
+			GOOS=windows GOARCH=amd64 go build -ldflags="$UNINSTALL_LDFLAGS" -o /out/windows/uninstall-kit.exe ./uninstall/main.go; \
 		fi
 
 # macOS (Apple Silicon)

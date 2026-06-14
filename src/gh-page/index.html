@@ -29,20 +29,6 @@
                 50+ file tools and local AI in one sleek dashboard — running entirely on your machine, with the power of a desktop app and the comfort of your browser.
             </p>
 
-            <!-- Animated Line -->
-            <p class="mt-5 text-base sm:text-lg text-gray-300 flex justify-center items-center gap-2 flex-wrap">
-                <span class="text-gray-500">No</span>
-
-                <span class="relative h-[1.5em] w-[84px] sm:w-[94px] overflow-hidden inline-flex items-center">
-                    <span id="roulette" class="absolute inset-x-0 top-0 flex flex-col items-center text-base sm:text-lg leading-[1.5em]">
-                        <span class="text-gray-500 h-[1.5em] flex items-center justify-center">uploads.</span>
-                        <span class="text-gray-500 h-[1.5em] flex items-center justify-center">limits.</span>
-                        <span class="text-gray-500 h-[1.5em] flex items-center justify-center">nonsense.</span>
-                        <span class="text-gray-500 h-[1.5em] flex items-center justify-center">uploads.</span>
-                    </span>
-                </span>
-            </p>
-
             <!-- Get it -->
             <div class="mt-8 sm:mt-10 flex flex-col items-center gap-3">
                 <a href="https://github.com/M1XaM/kit/releases"
@@ -159,29 +145,6 @@
         </div>
 
     </div>
-
-<script>
-const el = document.getElementById("roulette");
-let index = 0;
-const step = el.firstElementChild.offsetHeight;
-const total = el.children.length;
-
-function animate() {
-    index++;
-    el.style.transition = "transform 0.7s ease-in-out";
-    el.style.transform = `translateY(-${index * step}px)`;
-
-    if (index === total - 1) {
-        setTimeout(() => {
-            el.style.transition = "none";
-            el.style.transform = "translateY(0)";
-            index = 0;
-        }, 700);
-    }
-}
-
-setInterval(animate, 2000);
-</script>
 
 </body>
 </html>

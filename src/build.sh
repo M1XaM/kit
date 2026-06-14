@@ -29,9 +29,20 @@ for arg in "$@"; do
 	esac
 done
 
+# Linux/macOS install-kit flags: --with-terminal only changes runtime behavior
+# (whether the kit:// launcher spawns a terminal for logs).
 GO_BUILD_FLAGS=()
+# Windows is special: a normal console-subsystem .exe pops a terminal window the
+# instant it's double-clicked — before any runtime flag is even read. So the
+# default (release) Windows build links with `-H windowsgui` to suppress that
+# console entirely for BOTH binaries. --with-terminal opts back into a console
+# build so logs are visible for people who built it deliberately.
+WIN_INSTALL_LDFLAGS="-H windowsgui"
+WIN_UNINSTALL_LDFLAGS="-H windowsgui"
 if [ "$WITH_TERMINAL" = "true" ]; then
 	GO_BUILD_FLAGS=(-ldflags "-X main.withTerminal=true")
+	WIN_INSTALL_LDFLAGS="-X main.withTerminal=true"
+	WIN_UNINSTALL_LDFLAGS=""
 fi
 
 # Embed a clean copy of the freshly built frontend. Clear first so stale
@@ -48,8 +59,8 @@ build_linux() {
 
 build_windows() {
 	mkdir -p ../bin/windows
-	GOOS=windows GOARCH=amd64 go build "${GO_BUILD_FLAGS[@]}" -o ../bin/windows/install-kit.exe ./backend
-	GOOS=windows GOARCH=amd64 go build -o ../bin/windows/uninstall-kit.exe ./uninstall/main.go
+	GOOS=windows GOARCH=amd64 go build -ldflags "$WIN_INSTALL_LDFLAGS" -o ../bin/windows/install-kit.exe ./backend
+	GOOS=windows GOARCH=amd64 go build -ldflags "$WIN_UNINSTALL_LDFLAGS" -o ../bin/windows/uninstall-kit.exe ./uninstall/main.go
 }
 
 build_macos() {
