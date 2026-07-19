@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -429,7 +428,7 @@ func HandleSummarize(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), summarizeTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, engine,
+	cmd := hiddenCommandContext(ctx, engine,
 		"--encoder", filepath.Join(dir, "encoder_model.onnx"),
 		"--decoder", filepath.Join(dir, "decoder_model.onnx"),
 		"--tokenizer", filepath.Join(dir, "tokenizer.json"),

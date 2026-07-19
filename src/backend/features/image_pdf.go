@@ -114,7 +114,7 @@ func rasterizePDF(inputPath, outDir, format string, dpi int) (bool, error) {
 			args = append(args, "-png")
 		}
 		args = append(args, inputPath, filepath.Join(outDir, "page"))
-		out, err := combinedOutputGated(ctx, exec.CommandContext(ctx, bin, args...))
+		out, err := combinedOutputGated(ctx, hiddenCommandContext(ctx, bin, args...))
 		if err != nil {
 			return true, fmt.Errorf("pdftoppm: %v: %s", err, strings.TrimSpace(string(out)))
 		}
@@ -128,7 +128,7 @@ func rasterizePDF(inputPath, outDir, format string, dpi int) (bool, error) {
 			device = "jpeg"
 			ext = "jpg"
 		}
-		out, err := combinedOutputGated(ctx, exec.CommandContext(ctx, bin,
+		out, err := combinedOutputGated(ctx, hiddenCommandContext(ctx, bin,
 			"-sDEVICE="+device,
 			"-r"+strconv.Itoa(dpi),
 			"-dNOPAUSE", "-dQUIET", "-dBATCH", "-dSAFER",
@@ -143,7 +143,7 @@ func rasterizePDF(inputPath, outDir, format string, dpi int) (bool, error) {
 
 	if bin, err := exec.LookPath("mutool"); err == nil {
 		// mutool draw encodes JPEG only in newer builds; PNG is universal.
-		out, err := combinedOutputGated(ctx, exec.CommandContext(ctx, bin, "draw",
+		out, err := combinedOutputGated(ctx, hiddenCommandContext(ctx, bin, "draw",
 			"-r", strconv.Itoa(dpi),
 			"-o", filepath.Join(outDir, "page-%03d.png"),
 			inputPath,

@@ -20,6 +20,9 @@ func argValue(args []string, flag string) (string, bool) {
 // This is the fix for the black-screen-with-sound bug: YouTube's raw "best"
 // video is VP9/AV1, which muxed into MP4 plays as audio-only in many players.
 func TestYtFormat_BothBestPrefersH264MP4(t *testing.T) {
+	if _, err := ffmpegPath(); err != nil {
+		t.Skip("ffmpeg not installed; the merge path under test needs it")
+	}
 	for _, q := range []string{"best", "", "1080", "720", "480", "360"} {
 		args := ytQualityFormat("both", q)
 		sort, ok := argValue(args, "-S")
@@ -36,6 +39,9 @@ func TestYtFormat_BothBestPrefersH264MP4(t *testing.T) {
 // must sort by resolution (not force H.264, which would silently drop them to
 // 1080p) and merge into MKV so the codecs actually play.
 func TestYtFormat_HighResUsesResSortAndMKV(t *testing.T) {
+	if _, err := ffmpegPath(); err != nil {
+		t.Skip("ffmpeg not installed; the merge path under test needs it")
+	}
 	for _, q := range []string{"1440", "2160"} {
 		args := ytQualityFormat("both", q)
 		if sort, _ := argValue(args, "-S"); !strings.HasPrefix(sort, "res") {

@@ -176,7 +176,7 @@ func extractWith7z(archivePath, destDir string) error {
 		return err
 	}
 
-	cmd := exec.Command(binary, "x", "-y", "-o"+destDir, "--", archivePath)
+	cmd := hiddenCommand(binary, "x", "-y", "-o"+destDir, "--", archivePath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		message := strings.TrimSpace(string(output))
@@ -199,7 +199,7 @@ func createWith7z(format, outputPath, inputDir string, inputNames []string) erro
 	args := []string{"a", "-y", "-t" + format, outputPath, "--"}
 	args = append(args, inputNames...)
 
-	cmd := exec.Command(binary, args...)
+	cmd := hiddenCommand(binary, args...)
 	cmd.Dir = inputDir
 	output, err := cmd.CombinedOutput()
 	if err != nil {

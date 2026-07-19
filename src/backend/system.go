@@ -11,7 +11,17 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"local-tools-hub/backend/features/shared"
 )
+
+// hiddenCommand builds a command that won't flash a console window on the
+// windowsgui build; a no-op elsewhere.
+func hiddenCommand(name string, args ...string) *exec.Cmd {
+	cmd := exec.Command(name, args...)
+	shared.HideConsole(cmd)
+	return cmd
+}
 
 func isPortInUse(port string) bool {
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", port), time.Second)
@@ -131,13 +141,13 @@ MimeType=x-scheme-handler/kit;
 		}
 
 	case "windows":
-		// Check registry quickly so cmd windows don't flash if already present
-		cmd := exec.Command("reg", "query", `HKCU\Software\Classes\kit\shell\open\command`, "/ve")
+		// Check registry quickly so registration is skipped if already present
+		cmd := hiddenCommand("reg", "query", `HKCU\Software\Classes\kit\shell\open\command`, "/ve")
 		out, err := cmd.Output()
 		if err != nil || !strings.Contains(string(out), exePath) {
-			exec.Command("reg", "add", `HKCU\Software\Classes\kit`, "/ve", "/d", "URL:Kit Protocol", "/f").Run()
-			exec.Command("reg", "add", `HKCU\Software\Classes\kit`, "/v", "URL Protocol", "/d", "", "/f").Run()
-			exec.Command("reg", "add", `HKCU\Software\Classes\kit\shell\open\command`, "/ve", "/d", fmt.Sprintf(`"%s" "%%1"`, exePath), "/f").Run()
+			hiddenCommand("reg", "add", `HKCU\Software\Classes\kit`, "/ve", "/d", "URL:Kit Protocol", "/f").Run()
+			hiddenCommand("reg", "add", `HKCU\Software\Classes\kit`, "/v", "URL Protocol", "/d", "", "/f").Run()
+			hiddenCommand("reg", "add", `HKCU\Software\Classes\kit\shell\open\command`, "/ve", "/d", fmt.Sprintf(`"%s" "%%1"`, exePath), "/f").Run()
 		}
 	case "darwin":
 		home, err := os.UserHomeDir()

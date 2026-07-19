@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"mime"
 	"net/http"
 	"strings"
 	"time"
@@ -12,6 +13,20 @@ import (
 
 //go:embed frontend/dist/*
 var embeddedFiles embed.FS
+
+func init() {
+	// On Windows, Go resolves MIME types from the registry, which is often
+	// missing or wrong (.js as text/plain, .svg unset). With nosniff set, a
+	// wrong type breaks scripts and the tab icon — so pin the ones we serve.
+	for ext, typ := range map[string]string{
+		".js":   "text/javascript",
+		".css":  "text/css",
+		".svg":  "image/svg+xml",
+		".wasm": "application/wasm",
+	} {
+		mime.AddExtensionType(ext, typ)
+	}
+}
 
 func setupServer(port string) *http.Server {
 	security := newSecurityPolicy(port)

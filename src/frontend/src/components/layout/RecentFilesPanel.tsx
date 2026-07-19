@@ -151,6 +151,27 @@ function useRecentFileInjection(onInject: () => void, onHint: (hint: DropHint | 
   onHintRef.current = onHint
 
   useEffect(() => {
+    // dragover fires continuously; only push a new hint when it actually
+    // changed, so the panel isn't re-rendered on every mouse move of a drag.
+    let lastHint: DropHint | null = null
+    const setHint = (hint: DropHint | null) => {
+      if (
+        hint !== null &&
+        lastHint !== null &&
+        hint.ok === lastHint.ok &&
+        hint.message === lastHint.message &&
+        hint.rect.left === lastHint.rect.left &&
+        hint.rect.top === lastHint.rect.top &&
+        hint.rect.width === lastHint.rect.width &&
+        hint.rect.height === lastHint.rect.height
+      ) {
+        return
+      }
+      if (hint === null && lastHint === null) return
+      lastHint = hint
+      onHintRef.current(hint)
+    }
+    const onDragEndReset = () => setHint(null)
     const onDragOver = (e: DragEvent) => {
       if (!e.dataTransfer?.types.includes(RECENT_DRAG_TYPE)) return
       e.preventDefault()
@@ -159,14 +180,14 @@ function useRecentFileInjection(onInject: () => void, onHint: (hint: DropHint | 
       const input = over?.closest('[data-recent-panel]') ? null : findFileInput(e.clientX, e.clientY)
       if (!input || !draggingRecent) {
         e.dataTransfer.dropEffect = 'copy'
-        onHintRef.current(null)
+        setHint(null)
         return
       }
       const ok = fileMatchesAccept(draggingRecent, input.accept || '')
       // 'none' tells the OS this is an invalid target (no drop will fire).
       e.dataTransfer.dropEffect = ok ? 'copy' : 'none'
       const ext = extOf(draggingRecent.name)
-      onHintRef.current({
+      setHint({
         rect: dropZoneOf(input).getBoundingClientRect(),
         ok,
         message: ok ? '' : `${ext ? `${ext} files` : 'This file type'} aren’t supported by this tool`,
@@ -176,7 +197,7 @@ function useRecentFileInjection(onInject: () => void, onHint: (hint: DropHint | 
       if (!e.dataTransfer?.types.includes(RECENT_DRAG_TYPE)) return
       e.preventDefault()
       e.stopPropagation()
-      onHintRef.current(null)
+      setHint(null)
       const id = e.dataTransfer.getData(RECENT_DRAG_TYPE)
       if (!id) return
       // Dropping back onto the panel is a no-op, not an injection.
@@ -194,9 +215,11 @@ function useRecentFileInjection(onInject: () => void, onHint: (hint: DropHint | 
     }
     document.addEventListener('dragover', onDragOver, true)
     document.addEventListener('drop', onDrop, true)
+    document.addEventListener('dragend', onDragEndReset, true)
     return () => {
       document.removeEventListener('dragover', onDragOver, true)
       document.removeEventListener('drop', onDrop, true)
+      document.removeEventListener('dragend', onDragEndReset, true)
     }
   }, [])
 }
@@ -350,7 +373,7 @@ function HoverPreview({ meta, anchorRect, onEnter, onLeave }: HoverPreviewProps)
         top: pos ? `${pos.top}px` : `${anchorRect.top}px`,
         visibility: pos ? 'visible' : 'hidden',
       }}
-      className="fixed z-[60] flex w-[24rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-white/15 bg-slate-950/98 shadow-2xl backdrop-blur"
+      className="fixed z-[60] flex w-[24rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-white/15 bg-slate-950 shadow-2xl"
     >
       <div className="border-b border-white/10 px-3 py-2">
         <div className="truncate text-xs font-semibold text-slate-100">{meta.name}</div>
@@ -640,7 +663,7 @@ function RecentFilesPanel() {
       {/* Backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-[2px]"
+          className="fixed inset-0 z-30 bg-black/50"
           onClick={() => setOpen(false)}
           aria-hidden
         />
@@ -651,7 +674,10 @@ function RecentFilesPanel() {
           same transition — instead of drifting ahead on its own timing. */}
       <aside
         data-recent-panel
-        className={`fixed right-0 top-0 z-40 flex h-full w-80 flex-col border-l border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur transition-transform duration-300 sm:w-[22rem] ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        // No backdrop-blur here: animating transform on a backdrop-filtered
+        // element flickers badly in Chromium on Windows. The near-opaque
+        // background makes the blur invisible anyway.
+        className={`fixed right-0 top-0 z-40 flex h-full w-80 flex-col border-l border-white/10 bg-slate-950 shadow-2xl will-change-transform transition-transform duration-300 sm:w-[22rem] ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Edge tab — rides on the panel's left edge, protruding into the
             viewport so it stays reachable while the panel is off-screen. */}
@@ -659,7 +685,7 @@ function RecentFilesPanel() {
           type="button"
           aria-label={open ? 'Close recent files' : 'Open recent files'}
           onClick={() => setOpen((v) => !v)}
-          className="absolute left-0 top-1/2 flex -translate-x-full -translate-y-1/2 items-center gap-1 rounded-l-xl border border-r-0 border-white/15 bg-slate-900/90 py-3 pl-2 pr-1.5 text-slate-300 shadow-lg backdrop-blur transition-colors hover:bg-slate-800 hover:text-white"
+          className="absolute left-0 top-1/2 flex -translate-x-full -translate-y-1/2 items-center gap-1 rounded-l-xl border border-r-0 border-white/15 bg-slate-900 py-3 pl-2 pr-1.5 text-slate-300 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
         >
           <svg
             width="18"

@@ -7,13 +7,23 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"local-tools-hub/backend/features/shared"
 )
+
+// hiddenCommand builds a command that won't flash a console window on the
+// windowsgui build; a no-op elsewhere.
+func hiddenCommand(name string, args ...string) *exec.Cmd {
+	cmd := exec.Command(name, args...)
+	shared.HideConsole(cmd)
+	return cmd
+}
 
 func askUser() bool {
 	switch runtime.GOOS {
 	case "windows":
 		if _, err := exec.LookPath("powershell"); err == nil {
-			cmd := exec.Command("powershell", "-Command", "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $res = [System.Windows.Forms.MessageBox]::Show('Are you sure you want to completely uninstall Kit?', 'Uninstall Kit', 'YesNo', 'Question'); if ($res -eq 'Yes') { exit 0 } else { exit 1 }")
+			cmd := hiddenCommand("powershell", "-Command", "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $res = [System.Windows.Forms.MessageBox]::Show('Are you sure you want to completely uninstall Kit?', 'Uninstall Kit', 'YesNo', 'Question'); if ($res -eq 'Yes') { exit 0 } else { exit 1 }")
 			if err := cmd.Run(); err != nil {
 				return false
 			}
@@ -79,7 +89,7 @@ func main() {
 
 	case "windows":
 		// Force delete the registry keys without prompting
-		cmd := exec.Command("cmd", "/c", "reg delete \"HKCU\\Software\\Classes\\kit\" /f")
+		cmd := hiddenCommand("reg", "delete", `HKCU\Software\Classes\kit`, "/f")
 		err := cmd.Run()
 		if err != nil {
 			fmt.Println("Could not find or remove Kit Registry Keys (they may already be removed).")
@@ -114,6 +124,14 @@ func main() {
 
 	fmt.Println()
 	fmt.Println("Kit uninstallation complete! You can now safely delete the executable binaries.")
+
+	// The Windows binary is built windowsgui (no console), so console output is
+	// invisible there — confirm completion with a dialog instead.
+	if runtime.GOOS == "windows" {
+		if _, err := exec.LookPath("powershell"); err == nil {
+			hiddenCommand("powershell", "-Command", "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; [System.Windows.Forms.MessageBox]::Show('Kit uninstallation complete! You can now safely delete the executable binaries.', 'Uninstall Kit') | Out-Null").Run()
+		}
+	}
 }
 
 // removeModelCache deletes Kit's cache directory, including any downloaded

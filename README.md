@@ -21,7 +21,7 @@ Instead of uploading your sensitive files to random cloud websites for conversio
 50+ tools in one searchable dashboard, grouped by category:
 
 ### 🖼️ Image
-Resize Image · Compress Image · Crop/Rotate/Flip · Color Palette Extraction · Image Collage/Grid · Borders/Rounded Corners · Filters/Effects · Convert Image Formats · Denoise/Enhance · Image Watermark · PNG to JPG
+Resize Image · Compress Image · Crop/Rotate/Flip · Color Palette Extraction · Image Collage/Grid · Borders/Rounded Corners · Filters/Effects · Convert Image Formats · Denoise/Enhance · Image Watermark
 
 ### 📄 Documents (PDF)
 Merge PDF · Compress PDF · Split PDF · Encrypt/Decrypt PDF · Extract Pages · Delete Pages · Reorder Pages · Rotate Pages · File Converter

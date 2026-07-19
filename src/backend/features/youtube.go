@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -210,7 +209,7 @@ func HandleYoutubeDownload(w http.ResponseWriter, r *http.Request) {
 	args = append(args, "--")
 	args = append(args, urls...)
 
-	cmd := exec.CommandContext(ctx, ytBin, args...)
+	cmd := hiddenCommandContext(ctx, ytBin, args...)
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	if err := runHeavyJob(ctx, cmd.Run); err != nil {

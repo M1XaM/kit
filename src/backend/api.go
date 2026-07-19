@@ -9,7 +9,6 @@ import (
 )
 
 func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string) {
-	mux.HandleFunc("/api/convert/png-to-jpg", policy.wrapAPIHandler(features.HandlePngToJpg))
 	mux.HandleFunc("/api/convert/image-to-pdf", policy.wrapAPIHandler(features.HandleImagesToPDF))
 	mux.HandleFunc("/api/convert/pdf-to-images", policy.wrapAPIHandler(features.HandlePdfToImages))
 	mux.HandleFunc("/api/image/resize", policy.wrapAPIHandler(features.HandleResizeImage))

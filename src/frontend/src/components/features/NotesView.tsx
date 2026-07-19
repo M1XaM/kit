@@ -32,7 +32,9 @@ const ACTION_BUTTON = 'rounded-lg border px-4 py-2 text-sm font-semibold transit
 const INPUT_CLASS = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-800 bg-slate-900/70 text-white placeholder:text-slate-500'
 
 // Markdown with LaTeX ($inline$ and $$block$$) rendered fully client-side.
-marked.use(markedKatex({ throwOnError: false }))
+// nonStandard lets math render without surrounding whitespace too, e.g. ($x$)
+// inside brackets — the standard rule silently skips those.
+marked.use(markedKatex({ throwOnError: false, nonStandard: true }))
 marked.use({ gfm: true, breaks: true, async: false })
 
 const renderMarkdown = (text: string) => {

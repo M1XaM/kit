@@ -114,7 +114,7 @@ func HandleCompressPDF(w http.ResponseWriter, r *http.Request) {
 	if gsBin, ok := ghostscriptPath(); ok {
 		gsOut := filepath.Join(workDir, "gs.pdf")
 		ctx, cancel := context.WithTimeout(context.Background(), gsTimeout)
-		cmd := exec.CommandContext(ctx, gsBin,
+		cmd := hiddenCommandContext(ctx, gsBin,
 			"-sDEVICE=pdfwrite",
 			"-dCompatibilityLevel=1.5",
 			"-dPDFSETTINGS="+gsPdfSettings(level),

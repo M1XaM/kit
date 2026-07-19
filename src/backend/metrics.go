@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"local-tools-hub/backend/features/shared"
+
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/mem"
@@ -335,6 +337,7 @@ func queryNvidiaSmi() []gpuMetrics {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "nvidia-smi", "--query-gpu=name,utilization.gpu,utilization.memory,memory.total,memory.used,temperature.gpu", "--format=csv,noheader,nounits")
+	shared.HideConsole(cmd)
 	output, err := cmd.Output()
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {

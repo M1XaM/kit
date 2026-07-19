@@ -85,7 +85,7 @@ func runFFmpeg(bin string, args ...string) error {
 	defer cancel()
 
 	full := append([]string{"-y", "-hide_banner", "-loglevel", "error"}, args...)
-	cmd := exec.CommandContext(ctx, bin, full...)
+	cmd := hiddenCommandContext(ctx, bin, full...)
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	// Gated through the heavy-job pool so concurrent transcodes can't thrash the
@@ -108,7 +108,7 @@ func probeDuration(path string) float64 {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, bin,
+	cmd := hiddenCommandContext(ctx, bin,
 		"-v", "error",
 		"-show_entries", "format=duration",
 		"-of", "default=noprint_wrappers=1:nokey=1",
@@ -133,7 +133,7 @@ func probeHasAudio(path string) bool {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, bin,
+	cmd := hiddenCommandContext(ctx, bin,
 		"-v", "error",
 		"-select_streams", "a",
 		"-show_entries", "stream=index",
@@ -155,7 +155,7 @@ func probeResolution(path string) (int, int) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, bin,
+	cmd := hiddenCommandContext(ctx, bin,
 		"-v", "error",
 		"-select_streams", "v:0",
 		"-show_entries", "stream=width,height",

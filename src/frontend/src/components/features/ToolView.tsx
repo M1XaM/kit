@@ -54,7 +54,6 @@ function ToolView() {
   const [isProcessing, setIsProcessing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [batchMode, setBatchMode] = useState(false)
   const [splitMode, setSplitMode] = useState('range')
   const [splitRange, setSplitRange] = useState('1-2')
   const [compressLevel, setCompressLevel] = useState('medium')
@@ -133,9 +132,6 @@ function ToolView() {
     return <NotFound />
   }
 
-  // png-to-jpg supports batch: several PNGs come back as one ZIP.
-  const supportsBatch = id === 'png-to-jpg'
-
   const handleProcess = async (event) => {
     event.preventDefault()
     if (!selectedFiles.length) {
@@ -170,8 +166,7 @@ function ToolView() {
       const disp = response.headers.get('content-disposition')
       let downloadFilename = selectedFiles[0].name.replace(/\.[^/.]+$/, '') + '_output'
 
-      if (id === 'png-to-jpg') downloadFilename += selectedFiles.length > 1 ? '.zip' : '.jpg'
-      else if (id === 'split-pdf') downloadFilename += splitMode === 'per-page' ? '.zip' : '.pdf'
+      if (id === 'split-pdf') downloadFilename += splitMode === 'per-page' ? '.zip' : '.pdf'
       else downloadFilename += '.pdf'
 
       if (disp && disp.includes('filename=')) {
@@ -201,7 +196,7 @@ function ToolView() {
   const handleFileChange = () => {
     const incoming = Array.from(fileInputRef.current?.files || [])
     if (!incoming.length) return
-    setSelectedFiles((prev) => (batchMode ? [...prev, ...incoming] : incoming.slice(0, 1)))
+    setSelectedFiles(incoming.slice(0, 1))
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -235,46 +230,13 @@ function ToolView() {
           </div>
           <input
             type="file"
-            accept={id === 'png-to-jpg' ? 'image/png' : (id === 'split-pdf' || id === 'compress-pdf') ? 'application/pdf' : '*'}
-            multiple={batchMode}
+            accept={(id === 'split-pdf' || id === 'compress-pdf') ? 'application/pdf' : '*'}
             ref={fileInputRef}
             disabled={isProcessing}
             onChange={handleFileChange}
             className="hidden"
           />
         </label>
-        {supportsBatch && (
-          <label className="flex items-center gap-2 text-sm text-slate-200">
-            <input
-              type="checkbox"
-              className="accent-blue-600"
-              checked={batchMode}
-              onChange={(event) => {
-                setBatchMode(event.target.checked)
-                if (!event.target.checked) setSelectedFiles((prev) => prev.slice(0, 1))
-              }}
-              disabled={isProcessing}
-            />
-            Batch processing — convert multiple PNGs at once (results download as a ZIP)
-          </label>
-        )}
-        {batchMode && selectedFiles.length > 0 && (
-          <div className="max-h-44 overflow-auto rounded-xl border border-white/10 bg-slate-950/60">
-            {selectedFiles.map((f, index) => (
-              <div key={`${f.name}-${index}`} className="flex items-center justify-between gap-3 border-b px-4 py-2 text-sm border-white/5 last:border-b-0">
-                <span className="truncate text-slate-200">{f.name}</span>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-slate-400 transition hover:text-red-300"
-                  onClick={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== index))}
-                  disabled={isProcessing}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
         {id === 'compress-pdf' && (
           <div className="text-left">
             <label className="mb-2 block text-xs uppercase tracking-[0.12em] text-slate-400">Compression level</label>

@@ -58,27 +58,6 @@ func TestSingleImageStillDirect(t *testing.T) {
 	}
 }
 
-// TestPngToJpgRejectsNonPng keeps the dedicated PNG converter strict.
-func TestPngToJpgRejectsNonPng(t *testing.T) {
-	var jpegBuf bytes.Buffer
-	// Build a tiny JPEG by converting a PNG via the encoder helpers.
-	img, _, err := safeDecodeImage(bytes.NewReader(makeTestPNG(t, 8, 8)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := encodeImage(&jpegBuf, img, "jpeg", 90); err != nil {
-		t.Fatal(err)
-	}
-
-	req := multipartImageRequest(t, "image",
-		map[string][]byte{"photo.jpg": jpegBuf.Bytes()}, nil)
-	rec := httptest.NewRecorder()
-	HandlePngToJpg(rec, req)
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want 400", rec.Code)
-	}
-}
-
 // TestEnhanceDefaults verifies the simplified one-click enhance works with no
 // tuning parameters at all.
 func TestEnhanceDefaults(t *testing.T) {

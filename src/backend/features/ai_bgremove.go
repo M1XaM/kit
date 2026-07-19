@@ -507,7 +507,7 @@ func HandleRemoveBackground(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	// "auto" tries the GPU (CUDA) first and falls back to CPU inside the sidecar.
-	cmd := exec.CommandContext(ctx, engine,
+	cmd := hiddenCommandContext(ctx, engine,
 		"--model", weights,
 		"--profile", m.Profile,
 		"--input", inPath,

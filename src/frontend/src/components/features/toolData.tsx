@@ -504,21 +504,6 @@ const IMAGE_TOOLS = [
 
 export const TOOLS = [
   {
-    id: 'png-to-jpg',
-    title: 'PNG to JPG',
-    description: 'Convert PNG images to JPG in seconds. Easily handled locally to bypass limits.',
-    category: 'image',
-    icon: () => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-        <polyline points="21 15 16 10 5 21"></polyline>
-      </svg>
-    ),
-    colorClass: resolveColorClass('icon-yellow'),
-    apiEndpoint: '/api/convert/png-to-jpg'
-  },
-  {
     id: 'compress-pdf',
     title: 'Compress PDF',
     description: 'Reduce file size while optimizing for maximal PDF quality.',
@@ -682,7 +667,6 @@ export const CATEGORY_SECTIONS = [
       'resize-image',
       'compress-image',
       'convert-image-formats',
-      'png-to-jpg',
       'crop-rotate-flip',
       'denoise-enhance',
       'palette-extraction',
