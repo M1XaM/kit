@@ -521,7 +521,7 @@ func HandleRemoveBackground(w http.ResponseWriter, r *http.Request) {
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	runErr := runHeavyJob(ctx, cmd.Run)
+	runErr := runHeavyCmd(ctx, cmd)
 	if runErr != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			http.Error(w, "Background removal timed out. Try a lighter model.", http.StatusGatewayTimeout)

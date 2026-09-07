@@ -84,13 +84,15 @@ func runFFmpeg(bin string, args ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), ffmpegTimeout)
 	defer cancel()
 
-	full := append([]string{"-y", "-hide_banner", "-loglevel", "error"}, args...)
+	full := append([]string{"-y", "-hide_banner", "-loglevel", "error"}, ffmpegThreadArgs()...)
+	full = append(full, withEncoderThreads(args)...)
 	cmd := hiddenCommandContext(ctx, bin, full...)
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	// Gated through the heavy-job pool so concurrent transcodes can't thrash the
-	// machine; the ctx timeout also bounds how long a job waits in the queue.
-	if err := runHeavyJob(ctx, cmd.Run); err != nil {
+	// machine, and started at reduced priority so a long encode doesn't make the
+	// desktop stutter; the ctx timeout bounds how long a job waits in the queue.
+	if err := runHeavyCmd(ctx, cmd); err != nil {
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
 			msg = err.Error()
@@ -98,6 +100,27 @@ func runFFmpeg(bin string, args ...string) error {
 		return fmt.Errorf("ffmpeg failed: %s", msg)
 	}
 	return nil
+}
+
+// ffmpegThreadArgs bounds how many threads ffmpeg spawns. Left to itself it
+// uses every logical core, which is what makes a single export take the whole
+// machine with it.
+func ffmpegThreadArgs() []string {
+	return []string{"-threads", strconv.Itoa(heavyJobThreads())}
+}
+
+// withEncoderThreads repeats the cap just before the output file. ffmpeg reads
+// -threads per stage: ahead of -i it bounds the decoder, ahead of the output it
+// bounds the encoder, and the encoder is the expensive half. Every caller ends
+// its arguments with the output path; anything else is left untouched.
+func withEncoderThreads(args []string) []string {
+	if len(args) == 0 || strings.HasPrefix(args[len(args)-1], "-") {
+		return args
+	}
+	out := make([]string, 0, len(args)+2)
+	out = append(out, args[:len(args)-1]...)
+	out = append(out, ffmpegThreadArgs()...)
+	return append(out, args[len(args)-1])
 }
 
 // probeDuration returns the media duration in seconds, or 0 if unknown.

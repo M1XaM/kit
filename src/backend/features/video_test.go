@@ -243,3 +243,45 @@ func TestTrimVideoRejectsBadRange(t *testing.T) {
 		t.Fatalf("expected 400, got %d", rec.Code)
 	}
 }
+
+// ffmpeg reads -threads per stage, so the cap has to sit both ahead of -i (the
+// decoder) and ahead of the output file (the encoder, which is the expensive
+// half). Without the second one a transcode still claims every core.
+func TestWithEncoderThreadsInsertsBeforeOutput(t *testing.T) {
+	args := []string{"-i", "in.mp4", "-c:v", "libx264", "-crf", "23", "out.mp4"}
+	before := strings.Join(args, " ")
+	got := withEncoderThreads(args)
+
+	if len(got) != len(args)+2 {
+		t.Fatalf("withEncoderThreads returned %d args, want %d: %v", len(got), len(args)+2, got)
+	}
+	if got[len(got)-1] != "out.mp4" {
+		t.Errorf("the output path is no longer last: %v", got)
+	}
+	if got[len(got)-3] != "-threads" {
+		t.Errorf("-threads is not immediately before the output: %v", got)
+	}
+	if n, err := strconv.Atoi(got[len(got)-2]); err != nil || n < 1 {
+		t.Errorf("thread count %q is not a positive number", got[len(got)-2])
+	}
+	// The caller's slice must not be rewritten underneath it.
+	if after := strings.Join(args, " "); after != before {
+		t.Errorf("withEncoderThreads mutated its input: %q became %q", before, after)
+	}
+}
+
+// Arguments that don't end in an output path are left exactly as they are,
+// rather than having -threads spliced somewhere ffmpeg won't understand it.
+func TestWithEncoderThreadsLeavesOtherShapesAlone(t *testing.T) {
+	for _, args := range [][]string{
+		nil,
+		{},
+		{"-i", "in.mp4", "-f", "null", "-"},
+		{"-version"},
+	} {
+		got := withEncoderThreads(args)
+		if len(got) != len(args) {
+			t.Errorf("withEncoderThreads(%v) = %v, want it unchanged", args, got)
+		}
+	}
+}

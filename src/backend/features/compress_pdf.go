@@ -121,7 +121,7 @@ func HandleCompressPDF(w http.ResponseWriter, r *http.Request) {
 			"-dNOPAUSE", "-dQUIET", "-dBATCH", "-dSAFER",
 			"-o", gsOut, inputPath,
 		)
-		if err := runHeavyJob(ctx, cmd.Run); err != nil {
+		if err := runHeavyCmd(ctx, cmd); err != nil {
 			fmt.Printf("ghostscript compress failed (falling back to pdfcpu): %v\n", err)
 		} else if size := fileSize(gsOut); size > 0 && size < bestSize && pdfIsValid(gsOut) {
 			bestPath, bestSize = gsOut, size

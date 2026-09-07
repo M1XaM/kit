@@ -148,8 +148,21 @@ func buildSessionOptions(provider string) (*ort.SessionOptions, error) {
 		}
 		return opts, nil
 	}
-	_ = opts.SetIntraOpNumThreads(runtime.NumCPU())
+	// CPU: leave a core for everything else. Claiming every one of them makes
+	// the desktop stutter for as long as inference runs, and ORT gains very
+	// little from that last thread.
+	_ = opts.SetIntraOpNumThreads(cpuThreads())
 	return opts, nil
+}
+
+// cpuThreads is the inference thread budget: every logical core but one, and
+// never fewer than one. It mirrors heavyJobThreads in the Kit backend, which
+// bounds ffmpeg the same way.
+func cpuThreads() int {
+	if n := runtime.NumCPU() - 1; n > 0 {
+		return n
+	}
+	return 1
 }
 
 // run loads the model once and processes every input, returning the outputs and

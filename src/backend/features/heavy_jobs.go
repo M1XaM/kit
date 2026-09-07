@@ -1,12 +1,15 @@
 package features
 
 import (
+	"bytes"
 	"context"
 	"os/exec"
 	"runtime"
 	"sync"
 
 	"github.com/shirou/gopsutil/v4/mem"
+
+	"local-tools-hub/backend/features/shared"
 )
 
 // Heavy tools shell out to CPU/GPU-intensive external processes — ffmpeg,
@@ -44,6 +47,19 @@ func heavyJobLimit() int {
 	return limit
 }
 
+// heavyJobThreads caps how wide a single heavy job may run. Tools like ffmpeg
+// and ONNX Runtime default to every logical core, which is what makes one
+// export take the whole machine down with it. Leaving a core free keeps the
+// desktop responsive at a cost the job barely notices. How many jobs run at
+// once is bounded separately by heavyJobLimit, and all of them run at reduced
+// priority, so a full queue can't monopolise the CPU either.
+func heavyJobThreads() int {
+	if n := runtime.NumCPU() - 1; n > 0 {
+		return n
+	}
+	return 1
+}
+
 func heavySemaphore() chan struct{} {
 	heavyOnce.Do(func() { heavySem = make(chan struct{}, heavyJobLimit()) })
 	return heavySem
@@ -64,14 +80,24 @@ func runHeavyJob(ctx context.Context, fn func() error) error {
 	return fn()
 }
 
-// combinedOutputGated runs cmd.CombinedOutput() through the heavy-job pool,
-// returning the captured output and error just like the bare call would.
-func combinedOutputGated(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
-	var out []byte
-	err := runHeavyJob(ctx, func() error {
-		var runErr error
-		out, runErr = cmd.CombinedOutput()
-		return runErr
+// runHeavyCmd runs an external command through the heavy-job pool at reduced
+// priority, so a transcode that runs for minutes never competes with whatever
+// the user is doing in the foreground.
+func runHeavyCmd(ctx context.Context, cmd *exec.Cmd) error {
+	return runHeavyJob(ctx, func() error {
+		if err := shared.StartBackground(cmd); err != nil {
+			return err
+		}
+		return cmd.Wait()
 	})
-	return out, err
+}
+
+// combinedOutputGated is runHeavyCmd with cmd.CombinedOutput()'s signature:
+// stdout and stderr interleaved into one buffer.
+func combinedOutputGated(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	err := runHeavyCmd(ctx, cmd)
+	return out.Bytes(), err
 }

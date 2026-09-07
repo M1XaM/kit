@@ -358,7 +358,7 @@ func HandleParaphrase(w http.ResponseWriter, r *http.Request) {
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if runErr := runHeavyJob(ctx, cmd.Run); runErr != nil {
+	if runErr := runHeavyCmd(ctx, cmd); runErr != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			http.Error(w, "Paraphrasing timed out. Try a lighter model or fewer words.", http.StatusGatewayTimeout)
 			return

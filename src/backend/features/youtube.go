@@ -212,7 +212,7 @@ func HandleYoutubeDownload(w http.ResponseWriter, r *http.Request) {
 	cmd := hiddenCommandContext(ctx, ytBin, args...)
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
-	if err := runHeavyJob(ctx, cmd.Run); err != nil {
+	if err := runHeavyCmd(ctx, cmd); err != nil {
 		// --max-downloads makes yt-dlp exit with code 101 even on success;
 		// treat the run as failed only when nothing was produced.
 		files, _ := collectFiles(outDir)
