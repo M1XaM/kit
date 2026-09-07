@@ -61,6 +61,21 @@ Each OS folder contains `install-kit`, `uninstall-kit`, and a `lib/` folder with
 
 ---
 
+## 🔄 Staying Up To Date
+
+Kit checks the [Releases](https://github.com/M1XaM/kit/releases/latest) page for itself. When a newer
+version is out, a pill appears in the top bar next to the bookmark tip — click **Update now** and Kit
+downloads the release for your OS, verifies it against the published `checksums.txt`, installs it over
+itself and relaunches. Your `data/` folder (notes, recordings, downloaded AI models) is never touched.
+
+* The check runs on start and then every 30 minutes. GitHub allows 60 unauthenticated API calls an
+  hour, so a faster upstream poll would get throttled; set `KIT_UPDATE_CHECK_INTERVAL` (e.g. `30s`,
+  `5m`) if you want a different cadence.
+* Builds made from source report their version as `dev` and never auto-update — there's nothing to
+  compare against, and overwriting a local build would throw your work away.
+
+---
+
 ## 🗑️ Uninstallation
 
 Kit leaves no hidden background services. To wipe the custom `kit://` URL scheme from your system:

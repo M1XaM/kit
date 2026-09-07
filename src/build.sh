@@ -29,19 +29,25 @@ for arg in "$@"; do
 	esac
 done
 
+# The release tag is stamped into the binary so it can tell whether a newer
+# release exists. Unset (a plain source build) leaves it as "dev", which turns
+# auto-update off — nothing to compare against, and nothing worth overwriting.
+VERSION="${KIT_VERSION:-dev}"
+COMMON_LDFLAGS="-X main.appVersion=$VERSION"
+
 # Linux/macOS install-kit flags: --with-terminal only changes runtime behavior
 # (whether the kit:// launcher spawns a terminal for logs).
-GO_BUILD_FLAGS=()
+GO_BUILD_FLAGS=(-ldflags "$COMMON_LDFLAGS")
 # Windows is special: a normal console-subsystem .exe pops a terminal window the
 # instant it's double-clicked — before any runtime flag is even read. So the
 # default (release) Windows build links with `-H windowsgui` to suppress that
 # console entirely for BOTH binaries. --with-terminal opts back into a console
 # build so logs are visible for people who built it deliberately.
-WIN_INSTALL_LDFLAGS="-H windowsgui"
+WIN_INSTALL_LDFLAGS="$COMMON_LDFLAGS -H windowsgui"
 WIN_UNINSTALL_LDFLAGS="-H windowsgui"
 if [ "$WITH_TERMINAL" = "true" ]; then
-	GO_BUILD_FLAGS=(-ldflags "-X main.withTerminal=true")
-	WIN_INSTALL_LDFLAGS="-X main.withTerminal=true"
+	GO_BUILD_FLAGS=(-ldflags "$COMMON_LDFLAGS -X main.withTerminal=true")
+	WIN_INSTALL_LDFLAGS="$COMMON_LDFLAGS -X main.withTerminal=true"
 	WIN_UNINSTALL_LDFLAGS=""
 fi
 

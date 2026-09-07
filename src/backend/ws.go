@@ -85,7 +85,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 // server after 5 seconds of inactivity. When kit://start triggers /api/open,
 // the new browser tab establishes a fresh WebSocket connection, which resets
 // the idle timer — so the restart flow is preserved.
-func monitorConnections(server *http.Server) {
+//
+// busy lets a job that must outlive the last tab hold the shutdown off: an
+// update installing itself has to finish replacing the binaries and relaunch,
+// not be cut in half because the user closed the page.
+func monitorConnections(server *http.Server, busy func() bool) {
 	const idleTimeout = 5 * time.Second
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
@@ -98,7 +102,7 @@ func monitorConnections(server *http.Server) {
 		count := len(connections)
 		connsMutex.Unlock()
 
-		if count > 0 {
+		if count > 0 || (busy != nil && busy()) {
 			idle = false
 			continue
 		}

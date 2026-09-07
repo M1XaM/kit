@@ -5,6 +5,7 @@ import NotFound from './NotFound'
 import ToolView from '../features/ToolView'
 import RecentFilesPanel from './RecentFilesPanel'
 import { FavoritesProvider } from '../../state/favorites'
+import UpdatePill from './UpdatePill'
 
 const GITHUB_URL = 'https://github.com/M1XaM/kit'
 const GITHUB_ISSUES_URL = 'https://github.com/M1XaM/kit/issues'
@@ -131,6 +132,7 @@ function HeaderBar({ status }: HeaderBarProps) {
         <p className={pillClass}>
           Drag <a href="kit://start" className="underline decoration-slate-400 text-current">Kit</a> to your bookmarks!
         </p>
+        <UpdatePill />
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative group">

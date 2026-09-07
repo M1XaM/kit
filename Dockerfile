@@ -20,6 +20,10 @@ RUN npm run build
 FROM golang:alpine AS backend
 ARG TARGET_OS=all
 ARG WITH_TERMINAL=false
+# The release tag, stamped into the binary so it can tell whether a newer
+# release exists. "dev" (the default for a plain source build) turns
+# auto-update off.
+ARG KIT_VERSION=dev
 WORKDIR /app
 
 # Ensure correct CGO state for pure static cross-compilation
@@ -47,9 +51,9 @@ RUN for os in $TARGET_OS; do \
 # Linux
 RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " linux "; then \
 			mkdir -p /out/linux; \
-			LDFLAGS=""; \
-			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="-ldflags=-X=main.withTerminal=true"; fi; \
-			GOOS=linux GOARCH=amd64 go build $LDFLAGS -o /out/linux/install-kit ./backend; \
+			LDFLAGS="-X main.appVersion=$KIT_VERSION"; \
+			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="$LDFLAGS -X main.withTerminal=true"; fi; \
+			GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o /out/linux/install-kit ./backend; \
 			GOOS=linux GOARCH=amd64 go build -o /out/linux/uninstall-kit ./uninstall/main.go; \
 		fi
 
@@ -60,9 +64,9 @@ RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " linux "; then
 # terminal) so logs are visible for people who built it deliberately.
 RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " windows "; then \
 			mkdir -p /out/windows; \
-			INSTALL_LDFLAGS="-H windowsgui"; \
+			INSTALL_LDFLAGS="-X main.appVersion=$KIT_VERSION -H windowsgui"; \
 			UNINSTALL_LDFLAGS="-H windowsgui"; \
-			if [ "$WITH_TERMINAL" = "true" ]; then INSTALL_LDFLAGS="-X main.withTerminal=true"; UNINSTALL_LDFLAGS=""; fi; \
+			if [ "$WITH_TERMINAL" = "true" ]; then INSTALL_LDFLAGS="-X main.appVersion=$KIT_VERSION -X main.withTerminal=true"; UNINSTALL_LDFLAGS=""; fi; \
 			GOOS=windows GOARCH=amd64 go build -ldflags="$INSTALL_LDFLAGS" -o /out/windows/install-kit.exe ./backend; \
 			GOOS=windows GOARCH=amd64 go build -ldflags="$UNINSTALL_LDFLAGS" -o /out/windows/uninstall-kit.exe ./uninstall/main.go; \
 		fi
@@ -70,9 +74,9 @@ RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " windows "; th
 # macOS (Apple Silicon)
 RUN if [ "$TARGET_OS" = "all" ] || echo " $TARGET_OS " | grep -q " macos "; then \
 			mkdir -p /out/macos; \
-			LDFLAGS=""; \
-			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="-ldflags=-X=main.withTerminal=true"; fi; \
-			GOOS=darwin GOARCH=arm64 go build $LDFLAGS -o /out/macos/install-kit ./backend; \
+			LDFLAGS="-X main.appVersion=$KIT_VERSION"; \
+			if [ "$WITH_TERMINAL" = "true" ]; then LDFLAGS="$LDFLAGS -X main.withTerminal=true"; fi; \
+			GOOS=darwin GOARCH=arm64 go build -ldflags="$LDFLAGS" -o /out/macos/install-kit ./backend; \
 			GOOS=darwin GOARCH=arm64 go build -o /out/macos/uninstall-kit ./uninstall/main.go; \
 		fi
 

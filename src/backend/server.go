@@ -28,7 +28,7 @@ func init() {
 	}
 }
 
-func setupServer(port string) *http.Server {
+func setupServer(port string, upd *updater) *http.Server {
 	security := newSecurityPolicy(port)
 
 	distFS, err := fs.Sub(embeddedFiles, "frontend/dist")
@@ -70,7 +70,7 @@ func setupServer(port string) *http.Server {
 
 	mux.HandleFunc("/ws", security.wrapWebSocketHandler(handleWebSocket))
 
-	setupAPI(mux, security, port)
+	setupAPI(mux, security, port, upd)
 
 	// No Addr here: main binds explicit loopback-only listeners and calls
 	// Serve, so the API is never reachable from other machines on the network.

@@ -23,6 +23,12 @@ func main() {
 	showTerm := terminalEnabled()
 	registerCustomScheme(showTerm)
 
+	// An instance that just installed an update relaunches us while it is still
+	// finishing up, and tells us which port it is about to release. Wait for it
+	// so the probe below doesn't mistake the outgoing process for a live
+	// instance and hand the tab back to a server that is seconds from exiting.
+	waitForPortRelease(os.Getenv(restartWaitEnv), 30*time.Second)
+
 	// Probe ports starting at the base. If a Kit instance is already running
 	// on one, ask it to open a new browser tab instead of starting a second
 	// instance. If a port is occupied by some other application, fall through
@@ -52,8 +58,17 @@ func main() {
 	// Erased notes live in data/notes/trash for 7 days; purge expired ones.
 	go features.CleanupNotesTrash()
 
+	updates := newUpdater(port)
+	if updates.installDir != "" {
+		// Clear the files a previous update parked out of the way (and any
+		// staging folder an interrupted one left behind).
+		go sweepParkedFiles(updates.installDir)
+	}
+	go updates.run()
+
 	url := fmt.Sprintf("http://localhost:%s", port)
-	server := setupServer(port)
+	server := setupServer(port, updates)
+	updates.setStopper(func() { server.Close() })
 
 	// Bind to the loopback interfaces only: Kit's API gives access to local
 	// files and tools, so it must never be reachable from other machines.
@@ -80,19 +95,27 @@ func main() {
 		close(serverDone)
 	}()
 
-	go monitorConnections(server)
+	go monitorConnections(server, updates.isBusy)
 
-	go func() {
-		if waitForServerReady(url, 5*time.Second) {
-			openBrowserWithRetry(url, 3, 400*time.Millisecond)
-			return
-		}
-		openBrowserWithRetry(url, 5, 700*time.Millisecond)
-	}()
+	// A relaunch after an update skips the browser: the page that asked for the
+	// update is still open and reloads itself onto the new build, so opening a
+	// second tab on top of it would just be noise.
+	if os.Getenv(restartWaitEnv) == "" {
+		go func() {
+			if waitForServerReady(url, 5*time.Second) {
+				openBrowserWithRetry(url, 3, 400*time.Millisecond)
+				return
+			}
+			openBrowserWithRetry(url, 5, 700*time.Millisecond)
+		}()
+	}
 
 	// Block until the server shuts down (triggered by monitorConnections
 	// when no WebSocket clients remain for 5 seconds).
 	<-serverDone
+	// A running update replaces the binaries and relaunches Kit itself, so let
+	// it finish rather than exiting out from under it.
+	updates.waitUntilIdle(65 * time.Minute)
 	fmt.Println("Server shut down. Goodbye.")
 }
 

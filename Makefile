@@ -31,6 +31,11 @@ WITH_GPU_FLAG := --with-gpu
 DOCKER_GPU_ARG := --build-arg WITH_GPU=true
 endif
 
+# Stamped into install-kit so it can tell whether a newer release exists.
+# `make build KIT_VERSION=v1.2.3` marks a build as that release; the default
+# "dev" leaves auto-update switched off.
+KIT_VERSION ?= dev
+
 # Extract the version from the arguments for "make release <version>"
 ifeq (release,$(firstword $(MAKECMDGOALS)))
   RELEASE_VERSION := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
@@ -48,7 +53,7 @@ build:
 	@echo "Starting platform-agnostic build process via Docker..."
 	@rm -rf bin/
 	@rm -rf src/frontend/dist/
-	@DOCKER_BUILDKIT=1 docker build --file Dockerfile $(DOCKER_TERMINAL_ARG) $(DOCKER_GPU_ARG) --output type=local,dest=bin/ .
+	@DOCKER_BUILDKIT=1 docker build --file Dockerfile --build-arg KIT_VERSION="$(KIT_VERSION)" $(DOCKER_TERMINAL_ARG) $(DOCKER_GPU_ARG) --output type=local,dest=bin/ .
 	@echo "Build complete! Check the bin/ directory for your OS folders."
 
 # Compiles locally using your host's Go and Node.js
@@ -56,7 +61,7 @@ local-build:
 	@echo "Starting local build process..."
 	@rm -rf bin/
 	@rm -rf src/frontend/dist/
-	@cd src && ./build.sh $(WITH_TERMINAL_FLAG) $(WITH_GPU_FLAG)
+	@cd src && KIT_VERSION="$(KIT_VERSION)" ./build.sh $(WITH_TERMINAL_FLAG) $(WITH_GPU_FLAG)
 
 linux windows macos: platform-build
 
@@ -68,7 +73,7 @@ platform-build:
 	@echo "Starting platform-agnostic build process via Docker for $(REQUESTED_PLATFORMS)..."
 	@rm -rf bin/
 	@rm -rf src/frontend/dist/
-	@DOCKER_BUILDKIT=1 docker build --file Dockerfile --build-arg TARGET_OS="$(REQUESTED_PLATFORMS)" $(DOCKER_TERMINAL_ARG) $(DOCKER_GPU_ARG) --output type=local,dest=bin/ .
+	@DOCKER_BUILDKIT=1 docker build --file Dockerfile --build-arg TARGET_OS="$(REQUESTED_PLATFORMS)" --build-arg KIT_VERSION="$(KIT_VERSION)" $(DOCKER_TERMINAL_ARG) $(DOCKER_GPU_ARG) --output type=local,dest=bin/ .
 	@echo "Build complete! Check the bin/ directory for your OS folders."
 
 # Starts the Go backend directly for development. Requires a prior frontend

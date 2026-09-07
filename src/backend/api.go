@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string) {
+func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string, upd *updater) {
 	mux.HandleFunc("/api/convert/image-to-pdf", policy.wrapAPIHandler(features.HandleImagesToPDF))
 	mux.HandleFunc("/api/convert/pdf-to-images", policy.wrapAPIHandler(features.HandlePdfToImages))
 	mux.HandleFunc("/api/image/resize", policy.wrapAPIHandler(features.HandleResizeImage))
@@ -65,6 +65,11 @@ func setupAPI(mux *http.ServeMux, policy *securityPolicy, port string) {
 	mux.HandleFunc("/api/ocr/models/delete", policy.wrapAPIHandler(features.HandleDeleteOcrModel))
 	mux.HandleFunc("/api/ocr/lang/", policy.wrapAPIHandler(features.HandleOcrLangData))
 	mux.HandleFunc("/api/system/metrics", policy.wrapAPIHandler(handleSystemMetrics))
+	// Auto-update: the page polls /status and asks /install to pull the new
+	// release in. Both go through the same origin + session checks as every
+	// other API route.
+	mux.HandleFunc("/api/update/status", policy.wrapAPIHandler(upd.handleStatus))
+	mux.HandleFunc("/api/update/install", policy.wrapAPIHandler(upd.handleInstall))
 	// /api/open — opens a browser tab on the running server.
 	// Called by kit://start when an instance is already listening on the base port.
 	mux.HandleFunc("/api/open", handleOpenTab(port))

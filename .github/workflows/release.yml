@@ -20,12 +20,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # The tag is stamped into install-kit: it's what the running app compares
+      # against the latest release to decide whether to offer an update.
+      # A manual (workflow_dispatch) run has no tag, so it stays "dev".
       - name: Build linux + windows via Docker
         run: |
           DOCKER_BUILDKIT=1 docker build \
             --file Dockerfile \
             --build-arg TARGET_OS="linux windows" \
+            --build-arg KIT_VERSION="${KIT_VERSION:-dev}" \
             --output type=local,dest=bin/ .
+        env:
+          KIT_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}
 
       - name: Package Linux
         run: |
@@ -74,6 +80,8 @@ jobs:
         run: |
           chmod +x src/build.sh src/build_sidecar.sh
           ./src/build.sh macos
+        env:
+          KIT_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}
 
       - name: Package macOS
         run: |
@@ -100,6 +108,14 @@ jobs:
           path: dist
           merge-multiple: true
 
+      # The in-app updater verifies every download against this file before it
+      # replaces anything on disk, so it has to ship with the release.
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum kit-*.tar.gz kit-*.zip > checksums.txt
+          cat checksums.txt
+
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
@@ -108,3 +124,4 @@ jobs:
             dist/kit-linux-amd64.tar.gz
             dist/kit-windows-amd64.zip
             dist/kit-macos-arm64.tar.gz
+            dist/checksums.txt
