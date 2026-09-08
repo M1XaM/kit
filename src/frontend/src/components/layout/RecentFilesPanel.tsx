@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { PDFDocumentProxy } from 'pdfjs-dist'
 import {
   addRecentFile,
   clearRecentFiles,
@@ -295,6 +296,109 @@ function Thumb({ meta, kind }: { meta: RecentFileMeta; kind: ReturnType<typeof k
 }
 
 // ---------------------------------------------------------------------------
+// PDF preview
+// ---------------------------------------------------------------------------
+// The browser's own PDF plugin is not an option here: Kit's CSP sets
+// object-src 'none', so an <object data=… type="application/pdf"> is blocked
+// outright and the card came up empty. pdf.js draws the pages onto canvases
+// instead, which the strict policy allows — and it is already bundled for the
+// PDF text extractor, so nothing new ships. The library is imported on demand
+// so its ~1 MB stays out of the bundle until someone previews a PDF.
+
+// Only the opening pages are drawn: enough to recognise the document without
+// rendering a 500-page report into a hover card.
+const PDF_PREVIEW_MAX_PAGES = 10
+
+type PdfPreviewProps = {
+  file: File
+  onError: () => void
+}
+
+function PdfPreview({ file, onError }: PdfPreviewProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [pageCount, setPageCount] = useState(0)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    const container = containerRef.current
+    if (container) container.replaceChildren()
+    setPageCount(0)
+    setReady(false)
+
+    const run = async () => {
+      let doc: PDFDocumentProxy | null = null
+      try {
+        const [pdfjsLib, worker] = await Promise.all([
+          import('pdfjs-dist'),
+          import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+        ])
+        pdfjsLib.GlobalWorkerOptions.workerSrc = worker.default
+
+        const data = await file.arrayBuffer()
+        if (cancelled) return
+        doc = await pdfjsLib.getDocument({ data }).promise
+        if (cancelled) return
+
+        setPageCount(doc.numPages)
+        const target = containerRef.current
+        if (!target) return
+
+        // Match the card's width, then oversample by the device pixel ratio so
+        // the page stays sharp on a HiDPI screen.
+        const cssWidth = target.clientWidth || 320
+        const ratio = Math.min(window.devicePixelRatio || 1, 2)
+        const last = Math.min(doc.numPages, PDF_PREVIEW_MAX_PAGES)
+
+        for (let i = 1; i <= last; i += 1) {
+          const page = await doc.getPage(i)
+          if (cancelled) return
+          const unscaled = page.getViewport({ scale: 1 })
+          const viewport = page.getViewport({ scale: (cssWidth / unscaled.width) * ratio })
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.max(1, Math.floor(viewport.width))
+          canvas.height = Math.max(1, Math.floor(viewport.height))
+          canvas.className = 'mb-2 w-full rounded bg-white last:mb-0'
+          await page.render({ canvas, viewport }).promise
+          page.cleanup()
+          if (cancelled) return
+          target.appendChild(canvas)
+          setReady(true)
+        }
+      } catch {
+        // A password-protected or corrupt file lands here; the card falls back
+        // to its "Preview unavailable." message.
+        if (!cancelled) onError()
+      } finally {
+        if (doc) doc.destroy().catch(() => {})
+      }
+    }
+
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [file, onError])
+
+  const hidden = pageCount > PDF_PREVIEW_MAX_PAGES ? pageCount - PDF_PREVIEW_MAX_PAGES : 0
+
+  return (
+    // A fixed height (rather than max-height) keeps the card the same size from
+    // the first frame, so it doesn't jump around under the cursor as each page
+    // finishes drawing — the hover card is positioned once, on open.
+    <div className="h-[60vh] w-full overflow-auto">
+      <div ref={containerRef} />
+      {!ready && <div className="py-8 text-center text-xs text-slate-400">Rendering PDF…</div>}
+      {ready && hidden > 0 && (
+        <div className="py-2 text-center text-[0.65rem] text-slate-500">
+          +{hidden} more page{hidden === 1 ? '' : 's'} — open the file to see the rest
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Hover preview card
 // ---------------------------------------------------------------------------
 // Hovering a recent file pops a floating card next to it (to the left of the
@@ -313,10 +417,14 @@ type HoverPreviewProps = {
 function HoverPreview({ meta, anchorRect, onEnter, onLeave }: HoverPreviewProps) {
   const [url, setUrl] = useState<string | null>(null)
   const [text, setText] = useState<string | null>(null)
+  // PDFs are handed to pdf.js as the File itself rather than an object URL —
+  // see PdfPreview for why the browser's plugin view can't be used.
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [error, setError] = useState(false)
   const cardRef = useRef<HTMLDivElement | null>(null)
   const [pos, setPos] = useState<{ right: number; top: number } | null>(null)
   const kind = kindOf(meta.type, meta.name)
+  const failPreview = useCallback(() => setError(true), [])
 
   // Read from the live File reference for this preview. The bytes come straight
   // from the file on disk — nothing was copied to get here.
@@ -325,6 +433,7 @@ function HoverPreview({ meta, anchorRect, onEnter, onLeave }: HoverPreviewProps)
     let cancelled = false
     setUrl(null)
     setText(null)
+    setPdfFile(null)
     setError(false)
 
     const file = getRecentFile(meta.id)
@@ -338,6 +447,12 @@ function HoverPreview({ meta, anchorRect, onEnter, onLeave }: HoverPreviewProps)
       slice.text().then((body) => {
         if (!cancelled) setText(file.size > slice.size ? `${body}\n\n… (truncated)` : body)
       })
+      return () => {
+        cancelled = true
+      }
+    }
+    if (kind === 'pdf') {
+      setPdfFile(file)
       return () => {
         cancelled = true
       }
@@ -361,7 +476,7 @@ function HoverPreview({ meta, anchorRect, onEnter, onLeave }: HoverPreviewProps)
     let top = anchorRect.top + anchorRect.height / 2 - height / 2
     top = Math.max(8, Math.min(top, window.innerHeight - height - 8))
     setPos({ right, top })
-  }, [anchorRect, kind, url, text, error])
+  }, [anchorRect, kind, url, text, pdfFile, error])
 
   return (
     <div
@@ -401,11 +516,9 @@ function HoverPreview({ meta, anchorRect, onEnter, onLeave }: HoverPreviewProps)
           </div>
         )}
 
-        {!error && kind === 'pdf' && url && (
+        {!error && kind === 'pdf' && pdfFile && (
           // Scrollable inside its own viewport — the user can hover and scroll.
-          <object data={url} type="application/pdf" className="h-[60vh] w-full">
-            <p className="p-4 text-xs text-slate-400">PDF preview unavailable.</p>
-          </object>
+          <PdfPreview file={pdfFile} onError={failPreview} />
         )}
 
         {!error && kind === 'text' && text !== null && (
@@ -423,7 +536,7 @@ function HoverPreview({ meta, anchorRect, onEnter, onLeave }: HoverPreviewProps)
           </div>
         )}
 
-        {!error && url === null && text === null && kind !== 'other' && kind !== 'archive' && (
+        {!error && url === null && text === null && pdfFile === null && kind !== 'other' && kind !== 'archive' && (
           <div className="py-8 text-xs text-slate-400">Loading…</div>
         )}
       </div>
