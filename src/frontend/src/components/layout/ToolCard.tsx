@@ -15,8 +15,13 @@ function ToolCard({ tool, onNavigate }: ToolCardProps) {
     : 'border-white/20 bg-white/5 text-slate-500'
 
   return (
+    // No backdrop-blur on the card: favouriting a tool inserts the Favorites
+    // section above the grid, and Chromium leaves the shifted backdrop-filtered
+    // cards on a stale layer — they render blank until a hover forces a repaint
+    // (the same flicker the Recent files panel avoids). The cards sit on the
+    // fixed page background, so the blur was invisible anyway.
     <div
-      className="relative flex h-full min-h-[240px] cursor-pointer flex-col rounded-2xl border p-5 transition-colors hover:shadow-lg border-white/10 bg-white/5 backdrop-blur shadow-none hover:border-white/20 hover:bg-white/10"
+      className="relative flex h-full min-h-[240px] cursor-pointer flex-col rounded-2xl border p-5 transition-colors hover:shadow-lg border-white/10 bg-white/5 shadow-none hover:border-white/20 hover:bg-white/10"
       onClick={() => onNavigate(tool.id)}
     >
       <div className="absolute right-3 top-3 flex items-center gap-2">
