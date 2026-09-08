@@ -39,11 +39,11 @@ func openBrowser(url string) error {
 	var err error
 	switch runtime.GOOS {
 	case "linux":
-		err = exec.Command("xdg-open", url).Run()
+		err = hiddenCommand("xdg-open", url).Run()
 	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Run()
+		err = hiddenCommand("rundll32", "url.dll,FileProtocolHandler", url).Run()
 	case "darwin":
-		err = exec.Command("open", url).Run()
+		err = hiddenCommand("open", url).Run()
 	default:
 		err = fmt.Errorf("unsupported platform")
 	}
@@ -136,8 +136,8 @@ MimeType=x-scheme-handler/kit;
 		existingContent, err := os.ReadFile(desktopPath)
 		if err != nil || string(existingContent) != content {
 			os.WriteFile(desktopPath, []byte(content), 0644)
-			exec.Command("xdg-mime", "default", "kit.desktop", "x-scheme-handler/kit").Run()
-			exec.Command("update-desktop-database", appDir).Run()
+			hiddenCommand("xdg-mime", "default", "kit.desktop", "x-scheme-handler/kit").Run()
+			hiddenCommand("update-desktop-database", appDir).Run()
 		}
 
 	case "windows":

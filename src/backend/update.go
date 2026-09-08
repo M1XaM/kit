@@ -15,7 +15,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -679,7 +678,7 @@ func sweepParkedFiles(installDir string) {
 // process is about to release so it waits instead of concluding that another
 // instance is already serving.
 func (u *updater) relaunch() error {
-	cmd := exec.Command(filepath.Join(u.installDir, u.exeName))
+	cmd := hiddenCommand(filepath.Join(u.installDir, u.exeName))
 	cmd.Dir = u.installDir
 	cmd.Env = append(os.Environ(), restartWaitEnv+"="+u.port)
 	return cmd.Start()
