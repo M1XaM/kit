@@ -8,7 +8,7 @@ import { FavoritesProvider } from '../../state/favorites'
 import UpdatePill from './UpdatePill'
 
 const GITHUB_URL = 'https://github.com/M1XaM/kit'
-const GITHUB_ISSUES_URL = 'https://github.com/M1XaM/kit/issues'
+const GITHUB_ISSUES_URL = 'https://github.com/M1XaM/kit/issues/new'
 const HOME_SCROLL_KEY = 'kit-home-scroll'
 
 type HeaderBarProps = {
@@ -130,7 +130,7 @@ function HeaderBar({ status }: HeaderBarProps) {
     <div className="sticky top-0 z-20 flex flex-col gap-2 border-b px-6 py-2 text-sm backdrop-blur md:flex-row md:items-center md:justify-between border-white/10 bg-black/80 text-slate-400">
       <div className="flex flex-wrap items-center gap-3">
         <p className={pillClass}>
-          Drag <a href="kit://start" className="underline decoration-slate-400 text-current">Kit</a> to your bookmarks!
+          Drag <a href="kit://start" className="rounded-md border border-blue-400/40 bg-blue-500/15 px-1.5 py-0.5 font-semibold text-blue-200 transition hover:border-blue-400/70 hover:bg-blue-500/25 hover:text-blue-100">this</a> to your bookmarks!
         </p>
         <UpdatePill />
       </div>
