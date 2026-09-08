@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { marked } from 'marked'
 import markedKatex from 'marked-katex-extension'
+import katex from 'katex'
 import DOMPurify from 'dompurify'
 import 'katex/dist/katex.min.css'
 import FeatureHeader from './FeatureHeader'
@@ -35,6 +36,59 @@ const INPUT_CLASS = 'w-full rounded-lg border px-3 py-2 text-sm border-slate-800
 // nonStandard lets math render without surrounding whitespace too, e.g. ($x$)
 // inside brackets — the standard rule silently skips those.
 marked.use(markedKatex({ throwOnError: false, nonStandard: true }))
+
+// marked-katex-extension only knows the dollar delimiters, so LaTeX written
+// with the bracket ones — \(inline\) and \[display\] — fell through to
+// marked's escape rule and came out as literal "(x)" / "[x]" text. These two
+// extensions add them: an inline rule covering both pairs anywhere in a
+// paragraph, and a block rule so a standalone \[…\] renders as its own
+// centred display block.
+const BRACKET_INLINE_RULE = /^\\([([])([\s\S]+?)\\([)\]])/
+const BRACKET_BLOCK_RULE = /^\\\[([\s\S]+?)\\\](?:\n|$)/
+
+const renderKatex = (text: string, displayMode: boolean) =>
+  katex.renderToString(text, { throwOnError: false, displayMode })
+
+marked.use({
+  extensions: [
+    {
+      name: 'bracketKatexBlock',
+      level: 'block',
+      start: (src: string) => {
+        const index = src.indexOf('\\[')
+        return index === -1 ? undefined : index
+      },
+      tokenizer(src: string) {
+        const match = BRACKET_BLOCK_RULE.exec(src)
+        if (!match) return undefined
+        return { type: 'bracketKatexBlock', raw: match[0], text: match[1].trim() }
+      },
+      renderer: (token: { text: string }) => `${renderKatex(token.text, true)}\n`
+    },
+    {
+      name: 'bracketKatexInline',
+      level: 'inline',
+      start: (src: string) => {
+        const candidates = [src.indexOf('\\('), src.indexOf('\\[')].filter((i) => i !== -1)
+        return candidates.length ? Math.min(...candidates) : undefined
+      },
+      tokenizer(src: string) {
+        const match = BRACKET_INLINE_RULE.exec(src)
+        // Reject a mismatched pair such as \(x\] — those stay literal text.
+        if (!match || (match[1] === '(') !== (match[3] === ')')) return undefined
+        return {
+          type: 'bracketKatexInline',
+          raw: match[0],
+          text: match[2].trim(),
+          displayMode: match[1] === '['
+        }
+      },
+      renderer: (token: { text: string; displayMode: boolean }) =>
+        renderKatex(token.text, token.displayMode)
+    }
+  ]
+})
+
 marked.use({ gfm: true, breaks: true, async: false })
 
 const renderMarkdown = (text: string) => {
